@@ -1,10 +1,14 @@
 package com.rftgscorer;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.*;
 
 public class Scorer extends Activity {
@@ -42,6 +46,8 @@ public class Scorer extends Activity {
         super.onPause();
         state.saveState(this);
     }
+
+
 
     class PlayerContext implements TabHost.TabContentFactory {
 
@@ -94,12 +100,51 @@ public class Scorer extends Activity {
                 }
             });
 
-            ArrayAdapter<String> adapter = new ArrayAdapter<String>(Scorer.this, android.R.layout.simple_spinner_item, new String[]{"2","3","2","3","2","3","2","3","2","3","2","3","2","3","2","3","2","3","d"});
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+            final GridView cardGrid = (GridView) view.findViewById(R.id.cardGrid);
 
-            Spinner cardSelector = (Spinner) view.findViewById(R.id.cardSelector);
-            cardSelector.setAdapter(adapter);
-            cardSelector.setPrompt("Card:");
+            cardGrid.setAdapter(new BaseAdapter() {
+                @Override
+                public int getCount() {
+                    return 190;
+                }
+
+                @Override
+                public Object getItem(int i) {
+                    return null;
+                }
+
+                @Override
+                public long getItemId(int i) {
+                    return 0;
+                }
+
+                @Override
+                public View getView(int i, View view, ViewGroup viewGroup) {
+
+                    ImageView imageView = (ImageView)(view != null?view:getLayoutInflater().inflate(R.layout.grid_card, null));
+
+                    int resourceId = Scorer.this.getResources().getIdentifier("card_" + i, "drawable", getPackageName());
+
+                    BitmapFactory.Options options = new BitmapFactory.Options();
+                    options.inSampleSize = 2;
+                    options.inScaled = true;
+
+                    Bitmap bitmap = BitmapFactory.decodeResource(Scorer.this.getResources(), resourceId, options);
+
+                    imageView.setImageBitmap(bitmap);
+                    return imageView;
+                }
+            });
+
+//            ArrayAdapter<Card> adapter = new ArrayAdapter<Card>(this, R.layout.item, R.id.tvText, data);
+//            gvMain.setAdapter(adapter);
+
+//            ArrayAdapter<String> adapter = new ArrayAdapter<String>(Scorer.this, android.R.layout.simple_spinner_item, new String[]{"2","3","2","3","2","3","2","3","2","3","2","3","2","3","2","3","2","3","d"});
+//            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+//
+//            Spinner cardSelector = (Spinner) view.findViewById(R.id.cardSelector);
+//            cardSelector.setAdapter(adapter);
+//            cardSelector.setPrompt("Card:");
 
 //        cardSelector.setAdapter(new ArrayAdapter<Card>(this, R.layout.selector_item, R.layout.selector_text, cardsLoader.cards.toArray(new Card[cardsLoader.cards.size()])));
 

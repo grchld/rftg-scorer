@@ -12,7 +12,10 @@ import org.opencv.core.Mat;
 
 public class MainActivity extends Activity implements CvCameraViewListener {
 
+    private Recognizer recognizer;
+
     private CameraBridgeViewBase openCvCameraView;
+
     private BaseLoaderCallback loaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -60,16 +63,23 @@ public class MainActivity extends Activity implements CvCameraViewListener {
 
     @Override
     public void onCameraViewStarted(int width, int height) {
-        //To change body of implemented methods use File | Settings | File Templates.
+        recognizer = new Recognizer(width, height);
     }
 
     @Override
     public void onCameraViewStopped() {
-        //To change body of implemented methods use File | Settings | File Templates.
+        if (recognizer != null) {
+            recognizer.close();
+            recognizer = null;
+        }
     }
 
     @Override
     public Mat onCameraFrame(Mat inputFrame) {
-        return inputFrame;
+        if (recognizer != null) {
+            return recognizer.onFrame(inputFrame);
+        } else {
+            return inputFrame;
+        }
     }
 }

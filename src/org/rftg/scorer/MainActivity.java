@@ -10,7 +10,7 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 
-public class Scorer extends Activity implements CvCameraViewListener {
+public class MainActivity extends Activity implements CvCameraViewListener {
 
     private CameraBridgeViewBase openCvCameraView;
     private BaseLoaderCallback loaderCallback = new BaseLoaderCallback(this) {

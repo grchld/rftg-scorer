@@ -23,7 +23,7 @@
             android:label="@string/app_name"
             android:icon="@drawable/rftg"
             android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
-        <activity android:name="org.rftg.scorer.Scorer"
+        <activity android:name=".MainActivity"
                   android:label="@string/app_name"
                   android:screenOrientation="landscape"
                   android:configChanges="keyboardHidden|orientation">

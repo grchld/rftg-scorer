@@ -62,20 +62,20 @@ public class MainActivity extends Activity implements CvCameraViewListener {
     }
 
     @Override
-    public void onCameraViewStarted(int width, int height) {
-        recognizer = new Recognizer(width, height);
+    public synchronized void onCameraViewStarted(int width, int height) {
+        recognizer = new Recognizer(this, width, height);
     }
 
     @Override
-    public void onCameraViewStopped() {
+    public synchronized void onCameraViewStopped() {
         if (recognizer != null) {
-            recognizer.close();
+            recognizer.release();
             recognizer = null;
         }
     }
 
     @Override
-    public Mat onCameraFrame(Mat inputFrame) {
+    public synchronized Mat onCameraFrame(Mat inputFrame) {
         if (recognizer != null) {
             return recognizer.onFrame(inputFrame);
         } else {

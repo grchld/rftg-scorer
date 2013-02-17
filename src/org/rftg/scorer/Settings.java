@@ -1,7 +1,4 @@
-package com.rftgscorer;
-
-import android.os.Parcel;
-import android.os.Parcelable;
+package org.rftg.scorer;
 
 import java.io.Serializable;
 

@@ -38,6 +38,17 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module-library">
+      <library name="OpenCV">
+        <CLASSES>
+          <root url="file://$MODULE_DIR$/../OpenCV/out/production/OpenCV" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="file://$MODULE_DIR$/../OpenCV/src" />
+        </SOURCES>
+      </library>
+    </orderEntry>
   </component>
 </module>
 

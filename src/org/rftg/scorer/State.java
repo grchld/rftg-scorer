@@ -1,4 +1,4 @@
-package com.rftgscorer;
+package org.rftg.scorer;
 
 import android.app.Activity;
 import android.content.Context;
@@ -16,7 +16,6 @@ import java.util.List;
 class State implements Serializable {
 
     private final static String STATE = "state";
-
     Settings settings = new Settings();
     List<Player> players = new ArrayList<Player>();
 
@@ -32,7 +31,7 @@ class State implements Serializable {
             try {
                 ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(Base64.decode(stateString, Base64.NO_CLOSE | Base64.NO_WRAP | Base64.NO_PADDING)));
                 try {
-                    return (State)ois.readObject();
+                    return (State) ois.readObject();
                 } finally {
                     ois.close();
                 }

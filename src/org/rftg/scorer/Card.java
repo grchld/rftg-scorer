@@ -1,21 +1,27 @@
-package com.rftgscorer;
+package org.rftg.scorer;
 
-import android.content.res.AssetManager;
-
-import java.io.*;
-import java.util.*;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author gc
  */
 class Card {
 
+    int id;
+    String name;
+    CardType cardType;
+    int cost;
+    int vp;
+    GoodType goodType;
+    Set<Flags> flags;
+    Map<GameType, Integer> count;
+
     enum GameType {
         BASE("The base game"),
         EXP1("The Gathering Storm"),
         EXP2("Rebel vs Imperium"),
-        EXP3("The Brink of War")
-        ;
+        EXP3("The Brink of War");
         final String name;
 
         GameType(String name) {
@@ -56,14 +62,5 @@ class Card {
         TAKE_DISCARDS,
         SELECT_LAST
     }
-
-    int id;
-    String name;
-    CardType cardType;
-    int cost;
-    int vp;
-    GoodType goodType;
-    Set<Flags> flags;
-    Map<GameType, Integer> count;
 
 }

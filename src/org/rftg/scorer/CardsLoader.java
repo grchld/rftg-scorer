@@ -1,4 +1,4 @@
-package com.rftgscorer;
+package org.rftg.scorer;
 
 import android.app.Activity;
 import android.content.res.AssetManager;
@@ -15,6 +15,25 @@ import java.util.List;
  * @author gc
  */
 public class CardsLoader {
+
+    List<Card> cards;
+
+    CardsLoader(AssetManager assetManager) {
+        try {
+            InputStream inputStream = assetManager.open("cards.txt");
+            try {
+                cards = loadCards(inputStream);
+            } finally {
+                inputStream.close();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    CardsLoader(Activity activity) {
+        this(activity.getAssets());
+    }
 
     static List<Card> loadCards(InputStream inputStream) throws Exception {
         try {
@@ -81,24 +100,5 @@ public class CardsLoader {
         } finally {
             inputStream.close();
         }
-    }
-
-    List<Card> cards;
-
-    CardsLoader(AssetManager assetManager) {
-        try {
-            InputStream inputStream = assetManager.open("cards.txt");
-            try {
-                cards = loadCards(inputStream);
-            } finally {
-                inputStream.close();
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    CardsLoader(Activity activity) {
-        this(activity.getAssets());
     }
 }

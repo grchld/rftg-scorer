@@ -27,7 +27,7 @@ public class Scorer extends Activity {
         }
 
         setContentView(R.layout.main);
-
+/*
         TabHost tabHost = (TabHost) findViewById(R.id.tabHost);
         tabHost.setup();
 
@@ -39,6 +39,7 @@ public class Scorer extends Activity {
             tabSpec.setContent(new PlayerContext(player));
             tabHost.addTab(tabSpec);
         }
+        */
     }
 
     @Override

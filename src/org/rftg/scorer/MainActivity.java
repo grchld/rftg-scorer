@@ -12,6 +12,7 @@ import org.opencv.core.Mat;
 
 public class MainActivity extends Activity implements CvCameraViewListener {
 
+    private SamplesLoader samplesLoader;
     private Recognizer recognizer;
 
     private CameraBridgeViewBase openCvCameraView;
@@ -63,6 +64,7 @@ public class MainActivity extends Activity implements CvCameraViewListener {
 
     @Override
     public synchronized void onCameraViewStarted(int width, int height) {
+        samplesLoader = new SamplesLoader(this, Card.GameType.EXP1.maxCardNum);
         recognizer = new Recognizer(this, width, height);
     }
 
@@ -71,6 +73,10 @@ public class MainActivity extends Activity implements CvCameraViewListener {
         if (recognizer != null) {
             recognizer.release();
             recognizer = null;
+        }
+        if (samplesLoader != null) {
+            samplesLoader.release();
+            samplesLoader = null;
         }
     }
 

@@ -6,22 +6,20 @@ import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author gc
  */
 class Recognizer {
 
-    private static int MAX_LINES = 1000;
+    private static int MAX_LINES = 500;
 
     private static double MIN_RATIO = (7./5.)/1.2;
     private static double MAX_RATIO = (7./5.)*1.2;
+    private static double PARALLEL_ANGLE_BOUND = 0.1;
 
-    private static double ANGLE_BOUND = 0.3;
+    private static double ANGLE_BOUND = 0.2;
 
     private Mat real;
     private Mat gray;
@@ -36,11 +34,10 @@ class Recognizer {
     private double maxX;
     private double maxY;
 
+    private TreeMap<Double, MatOfPoint> tempRects = new TreeMap<Double, MatOfPoint>();
+
     List<Line> horizontal = new ArrayList<Line>(MAX_LINES);
     List<Line> vertical = new ArrayList<Line>(MAX_LINES);
-
-    int tempRectCounter;
-
 
     Recognizer(Context context, int width, int height) {
         Mat tempReal;
@@ -63,11 +60,11 @@ class Recognizer {
 
         result = new Mat(height, width, CvType.CV_8UC4);
 
-        maxX = width / 2;
-        minX = maxX / 5;
+        maxX = width / 3;
+        minX = maxX / 3;
 
-        maxY = height / 1.5;
-        minY = maxY / 5;
+        maxY = height / 1.8;
+        minY = maxY / 3;
     }
 
     void release() {
@@ -79,8 +76,10 @@ class Recognizer {
     Mat onFrame(Mat inputFrame) {
         /**/
         Mat sub = inputFrame.submat(0,real.rows(),0,real.cols());
-        real.copyTo(sub);
+//        real.copyTo(sub);
         sub.release();
+        /**/
+        tempRects.clear();
         /**/
 
         Imgproc.cvtColor(inputFrame, gray, Imgproc.COLOR_BGR2GRAY);
@@ -89,31 +88,13 @@ class Recognizer {
 
         Mat lines = new Mat();
 
-        Imgproc.HoughLinesP(canny, lines, 1, 3.14159 * 2 / 180, 50, 40, 5);
+        Imgproc.HoughLinesP(canny, lines, 1, 3.14159 * 2 / 180, 40, 40, 5);
 
         int lineCount = lines.cols();
 
-        if (lineCount < 4 || lineCount > 1000) {
+        if (lineCount < 4 || lineCount > MAX_LINES) {
             return inputFrame;
         }
-
-
-//        Imgproc.HoughLines(canny, lines, 4, 3.14159 * 4 / 180, 100/*, 2, 200*/);
-
-//        Imgproc.cvtColor(mIntermediateMat, sub, Imgproc.COLOR_GRAY2RGBA, 4);
-
-
-//        Mat sub = mRgba.submat(0, real.rows(), 0, real.cols());
-
-////        Mat lines = new Mat();
-
-////        Imgproc.HoughLinesP(mIntermediateMat, lines, 1, 3.14159 / 180, 50, 50, 5);
-//        Imgproc.HoughLines(mIntermediateMat, lines, 1, 3.14159 / 180, 100/*, 50, 5*/);
-
-//        Imgproc.cvtColor(canny, result, Imgproc.COLOR_GRAY2RGBA, 4);
-
-
-
 
         inputFrame.copyTo(result);
 
@@ -152,6 +133,7 @@ class Recognizer {
         }
 
         int rectCounter = 0;
+        int sameRectCounter = 0;
 
         Collections.sort(vertical, Line.MX_COMPARATOR);
         Collections.sort(horizontal, Line.MX_COMPARATOR);
@@ -189,6 +171,10 @@ class Recognizer {
                     break;
                 }
 
+                if (Math.abs(leftLine.tan - rightLine.tan) > PARALLEL_ANGLE_BOUND) {
+                    break;
+                }
+
                 if (Math.abs(leftLine.my-rightLine.my) <= maxY ) {
 
                     for (int horizontal1 = leftHorizontalBound ; horizontal1 < horizontalSizeMinusOne ; horizontal1++) {
@@ -213,11 +199,16 @@ class Recognizer {
                             }
                         }
 
+                        nextHorizontal2:
                         for (int horizontal2 = horizontal1+1 ; horizontal2 < horizontalSize ; horizontal2++) {
 
                             Line horizontalLine2 = horizontal.get(horizontal2);
 
                             if (horizontalLine2.mx > rightLine.mx) {
+                                break;
+                            }
+
+                            if (Math.abs(horizontalLine1.tan - horizontalLine2.tan) > PARALLEL_ANGLE_BOUND) {
                                 break;
                             }
 
@@ -248,32 +239,36 @@ class Recognizer {
                                 continue;
                             }
 
-                            ///////////
-                            if (leftLine.mx > rightLine.mx || rightLine.mx - leftLine.mx < minX || rightLine.mx - leftLine.mx > maxX) {
-                                throw new RuntimeException();
-                            }
-                            if (leftLine.mx > upperLine.mx || rightLine.mx < upperLine.mx || leftLine.mx > lowerLine.mx || rightLine.mx < lowerLine.mx) {
-                                throw new RuntimeException();
+                            Point p1 = intersect(leftLine, upperLine);
+                            Point p2 = intersect(rightLine, upperLine);
+                            Point p3 = intersect(rightLine, lowerLine);
+                            Point p4 = intersect(leftLine, lowerLine);
+
+
+                            MatOfPoint rect = new MatOfPoint(p1, p2, p3, p4);
+
+                            Point[] rectPoints = rect.toArray();
+
+                            double delta = (p2.x - p1.x) / 10;
+
+                            nextRect: for (MatOfPoint r : tempRects.subMap(p1.x - delta, true, p1.x + delta, true).values()) {
+                                Point[] p = r.toArray();
+                                for (int i = 0 ; i < 4 ; i++) {
+                                    if (Math.abs(rectPoints[i].x - p[i].x) > 5) {
+                                        continue nextRect;
+                                    }
+                                    if (Math.abs(rectPoints[i].y - p[i].y) > 5) {
+                                        continue nextRect;
+                                    }
+                                }
+                                sameRectCounter++;
+
+
+                                continue nextHorizontal2;
                             }
 
-                            if (upperLine.my > lowerLine.my || lowerLine.my - upperLine.my < minY || lowerLine.my - upperLine.my > maxY) {
-                                throw new RuntimeException();
-                            }
-                            if (upperLine.my > leftLine.my || lowerLine.my < leftLine.my || upperLine.my > rightLine.my || lowerLine.my < rightLine.my) {
-                                throw new RuntimeException();
-                            }
-                            ////////////
-                            ////
-                            /*
-                            if (rectCounter == tempRectCounter) {
-                                tempRectCounter++;
-                                Core.line(result, new Point(upperLine.x1, upperLine.y1), new Point(upperLine.x2, upperLine.y2), new Scalar(255,255,255), 3);
-                                Core.line(result, new Point(lowerLine.x1, lowerLine.y1), new Point(lowerLine.x2, lowerLine.y2), new Scalar(255,255,255), 3);
-                                Core.line(result, new Point(rightLine.x1, rightLine.y1), new Point(rightLine.x2, rightLine.y2), new Scalar(255,255,255), 3);
-                                Core.line(result, new Point(leftLine.x1, leftLine.y1), new Point(leftLine.x2, leftLine.y2), new Scalar(255,255,255), 3);
-                                break leftBoundLoop;
-                            }
-                                     */
+                            tempRects.put(p1.x, rect);
+
                             rectCounter++;
 
 
@@ -287,10 +282,22 @@ class Recognizer {
         }
 
 
+        Core.polylines(result, new ArrayList<MatOfPoint>(tempRects.values()), true, new Scalar(255,255,255));
 
         Core.putText(result, "" + rectCounter, new Point(100, 200), 1, 1, new Scalar(255,255,255));
+        Core.putText(result, "" + sameRectCounter, new Point(100, 250), 1, 1, new Scalar(0,255,255));
 
         return result;
+    }
+
+    private Point intersect(Line h, Line v) {
+
+        double divisor = v.dx * h.dy - h.dx * v.dy;
+
+        double x = (v.cross * h.dx - h.cross * v.dx) / divisor;
+        double y = (v.cross * h.dy - h.cross * v.dy) / divisor;
+
+        return new Point(x,y);
     }
 
     static class Line{
@@ -320,6 +327,8 @@ class Recognizer {
         double mx;
         double my;
 
+        double cross;
+
         double tan;
         boolean horizontal;
 
@@ -334,6 +343,8 @@ class Recognizer {
 
             mx = (x1 + x2) / 2;
             my = (y1 + y2) / 2;
+
+            cross = x1 * y2 - x2 * y1;
 
             horizontal = Math.abs(dx) > Math.abs(dy);
             if (horizontal) {

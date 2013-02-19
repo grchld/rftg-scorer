@@ -18,14 +18,16 @@ class Card {
     Map<GameType, Integer> count;
 
     enum GameType {
-        BASE("The base game"),
-        EXP1("The Gathering Storm"),
-        EXP2("Rebel vs Imperium"),
-        EXP3("The Brink of War");
+        BASE("The base game", 94),
+        EXP1("The Gathering Storm", 113),
+        EXP2("Rebel vs Imperium", 150),
+        EXP3("The Brink of War", 190);
         final String name;
+        final int maxCardNum;
 
-        GameType(String name) {
+        GameType(String name, int maxCardNum) {
             this.name = name;
+            this.maxCardNum = maxCardNum;
         }
     }
 

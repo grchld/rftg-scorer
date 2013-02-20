@@ -5,7 +5,7 @@ package org.rftg.scorer;
  */
 public class CustomNativeTools {
 
-    static {
+    public CustomNativeTools() {
         System.loadLibrary("rftg_scorer");
     }
 

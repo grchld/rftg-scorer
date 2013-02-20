@@ -10,10 +10,15 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class MainActivity extends Activity implements CvCameraViewListener {
 
-    private SamplesLoader samplesLoader;
-    private Recognizer recognizer;
+    ExecutorService executorService;
+    SamplesLoader samplesLoader;
+    Recognizer recognizer;
+    CustomNativeTools customNativeTools;
 
     private CameraBridgeViewBase openCvCameraView;
 
@@ -22,6 +27,11 @@ public class MainActivity extends Activity implements CvCameraViewListener {
         public void onManagerConnected(int status) {
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS:
+
+                    customNativeTools = new CustomNativeTools();
+                    samplesLoader = new SamplesLoader(MainActivity.this, Card.GameType.EXP1.maxCardNum);
+
+
                     openCvCameraView.enableView();
                     break;
                 default:
@@ -33,6 +43,8 @@ public class MainActivity extends Activity implements CvCameraViewListener {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -57,14 +69,18 @@ public class MainActivity extends Activity implements CvCameraViewListener {
     }
 
     public void onDestroy() {
-        super.onDestroy();
         if (openCvCameraView != null)
             openCvCameraView.disableView();
+        if (samplesLoader != null) {
+            samplesLoader.release();
+            samplesLoader = null;
+        }
+        executorService.shutdown();
+        super.onDestroy();
     }
 
     @Override
     public synchronized void onCameraViewStarted(int width, int height) {
-        samplesLoader = new SamplesLoader(this, Card.GameType.EXP1.maxCardNum);
         recognizer = new Recognizer(this, width, height);
     }
 
@@ -73,10 +89,6 @@ public class MainActivity extends Activity implements CvCameraViewListener {
         if (recognizer != null) {
             recognizer.release();
             recognizer = null;
-        }
-        if (samplesLoader != null) {
-            samplesLoader.release();
-            samplesLoader = null;
         }
     }
 

@@ -12,7 +12,7 @@ import java.util.concurrent.Callable;
 /**
  * @author gc
  */
-public class SamplesLoader {
+class SamplesLoader {
 
     public final static int ORIGINAL_SAMPLE_HEIGHT = 520;
     public final static int ORIGINAL_SAMPLE_WIDTH = 372;
@@ -21,6 +21,7 @@ public class SamplesLoader {
     public final static int SAMPLE_HEIGHT = 7 * SIZE_MULTIPLIER;
     public final static int SAMPLE_WIDTH = 5 * SIZE_MULTIPLIER;
     private Mat[] samples;
+    private Normalizer normalizer = new Normalizer();
 
     public SamplesLoader(final MainActivity main, int maxCardNum) {
 
@@ -51,6 +52,8 @@ public class SamplesLoader {
 
                 Mat scaled = new Mat(SAMPLE_WIDTH, SAMPLE_HEIGHT, CvType.CV_8UC3);
                 Imgproc.warpAffine(tempSample, scaled, scaleDown, size, Imgproc.INTER_LINEAR);
+
+                normalizer.normalize(scaled);
 
                 samples[num] = scaled;
                 tempSample.release();

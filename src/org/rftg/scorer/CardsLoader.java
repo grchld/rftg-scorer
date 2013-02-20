@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * @author gc
  */
-public class CardsLoader {
+class CardsLoader {
 
     List<Card> cards;
 

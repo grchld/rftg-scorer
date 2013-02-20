@@ -3,7 +3,7 @@ package org.rftg.scorer;
 /**
  * @author gc
  */
-public class CustomNativeTools {
+class CustomNativeTools {
 
     public CustomNativeTools() {
         System.loadLibrary("rftg_scorer");

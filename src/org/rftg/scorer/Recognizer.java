@@ -1,6 +1,7 @@
 package org.rftg.scorer;
 
 import android.content.Context;
+import android.util.Log;
 import org.opencv.android.Utils;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
@@ -21,11 +22,13 @@ class Recognizer {
 
     private static double ANGLE_BOUND = 0.2;
 
+    final MainActivity main;
+
     private Mat real;
     private Mat gray;
     private Mat canny;
 
-    private Mat result;
+//    private Mat result;
 
     private int counter;
 
@@ -39,11 +42,13 @@ class Recognizer {
     List<Line> horizontal = new ArrayList<Line>(MAX_LINES);
     List<Line> vertical = new ArrayList<Line>(MAX_LINES);
 
-    Recognizer(Context context, int width, int height) {
+
+    Recognizer(MainActivity main, int width, int height) {
+        this.main = main;
         Mat tempReal;
         try {
 
-            tempReal = Utils.loadResource(context, R.drawable.real);
+            tempReal = Utils.loadResource(main, R.drawable.real);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -58,7 +63,7 @@ class Recognizer {
 
         canny = new Mat(height, width, CvType.CV_8UC1);
 
-        result = new Mat(height, width, CvType.CV_8UC4);
+//        result = new Mat(height, width, CvType.CV_8UC4);
 
         maxX = width / 3;
         minX = maxX / 3;
@@ -73,19 +78,27 @@ class Recognizer {
         canny.release();
     }
 
-    Mat onFrame(Mat inputFrame) {
+    Mat onFrame(Mat frame) {
         /**/
-        Mat sub = inputFrame.submat(0,real.rows(),0,real.cols());
+        Mat sub = frame.submat(0,real.rows(),0,real.cols());
 //        real.copyTo(sub);
         sub.release();
         /**/
         tempRects.clear();
         /**/
 
-        Imgproc.cvtColor(inputFrame, gray, Imgproc.COLOR_BGR2GRAY);
+        long time = System.currentTimeMillis();
+        //new Normalizer().normalize(frame);
+        long x = main.customNativeTools.normalize(frame, Normalizer.NORMALIZE_THRESHOLD, Normalizer.NORMALIZE_THRESHOLD);
+        Log.i("rftg", "Normalize4: " + x + " " + (System.currentTimeMillis() - time));
+/*
+        Imgproc.cvtColor(frame, gray, Imgproc.COLOR_BGR2GRAY);
 
         Imgproc.Canny(gray, canny, 80, 100);
 
+        Imgproc.cvtColor(gray, frame, Imgproc.COLOR_GRAY2RGBA);
+  */
+/*
         Mat lines = new Mat();
 
         Imgproc.HoughLinesP(canny, lines, 1, 3.14159 * 2 / 180, 40, 40, 5);
@@ -286,8 +299,8 @@ class Recognizer {
 
         Core.putText(result, "" + rectCounter, new Point(100, 200), 1, 1, new Scalar(255,255,255));
         Core.putText(result, "" + sameRectCounter, new Point(100, 250), 1, 1, new Scalar(0,255,255));
-
-        return result;
+  */
+        return frame;
     }
 
     private Point intersect(Line h, Line v) {

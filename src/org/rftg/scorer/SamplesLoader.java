@@ -24,7 +24,7 @@ class SamplesLoader {
     private Normalizer normalizer = new Normalizer();
 
     public SamplesLoader(final MainActivity main, int maxCardNum) {
-
+/*
         samples = new Mat[maxCardNum + 1];
         final Size size = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
 
@@ -78,15 +78,16 @@ class SamplesLoader {
         Log.i("rftg", "Parallel loading time: " + (System.currentTimeMillis() - time));
 
         scaleDown.release();
-
+  */
     }
 
     public void release() {
-
+/*
         for (Mat sample : samples) {
             if (sample != null) {
                 sample.release();
             }
         }
+        */
     }
 }

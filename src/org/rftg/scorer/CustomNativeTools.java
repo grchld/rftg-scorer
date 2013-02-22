@@ -1,5 +1,7 @@
 package org.rftg.scorer;
 
+import org.opencv.core.Mat;
+
 /**
  * @author gc
  */
@@ -9,6 +11,10 @@ class CustomNativeTools {
         System.loadLibrary("rftg_scorer");
     }
 
-    public native double testNativeCall(double value);
+    public int normalize(Mat mat, double lowerPercent, double upperPercent) {
+        return normalize(mat.getNativeObjAddr(), lowerPercent, upperPercent);
+    }
+
+    private native int normalize(long mat, double lowerPercent, double upperPercent);
 
 }

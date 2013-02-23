@@ -27,6 +27,8 @@ class Recognizer {
     private Mat real;
     private Mat gray;
     private Mat canny;
+    private Mat sobelX;
+    private Mat sobelY;
 
 //    private Mat result;
 
@@ -63,6 +65,10 @@ class Recognizer {
 
         canny = new Mat(height, width, CvType.CV_8UC1);
 
+        sobelX = new Mat(height, width, CvType.CV_8U);
+
+        sobelY = new Mat(height, width, CvType.CV_8U);
+
 //        result = new Mat(height, width, CvType.CV_8UC4);
 
         maxX = width / 3;
@@ -76,23 +82,36 @@ class Recognizer {
         real.release();
         gray.release();
         canny.release();
+        sobelX.release();
+        sobelY.release();
     }
 
     Mat onFrame(Mat frame) {
         /**/
         Mat sub = frame.submat(0,real.rows(),0,real.cols());
-//        real.copyTo(sub);
+        real.copyTo(sub);
         sub.release();
         /**/
-        tempRects.clear();
+//        tempRects.clear();
         /**/
 
-        long time = System.currentTimeMillis();
-        //new Normalizer().normalize(frame);
-        long x = main.customNativeTools.normalize(frame, Normalizer.NORMALIZE_THRESHOLD, Normalizer.NORMALIZE_THRESHOLD);
-        Log.i("rftg", "Normalize4: " + x + " " + (System.currentTimeMillis() - time));
-/*
+//        long time = System.currentTimeMillis();
+
+
         Imgproc.cvtColor(frame, gray, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.Sobel(gray, sobelX, CvType.CV_8U, 1, 0, 3, 0.25, 128);
+        frame = sobelX;
+//        Core.convertScaleAbs(sobelX, frame, 1, 128);
+
+
+
+        //new Normalizer().normalize(frame);
+//        long x = main.customNativeTools.normalize(frame, Normalizer.NORMALIZE_THRESHOLD, Normalizer.NORMALIZE_THRESHOLD);
+//        Log.i("rftg", "Normalize4: " + x + " " + (System.currentTimeMillis() - time));
+
+
+
+/*
 
         Imgproc.Canny(gray, canny, 80, 100);
 

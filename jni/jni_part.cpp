@@ -86,13 +86,13 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
 
         uint8x8_t* drow = dst.ptr<uint8x8_t>(i);
 
-        int16x8_t p0 = (int16x8_t)vmovl_u8(prow[0]);
-        int16x8_t c0 = (int16x8_t)vmovl_u8(crow[0]);
-        int16x8_t n0 = (int16x8_t)vmovl_u8(nrow[0]);
+        uint8x8_t p0 = prow[0];
+        uint8x8_t c0 = crow[0];
+        uint8x8_t n0 = nrow[0];
 
-        int16x8_t p1 = (int16x8_t)vmovl_u8(prow[1]);
-        int16x8_t c1 = (int16x8_t)vmovl_u8(crow[1]);
-        int16x8_t n1 = (int16x8_t)vmovl_u8(nrow[1]);
+        uint8x8_t p1 = prow[1];
+        uint8x8_t c1 = crow[1];
+        uint8x8_t n1 = nrow[1];
 
 //        uint8x8_t delta = vdup_n_u8(128);
 
@@ -101,32 +101,27 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
 
         for (int j = 2 ; j < cols/8; j++) {
 
-            int16x8_t p2 = (int16x8_t)vmovl_u8(prow[j]);
-//            int16x8_t c2 = (int16x8_t)vmovl_u8(crow[j]);
-            int16x8_t n2 = (int16x8_t)vmovl_u8(nrow[j]);
+            uint8x8_t p2 = prow[j];
+            uint8x8_t c2 = crow[j];
+            uint8x8_t n2 = nrow[j];
 
-            int16x8_t px = vextq_s16(p0, p1, 7);
-            int16x8_t py = vextq_s16(p1, p2, 1);
+            int16x8_t px = (int16x8_t)vmovl_u8(vext_u8(p0, p1, 7));
+            int16x8_t py = (int16x8_t)vmovl_u8(vext_u8(p1, p2, 1));
 
-//            int16x8_t cx = vextq_s16(c0, c1, 7);
-//            int16x8_t cy = vextq_s16(c1, c2, 1);
+            int16x8_t cx = (int16x8_t)vmovl_u8(vext_u8(c0, c1, 7));
+            int16x8_t cy = (int16x8_t)vmovl_u8(vext_u8(c1, c2, 1));
             
-            int16x8_t nx = vextq_s16(n0, n1, 7);
-            int16x8_t ny = vextq_s16(n1, n2, 1);
+            int16x8_t nx = (int16x8_t)vmovl_u8(vext_u8(n0, n1, 7));
+            int16x8_t ny = (int16x8_t)vmovl_u8(vext_u8(n1, n2, 1));
 
+            int16x8_t pz = (int16x8_t)vmovl_u8(p1);
+            int16x8_t nz = (int16x8_t)vmovl_u8(n1);
+            
             // nx+2*n1+ny - (px+2*p1+py)
-            int16x8_t a = vsubq_s16(n1, p1);
-            int16x8_t c = vaddq_s16(nx, ny);
-            a = vshlq_n_s16(a, 1);
-            int16x8_t b = vaddq_s16(px, py);
-            a = vaddq_s16(a, c);
-            a = vsubq_s16(a, b);
+            int16x8_t a = vaddq_s16(vshlq_n_s16(vsubq_s16(nz, pz), 1), vaddq_s16(vsubq_s16(ny, py),vsubq_s16(nx, px)));
+
             // ny + 2*cy + py - (nx + 2*cx + px)
-            /*
-            int16x8_t a = vshlq_n_s16(vsubq_s16(cy, cx), 1);
-            int16x8_t b = vaddq_s16(vsubq_s16(py, px),vsubq_s16(ny, nx));
-            a = vaddq_s16(a, b);
-            */
+//            int16x8_t a = vaddq_s16(vshlq_n_s16(vsubq_s16(cy, cx), 1), vaddq_s16(vsubq_s16(py, px),vsubq_s16(ny, nx)));
 
             uint16x8_t dark = vcgeq_s16(a, lower);
             uint16x8_t light = vcgeq_s16(a, upper);
@@ -136,11 +131,11 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
 
             p0 = p1;
             n0 = n1;
-//            c0 = c1;
+            c0 = c1;
             
             p1 = p2;
             n1 = n2;
-//            c1 = c2;
+            c1 = c2;
 
            //drow[j] = (uchar)((1020 + (int)prow[j-1] + 2*(int)prow[j] + (int)prow[j+1] - (int)nrow[j-1] - 2*(int)nrow[j] - (int)nrow[j+1]) >> 3);
         }

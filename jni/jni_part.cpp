@@ -73,18 +73,32 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
     CV_Assert(src.cols == dst.cols);
     CV_Assert(src.cols == dst.cols);
     CV_Assert(src.channels() == dst.channels());
-
+    CV_Assert(src.channels() == 1);
+    
     const int rows = src.rows;
     const int cols = src.cols;
+
+    memset(dst.ptr<uchar>(0), 0, cols);
+    memset(dst.ptr<uchar>(rows-1), 0, cols);
+
+
     for (int i = 1 ; i < rows-1 ; i++) {
 
 #if HAVE_NEON == 1
+
+        uint8x8_t* drow = dst.ptr<uint8x8_t>(i);
+
+        int* idrow = (int*)drow;
+        idrow[0] = 0;
+        idrow[1] = 0;
+        idrow[cols-1] = 0;
+        idrow[cols-2] = 0;
+        
 
         uint8x8_t* prow = src.ptr<uint8x8_t>(i-1);
         uint8x8_t* crow = src.ptr<uint8x8_t>(i);
         uint8x8_t* nrow = src.ptr<uint8x8_t>(i+1);
 
-        uint8x8_t* drow = dst.ptr<uint8x8_t>(i);
 
         uint8x8_t p0 = prow[0];
         uint8x8_t c0 = crow[0];
@@ -163,6 +177,9 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
 
         uchar* drow = dst.ptr<uchar>(i);
 
+        drow[0] = 0;
+        drow[cols-1] = 0;
+        
         for (int j = 1 ; j < cols-1; j++) {
             int horizontal = (int)prow[j-1] + 2*(int)prow[j] + (int)prow[j+1] - (int)nrow[j-1] - 2*(int)nrow[j] - (int)nrow[j+1];
             int vertical = (int)prow[j-1] + 2*(int)crow[j-1] + (int)nrow[j-1] - (int)prow[j+1] - 2*(int)crow[j+1] - (int)nrow[j+1];

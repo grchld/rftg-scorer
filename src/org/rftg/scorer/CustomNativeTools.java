@@ -17,10 +17,10 @@ class CustomNativeTools {
 
     private native long normalize(long mat, double lowerPercent, double upperPercent);
 
-    public long sobel(Mat src, Mat dst) {
-        return sobel(src.getNativeObjAddr(), dst.getNativeObjAddr());
+    public void sobel(Mat src, Mat dst, int bound) {
+        sobel(src.getNativeObjAddr(), dst.getNativeObjAddr(), bound);
     }
 
-    private native long sobel(long src, long dst);
+    private native void sobel(long src, long dst, int bound);
 
 }

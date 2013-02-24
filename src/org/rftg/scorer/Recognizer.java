@@ -27,8 +27,7 @@ class Recognizer {
     private Mat real;
     private Mat gray;
     private Mat canny;
-    private Mat sobelX;
-    private Mat sobelY;
+    private Mat sobel;
 
 //    private Mat result;
 
@@ -43,6 +42,8 @@ class Recognizer {
 
     List<Line> horizontal = new ArrayList<Line>(MAX_LINES);
     List<Line> vertical = new ArrayList<Line>(MAX_LINES);
+
+    private long frameTimer;
 
 
     Recognizer(MainActivity main, int width, int height) {
@@ -65,9 +66,7 @@ class Recognizer {
 
         canny = new Mat(height, width, CvType.CV_8UC1);
 
-        sobelX = new Mat(height, width, CvType.CV_8U);
-
-        sobelY = new Mat(height, width, CvType.CV_8U);
+        sobel = new Mat(height, width, CvType.CV_8U);
 
 //        result = new Mat(height, width, CvType.CV_8UC4);
 
@@ -82,15 +81,19 @@ class Recognizer {
         real.release();
         gray.release();
         canny.release();
-        sobelX.release();
-        sobelY.release();
+        sobel.release();
     }
 
     Mat onFrame(Mat frame) {
+        if (frameTimer != 0) {
+            Log.e("rftg", "Total frame time: " + (System.currentTimeMillis() - frameTimer));
+        }
+        frameTimer = System.currentTimeMillis();
+
         /**/
-//        Mat sub = frame.submat(0,real.rows(),0,real.cols());
-  //      real.copyTo(sub);
-    //    sub.release();
+        Mat sub = frame.submat(0,real.rows(),0,real.cols());
+        real.copyTo(sub);
+        sub.release();
         /**/
 //        tempRects.clear();
         /**/
@@ -101,9 +104,9 @@ class Recognizer {
         Log.e("rftg", "Convert color: " + (System.currentTimeMillis() - time));
         time = System.currentTimeMillis();
 //        Imgproc.Sobel(gray, sobelX, CvType.CV_8U, 1, 0, 3, 0.25, 128);
-        main.customNativeTools.sobel(gray, sobelX);
+        main.customNativeTools.sobel(gray, sobel, 100);
         Log.e("rftg", "Sobel: " + (System.currentTimeMillis() - time));
-        frame = sobelX;
+        frame = sobel;
 //        Core.convertScaleAbs(sobelX, frame, 1, 128);
 
 

@@ -60,9 +60,9 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*
     return hist[channels*256-1];
 }
 
-JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr);
+JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr, jint bound);
 
-JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr)
+JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr, jint bound)
 {
     Mat& src = *(Mat*)srcAddr;
     Mat& dst = *(Mat*)dstAddr;
@@ -94,10 +94,8 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
         uint8x8_t c1 = crow[1];
         uint8x8_t n1 = nrow[1];
 
-//        uint8x8_t delta = vdup_n_u8(128);
-
-        int16x8_t lower = vdupq_n_s16(-100);
-        int16x8_t upper = vdupq_n_s16(100);
+        int16x8_t lower = vdupq_n_s16(-bound);
+        int16x8_t upper = vdupq_n_s16(bound);
 
         uint8x8_t hlightmask = vdup_n_u8(0x80);
         uint8x8_t hdarkmask = vdup_n_u8(0x40);
@@ -176,8 +174,6 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
 #endif
 
     }
-
-    return 0;
 
 }
 }

@@ -142,8 +142,6 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
             vlight = vand_u8(vlight, vlightmask);
 
             drow[j-1] = vorr_u8(vorr_u8(hdark,hlight), vorr_u8(vdark,vlight));
-            //vorr_u8(vqmovn_u16(light), vshr_n_u8(vqmovn_u16(dark),1));
-            //vadd_u8((uint8x8_t)vqmovn_s16(a), delta);
 
             p0 = p1;
             n0 = n1;
@@ -153,7 +151,6 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
             n1 = n2;
             c1 = c2;
 
-           //drow[j] = (uchar)((1020 + (int)prow[j-1] + 2*(int)prow[j] + (int)prow[j+1] - (int)nrow[j-1] - 2*(int)nrow[j] - (int)nrow[j+1]) >> 3);
         }
 
 
@@ -161,13 +158,30 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
 
 
         uchar* prow = src.ptr<uchar>(i-1);
-//        uchar* crow = src.ptr<uchar>(i);
+        uchar* crow = src.ptr<uchar>(i);
         uchar* nrow = src.ptr<uchar>(i+1);
 
         uchar* drow = dst.ptr<uchar>(i);
 
         for (int j = 1 ; j < cols-1; j++) {
-            drow[j] = (uchar)((1020 + (int)prow[j-1] + 2*(int)prow[j] + (int)prow[j+1] - (int)nrow[j-1] - 2*(int)nrow[j] - (int)nrow[j+1]) >> 3);
+            int horizontal = (int)prow[j-1] + 2*(int)prow[j] + (int)prow[j+1] - (int)nrow[j-1] - 2*(int)nrow[j] - (int)nrow[j+1];
+            int vertical = (int)prow[j-1] + 2*(int)crow[j-1] + (int)nrow[j-1] - (int)prow[j+1] - 2*(int)crow[j+1] - (int)nrow[j+1];
+
+            uchar result;
+            if (horizontal >= bound) {
+                result = 0x80;
+            } else if (horizontal <= -bound) {
+                result = 0x40;
+            } else {
+                result = 0;
+            }
+
+            if (vertical >= bound) {
+                result |= 0x10;
+            } else if (vertical <= -bound) {
+                result |= 0x20;
+            }
+            drow[j] = result;
         }
 
 

@@ -116,12 +116,15 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
 
             int16x8_t pz = (int16x8_t)vmovl_u8(p1);
             int16x8_t nz = (int16x8_t)vmovl_u8(n1);
+
+            int16x8_t d1 = vsubq_s16(ny, px);
+            int16x8_t d2 = vsubq_s16(nx, py);
             
             // nx+2*n1+ny - (px+2*p1+py)
-            int16x8_t a = vaddq_s16(vshlq_n_s16(vsubq_s16(nz, pz), 1), vaddq_s16(vsubq_s16(ny, py),vsubq_s16(nx, px)));
+//            int16x8_t a = vaddq_s16(vshlq_n_s16(vsubq_s16(nz, pz), 1), vaddq_s16(d1,d2));
 
             // ny + 2*cy + py - (nx + 2*cx + px)
-//            int16x8_t a = vaddq_s16(vshlq_n_s16(vsubq_s16(cy, cx), 1), vaddq_s16(vsubq_s16(py, px),vsubq_s16(ny, nx)));
+            int16x8_t a = vaddq_s16(vshlq_n_s16(vsubq_s16(cy, cx), 1), vsubq_s16(d1,d2));
 
             uint16x8_t dark = vcgeq_s16(a, lower);
             uint16x8_t light = vcgeq_s16(a, upper);

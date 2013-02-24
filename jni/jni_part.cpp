@@ -39,7 +39,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*
                 h4[v >> 24]++;
             }
         }
-        
+
     } else {
         int* s = &(hist[0]);
         int* h = s;
@@ -79,7 +79,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
     for (int i = 1 ; i < rows-1 ; i++) {
 
 #if HAVE_NEON == 1
-        
+
         uint8x8_t* prow = src.ptr<uint8x8_t>(i-1);
         uint8x8_t* nrow = src.ptr<uint8x8_t>(i+1);
 
@@ -90,9 +90,9 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
 
         int16x8_t p1 = (int16x8_t)vmovl_u8(prow[1]);
         int16x8_t n1 = (int16x8_t)vmovl_u8(nrow[1]);
-        
-        int16x8_t delta = vdupq_n_s16(1020);
-        
+
+        uint8x8_t delta = vdup_n_u8(128);
+
         for (int j = 2 ; j < cols/8; j++) {
 
             int16x8_t p2 = (int16x8_t)vmovl_u8(prow[j]);
@@ -100,7 +100,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
 
             int16x8_t px = vextq_s16(p0, p1, 7);
             int16x8_t py = vextq_s16(p1, p2, 1);
-            
+
             int16x8_t nx = vextq_s16(n0, n1, 7);
             int16x8_t ny = vextq_s16(n1, n2, 1);
 
@@ -111,22 +111,21 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
             int16x8_t b = vaddq_s16(px, py);
             a = vaddq_s16(a, c);
             a = vsubq_s16(a, b);
-            a = vaddq_s16(a, delta);
 
-            a = vshrq_n_s16(a, 3);
-            
+//            a = vshrq_n_s16(a, 3);
 
 
-            
+
+
 //            uint8x8_t a = vsub_u8(n1, p1);
 //            a = vshl_n_u8(a, 1);
 //            a = vadd_u8(a, nx);
 //            a = vadd_u8(a, ny);
 //            a = vsub_u8(a, px);
 //            a = vsub_u8(a, py);
-            
-            drow[j-1] = vmovn_u16((uint16x8_t)a);
-            
+
+            drow[j-1] = vadd_u8((uint8x8_t)vqmovn_s16(a), delta);
+
             p0 = p1;
             n0 = n1;
             p1 = p2;
@@ -134,7 +133,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
 
            //drow[j] = (uchar)((1020 + (int)prow[j-1] + 2*(int)prow[j] + (int)prow[j+1] - (int)nrow[j-1] - 2*(int)nrow[j] - (int)nrow[j+1]) >> 3);
         }
-        
+
 
 #else
 
@@ -155,6 +154,6 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
     }
 
     return 0;
-    
-}    
+
+}
 }

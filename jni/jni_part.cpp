@@ -91,7 +91,10 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
         int16x8_t p1 = (int16x8_t)vmovl_u8(prow[1]);
         int16x8_t n1 = (int16x8_t)vmovl_u8(nrow[1]);
 
-        uint8x8_t delta = vdup_n_u8(128);
+//        uint8x8_t delta = vdup_n_u8(128);
+
+        int16x8_t lower = vdupq_n_s16(-100);
+        int16x8_t upper = vdupq_n_s16(100);
 
         for (int j = 2 ; j < cols/8; j++) {
 
@@ -112,19 +115,11 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
             a = vaddq_s16(a, c);
             a = vsubq_s16(a, b);
 
-//            a = vshrq_n_s16(a, 3);
+            uint16x8_t dark = vcgeq_s16(a, lower);
+            uint16x8_t light = vcgeq_s16(a, upper);
 
-
-
-
-//            uint8x8_t a = vsub_u8(n1, p1);
-//            a = vshl_n_u8(a, 1);
-//            a = vadd_u8(a, nx);
-//            a = vadd_u8(a, ny);
-//            a = vsub_u8(a, px);
-//            a = vsub_u8(a, py);
-
-            drow[j-1] = vadd_u8((uint8x8_t)vqmovn_s16(a), delta);
+            drow[j-1] = vorr_u8(vqmovn_u16(light), vshr_n_u8(vqmovn_u16(dark),1));
+            //vadd_u8((uint8x8_t)vqmovn_s16(a), delta);
 
             p0 = p1;
             n0 = n1;

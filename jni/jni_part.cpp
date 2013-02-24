@@ -99,6 +99,11 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
         int16x8_t lower = vdupq_n_s16(-100);
         int16x8_t upper = vdupq_n_s16(100);
 
+        uint8x8_t hlightmask = vdup_n_u8(0x80);
+        uint8x8_t hdarkmask = vdup_n_u8(0x40);
+        uint8x8_t vlightmask = vdup_n_u8(0x20);
+        uint8x8_t vdarkmask = vdup_n_u8(0x10);
+
         for (int j = 2 ; j < cols/8; j++) {
 
             uint8x8_t p2 = prow[j];
@@ -121,15 +126,25 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jo
             int16x8_t d2 = vsubq_s16(nx, py);
             
             // nx+2*n1+ny - (px+2*p1+py)
-//            int16x8_t a = vaddq_s16(vshlq_n_s16(vsubq_s16(nz, pz), 1), vaddq_s16(d1,d2));
+            int16x8_t horizontal = vaddq_s16(vshlq_n_s16(vsubq_s16(nz, pz), 1), vaddq_s16(d1,d2));
 
             // ny + 2*cy + py - (nx + 2*cx + px)
-            int16x8_t a = vaddq_s16(vshlq_n_s16(vsubq_s16(cy, cx), 1), vsubq_s16(d1,d2));
+            int16x8_t vertical = vaddq_s16(vshlq_n_s16(vsubq_s16(cy, cx), 1), vsubq_s16(d1,d2));
 
-            uint16x8_t dark = vcgeq_s16(a, lower);
-            uint16x8_t light = vcgeq_s16(a, upper);
+            uint8x8_t hdark = vqmovn_u16(vcleq_s16(horizontal, lower));
+            uint8x8_t hlight = vqmovn_u16(vcgeq_s16(horizontal, upper));
 
-            drow[j-1] = vorr_u8(vqmovn_u16(light), vshr_n_u8(vqmovn_u16(dark),1));
+            uint8x8_t vdark = vqmovn_u16(vcleq_s16(vertical, lower));
+            uint8x8_t vlight = vqmovn_u16(vcgeq_s16(vertical, upper));
+
+            hdark = vand_u8(hdark, hdarkmask);
+            hlight = vand_u8(hlight, hlightmask);
+
+            vdark = vand_u8(vdark, vdarkmask);
+            vlight = vand_u8(vlight, vlightmask);
+
+            drow[j-1] = vorr_u8(vorr_u8(hdark,hlight), vorr_u8(vdark,vlight));
+            //vorr_u8(vqmovn_u16(light), vshr_n_u8(vqmovn_u16(dark),1));
             //vadd_u8((uint8x8_t)vqmovn_s16(a), delta);
 
             p0 = p1;

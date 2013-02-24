@@ -88,18 +88,21 @@ class Recognizer {
 
     Mat onFrame(Mat frame) {
         /**/
-        Mat sub = frame.submat(0,real.rows(),0,real.cols());
-        real.copyTo(sub);
-        sub.release();
+//        Mat sub = frame.submat(0,real.rows(),0,real.cols());
+  //      real.copyTo(sub);
+    //    sub.release();
         /**/
 //        tempRects.clear();
         /**/
 
-//        long time = System.currentTimeMillis();
-
-
+        long time;
+        time = System.currentTimeMillis();
         Imgproc.cvtColor(frame, gray, Imgproc.COLOR_BGR2GRAY);
-        Imgproc.Sobel(gray, sobelX, CvType.CV_8U, 1, 0, 3, 0.25, 128);
+        Log.e("rftg", "Convert color: " + (System.currentTimeMillis() - time));
+        time = System.currentTimeMillis();
+//        Imgproc.Sobel(gray, sobelX, CvType.CV_8U, 1, 0, 3, 0.25, 128);
+        main.customNativeTools.sobel(gray, sobelX);
+        Log.e("rftg", "Sobel: " + (System.currentTimeMillis() - time));
         frame = sobelX;
 //        Core.convertScaleAbs(sobelX, frame, 1, 128);
 

@@ -11,10 +11,16 @@ class CustomNativeTools {
         System.loadLibrary("rftg_scorer");
     }
 
-    public int normalize(Mat mat, double lowerPercent, double upperPercent) {
+    public long normalize(Mat mat, double lowerPercent, double upperPercent) {
         return normalize(mat.getNativeObjAddr(), lowerPercent, upperPercent);
     }
 
-    private native int normalize(long mat, double lowerPercent, double upperPercent);
+    private native long normalize(long mat, double lowerPercent, double upperPercent);
+
+    public long sobel(Mat src, Mat dst) {
+        return sobel(src.getNativeObjAddr(), dst.getNativeObjAddr());
+    }
+
+    private native long sobel(long src, long dst);
 
 }

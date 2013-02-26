@@ -12,7 +12,7 @@ LOCAL_CFLAGS += -O2
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)
 LOCAL_ARM_NEON  := true
-LOCAL_CFLAGS += -DHAVE_NEON=1
+LOCAL_CFLAGS += -ffast-math -mfpu=neon -DHAVE_NEON=1
 endif
 
 include $(BUILD_SHARED_LIBRARY)

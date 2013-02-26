@@ -135,9 +135,9 @@ class Recognizer {
         frameTimer = System.currentTimeMillis();
 
         /**/
-//        Mat sub = frame.submat(0,real.rows(),0,real.cols());
-//        real.copyTo(sub);
-//        sub.release();
+       Mat sub = frame.submat(0,real.rows(),0,real.cols());
+        real.copyTo(sub);
+        sub.release();
         /**/
 //        tempRects.clear();
         /**/

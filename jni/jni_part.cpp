@@ -222,10 +222,31 @@ struct SegmentState {
 
 #define DIVISOR 64
 
+int segmentCompare(void const *a1, void const* a2) {
+    Segment& s1 = *(Segment*)a1;
+    Segment& s2 = *(Segment*)a2;
+    if (s1.slope < s2.slope || (s1.slope == s2.slope && s1.x < s2.x)) {
+        return -1;
+    } else {
+        return 1;
+    }
+}
+
+jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint minSlope, jint maxSlope, jint maxGap, jint minLength, jlong segmentsAddr);
+
 JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jlong imageAddr, jint bordermask, jint origin, jint minSlope, jint maxSlope, jint maxGap, jint minLength, jlong segmentsAddr);
 
 JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jlong imageAddr, jint bordermask, jint origin, jint minSlope, jint maxSlope, jint maxGap, jint minLength, jlong segmentsAddr) {
+    jint segmentNumber = houghVerticalUnsorted(imageAddr, bordermask, origin, minSlope, maxSlope, maxGap, minLength, segmentsAddr);
+    if (segmentNumber > 0) {
+        Mat& segmentsMat = *(Mat*)segmentsAddr;
+        qsort(segmentsMat.ptr<Segment>(0), segmentNumber, sizeof(Segment), segmentCompare);
+    }
+    return segmentNumber;
+}
 
+jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint minSlope, jint maxSlope, jint maxGap, jint minLength, jlong segmentsAddr) {
+    
     Mat& image = *(Mat*)imageAddr;
     Mat& segmentsMat = *(Mat*)segmentsAddr;
 
@@ -321,7 +342,7 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIE
             state++;
         }
     }
-
+    
     return segmentNumber;
 }
 

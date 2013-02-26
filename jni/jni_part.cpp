@@ -215,6 +215,11 @@ struct Segment {
     short slope;
 };
 
+struct SegmentState {
+    short count;
+    short last;
+};
+
 #define DIVISOR 64
 
 JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jlong imageAddr, jint bordermask, jint origin, jint minSlope, jint maxSlope, jint maxGap, jint minLength, jlong segmentsAddr);
@@ -230,7 +235,7 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIE
     CV_Assert(segmentsMat.channels() == 4);
     CV_Assert(segmentsMat.depth() == CV_16S);
     CV_Assert(segmentsMat.rows == 1);
-
+    
     int segmentNumber = 0;
     int maxSegments = segmentsMat.cols;
     
@@ -239,68 +244,81 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIE
     int cols = image.cols;
     int rows = image.rows;
     uchar mask = bordermask;
+    int slopeCount = maxSlope - minSlope + 1;
 
-    for (int xbase = 0 ; xbase < cols; xbase++) {
-        for (int slope = minSlope ; slope <= maxSlope ; slope++) {
-            int xbig = xbase * DIVISOR - slope * origin;
-            int count = 0;
-            int length;
-            int last;
-            for (int y = 0; y < rows; y++) {
-                int x = xbig / DIVISOR;
-                xbig += slope;
-                if (x >= 0 && x < cols) {
-                    if (image.ptr<uchar>(y)[x] & mask) {
-                        if (count) {
-                            // Line continues
-                            count++;
-                            length += y-last;
-                            last = y;
+    int totalStates = cols * slopeCount;
+    
+    cv::AutoBuffer<SegmentState, 32> states(totalStates);
+    memset(states, 0, sizeof(SegmentState) * totalStates);
+    
+    for (int y = 0; y < rows; y++) {
+        uchar* row = image.ptr<uchar>(y);
+        for (int x = 0 ; x < cols; x++) {
+            uchar value = row[x];
+            if (value & mask) {
+                for (int slope = minSlope ; slope <= maxSlope ; slope++) {
+                    int xbase = x + slope * (origin - y) / DIVISOR;
+
+                    if (xbase < 0 || xbase >= cols) {
+                        continue;
+                    }
+                    
+                    SegmentState& state = states[slopeCount * xbase + (slope - minSlope)];
+
+                    if (state.count) {
+                        if (y - state.last <= maxGap) {
+                            // line continues
+                            state.count += y-state.last;
+                            state.last = y;
                         } else {
-                            // Beginning of the line
-                            count = 1;
-                            length = 1;
-                            last = y;
-                        }
-                    } else if (count) {
-                        if (y - last > maxGap) {
-                            // line stops
-                            if (count > minLength) {
+                            // previous line stops
+                            if (state.count > minLength) {
                                 // save line
                                 Segment& segment = segments[segmentNumber];
 
-                                segment.ymin = last - length + 1;
-                                segment.ymax = last;
+                                segment.ymin = state.last - state.count + 1;
+                                segment.ymax = state.last;
                                 segment.x = xbase;
                                 segment.slope = slope;
-                                
+
                                 if (++segmentNumber == maxSegments) {
                                     // segment stack is full
                                     return maxSegments;
                                 }
                             }
-                            // clear line
-                            count = 0;
+                            // staring new line
+                            state.count = 1;
+                            state.last = y;
                         }
-                        
+                    } else {
+                        // starting new line
+                        state.count = 1;
+                        state.last = y;
                     }
+                    
                 }
             }
-            // force to end the line
-            if (count != 0 && count > minLength) {
+        }
+    }
+
+    // force line endings
+    SegmentState* state = states;
+    for (int xbase = 0 ; xbase < cols; xbase++) {
+        for (int slope = minSlope ; slope <= maxSlope ; slope++) {
+            if (state->count > minLength) {
                 // save line
                 Segment& segment = segments[segmentNumber];
 
-                segment.ymin = last - length + 1;
-                segment.ymax = last;
+                segment.ymin = state->last - state->count + 1;
+                segment.ymax = state->last;
                 segment.x = xbase;
                 segment.slope = slope;
-
                 if (++segmentNumber == maxSegments) {
                     // segment stack is full
                     return maxSegments;
                 }
-           }
+            }
+            state++;
         }
     }
 

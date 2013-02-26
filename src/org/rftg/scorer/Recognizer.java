@@ -15,13 +15,13 @@ class Recognizer {
 
     private static final int MAX_LINES = 1000;
 
-    private static final int MIN_SLOPE = -15;
-    private static final int MAX_SLOPE = 15;
+    private static final int MIN_SLOPE = -11;
+    private static final int MAX_SLOPE = 12;
     private static final int MAX_GAP = 3;
     private static final int MIN_LENGTH = 70;
 
-    private static final int MAX_SLOPE_DRIFT = 2;
-    private static final int MAX_BASE_DRIFT = 10;
+    private static final int MAX_BASE_GAP = 2;
+    private static final int MAX_BASE_DISTANCE = 5;
 
     private static double MIN_RATIO = (7./5.)/1.2;
     private static double MAX_RATIO = (7./5.)*1.2;
@@ -125,6 +125,8 @@ class Recognizer {
         }
     }
 
+    int slope = 0;
+
     Mat onFrame(Mat frame) {
 
         if (frameTimer != 0) {
@@ -133,9 +135,9 @@ class Recognizer {
         frameTimer = System.currentTimeMillis();
 
         /**/
-        Mat sub = frame.submat(0,real.rows(),0,real.cols());
-        real.copyTo(sub);
-        sub.release();
+//        Mat sub = frame.submat(0,real.rows(),0,real.cols());
+//        real.copyTo(sub);
+//        sub.release();
         /**/
 //        tempRects.clear();
         /**/
@@ -165,19 +167,27 @@ class Recognizer {
 
         Scalar green = new Scalar(0, 255, 0);
         Scalar red = new Scalar(255, 0, 0);
+        /*
         for (Segment segment : segments) {
+            if (segment.slope == slope)
             Core.line(frame,
                     new Point(segment.x1, segment.y1),
                     new Point(segment.x2, segment.y2),
                     green);
+        } */
+
+        slope++;
+        if (slope > MAX_SLOPE) {
+            slope = MIN_SLOPE;
         }
-        for (Segment segment : group(segments)) {
+
+        for (Segment segment : /*group(*/segments/*)*/) {
+//            if (segment.slope == slope)
             Core.line(frame,
                     new Point(segment.x1, segment.y1),
                     new Point(segment.x2, segment.y2),
                     red);
         }
-
 
 
 //        Core.convertScaleAbs(sobelX, frame, 1, 128);
@@ -408,11 +418,8 @@ class Recognizer {
             if (base != null) {
                 int y1 = base.y1;
                 int y2 = base.y2;
-                int slopeMin = base.slope;
-                int slopeAvg = base.slope;
-                int slopeMax = base.slope;
+                int slope = base.slope;
                 int xbaseMin = base.xbase;
-                int xbaseAvg = base.xbase;
                 int xbaseMax = base.xbase;
 
                 for (int j = i+1 ; j < segments.length ; j++) {
@@ -420,39 +427,26 @@ class Recognizer {
                     if (s == null) {
                         continue;
                     }
-                    if (s.xbase > xbaseAvg + MAX_BASE_DRIFT) {
+                    if (s.xbase > xbaseMax + MAX_BASE_GAP) {
                         break;
                     }
-                    if (s.slope < slopeAvg - MAX_SLOPE_DRIFT || s.slope > slopeAvg + MAX_SLOPE_DRIFT) {
+                    if (s.slope != slope) {
                         continue;
                     }
+
                     if (s.y1 > y2 || s.y2 < y1) {
                         continue;
                     }
                     segments[j] = null;
-                    if (slopeMin > s.slope) {
-                        slopeMin = s.slope;
-                        slopeAvg = (slopeMax + slopeMin) / 2;
-                    }
-                    if (slopeMax < s.slope) {
-                        slopeMax = s.slope;
-                        slopeAvg = (slopeMax + slopeMin) / 2;
-                    }
-                    if (xbaseMax < s.xbase) {
-                        xbaseMax = s.xbase;
-                        xbaseAvg = (xbaseMax + xbaseMin) / 2;
-                    }
+                    xbaseMax = s.xbase;
                     if (y1 > s.y1) {
                         y1 = s.y1;
                     }
                     if (y2 < s.y2) {
                         y2 = s.y2;
                     }
-                    if (xbaseMax - xbaseMin >= 2 * MAX_BASE_DRIFT || slopeMax - slopeMin >= 2 * MAX_SLOPE_DRIFT) {
-                        break;
-                    }
                 }
-                result.add(new Segment(y1, y2, xbaseAvg, slopeAvg));
+                result.add(new Segment(y1, y2, (xbaseMin + xbaseMax)/2, slope));
             }
         }
         return result;

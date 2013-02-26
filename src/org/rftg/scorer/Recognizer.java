@@ -1,6 +1,5 @@
 package org.rftg.scorer;
 
-import android.content.Context;
 import android.util.Log;
 import org.opencv.android.Utils;
 import org.opencv.core.*;
@@ -14,7 +13,15 @@ import java.util.*;
  */
 class Recognizer {
 
-    private static int MAX_LINES = 500;
+    private static final int MAX_LINES = 1000;
+
+    private static final int MIN_SLOPE = -15;
+    private static final int MAX_SLOPE = 15;
+    private static final int MAX_GAP = 3;
+    private static final int MIN_LENGTH = 70;
+
+    private static final int MAX_SLOPE_DRIFT = 2;
+    private static final int MAX_BASE_DRIFT = 10;
 
     private static double MIN_RATIO = (7./5.)/1.2;
     private static double MAX_RATIO = (7./5.)*1.2;
@@ -28,6 +35,7 @@ class Recognizer {
     private Mat gray;
     private Mat canny;
     private Mat sobel;
+    private Mat segmentsStack;
 
 //    private Mat result;
 
@@ -37,6 +45,9 @@ class Recognizer {
     private double minY;
     private double maxX;
     private double maxY;
+
+    int xOrigin;
+    int yOrigin;
 
     private TreeMap<Double, MatOfPoint> tempRects = new TreeMap<Double, MatOfPoint>();
 
@@ -48,6 +59,10 @@ class Recognizer {
 
     Recognizer(MainActivity main, int width, int height) {
         this.main = main;
+
+        int xOrigin = width/2;
+        int yOrigin = height/2;
+
         Mat tempReal;
         try {
 
@@ -68,6 +83,8 @@ class Recognizer {
 
         sobel = new Mat(height, width, CvType.CV_8U);
 
+        segmentsStack = new Mat(1, MAX_LINES, CvType.CV_16SC4);
+
 //        result = new Mat(height, width, CvType.CV_8UC4);
 
         maxX = width / 3;
@@ -82,9 +99,34 @@ class Recognizer {
         gray.release();
         canny.release();
         sobel.release();
+        segmentsStack.release();
+    }
+
+    class Segment {
+        final int x1;
+        final int x2;
+        final int y1;
+        final int y2;
+        final int xbase;
+        final int slope;
+
+        Segment(short[] v) {
+            this(v[0], v[1], v[2], v[3]);
+        }
+
+        Segment(int y1, int y2, int xbase, int slope) {
+            this.y1 = y1;
+            this.y2 = y2;
+            this.xbase = xbase;
+            this.slope = slope;
+
+            x1 = xbase + slope * (y1 - yOrigin)/64;
+            x2 = xbase + slope * (y2 - yOrigin)/64;
+        }
     }
 
     Mat onFrame(Mat frame) {
+
         if (frameTimer != 0) {
             Log.e("rftg", "Total frame time: " + (System.currentTimeMillis() - frameTimer));
         }
@@ -106,7 +148,38 @@ class Recognizer {
 //        Imgproc.Sobel(gray, sobelX, CvType.CV_8U, 1, 0, 3, 0.25, 128);
         main.customNativeTools.sobel(gray, sobel, 100);
         Log.e("rftg", "Sobel: " + (System.currentTimeMillis() - time));
-        frame = sobel;
+
+        time = System.currentTimeMillis();
+        int segmentCount = main.customNativeTools.houghVertical(sobel, 0x10, yOrigin, MIN_SLOPE, MAX_SLOPE, MAX_GAP, MIN_LENGTH, segmentsStack);
+        Log.e("rftg", "HoughVertical: " + (System.currentTimeMillis() - time));
+
+        Imgproc.cvtColor(sobel, frame, Imgproc.COLOR_GRAY2RGB);
+
+        Segment[] segments = new Segment[segmentCount];
+
+        short[] segmentData = new short[4];
+        for (int i = 0 ; i < segmentCount ; i++) {
+            segmentsStack.get(0, i, segmentData);
+            segments[i] = new Segment(segmentData);
+        }
+
+        Scalar green = new Scalar(0, 255, 0);
+        Scalar red = new Scalar(255, 0, 0);
+        for (Segment segment : segments) {
+            Core.line(frame,
+                    new Point(segment.x1, segment.y1),
+                    new Point(segment.x2, segment.y2),
+                    green);
+        }
+        for (Segment segment : group(segments)) {
+            Core.line(frame,
+                    new Point(segment.x1, segment.y1),
+                    new Point(segment.x2, segment.y2),
+                    red);
+        }
+
+
+
 //        Core.convertScaleAbs(sobelX, frame, 1, 128);
 
 
@@ -327,6 +400,64 @@ class Recognizer {
   */
         return frame;
     }
+
+    private List<Segment> group(Segment[] segments) {
+        List<Segment> result = new ArrayList<Segment>(segments.length);
+        for (int i = 0 ; i < segments.length ; i++) {
+            Segment base = segments[i];
+            if (base != null) {
+                int y1 = base.y1;
+                int y2 = base.y2;
+                int slopeMin = base.slope;
+                int slopeAvg = base.slope;
+                int slopeMax = base.slope;
+                int xbaseMin = base.xbase;
+                int xbaseAvg = base.xbase;
+                int xbaseMax = base.xbase;
+
+                for (int j = i+1 ; j < segments.length ; j++) {
+                    Segment s = segments[j];
+                    if (s == null) {
+                        continue;
+                    }
+                    if (s.xbase > xbaseAvg + MAX_BASE_DRIFT) {
+                        break;
+                    }
+                    if (s.slope < slopeAvg - MAX_SLOPE_DRIFT || s.slope > slopeAvg + MAX_SLOPE_DRIFT) {
+                        continue;
+                    }
+                    if (s.y1 > y2 || s.y2 < y1) {
+                        continue;
+                    }
+                    segments[j] = null;
+                    if (slopeMin > s.slope) {
+                        slopeMin = s.slope;
+                        slopeAvg = (slopeMax + slopeMin) / 2;
+                    }
+                    if (slopeMax < s.slope) {
+                        slopeMax = s.slope;
+                        slopeAvg = (slopeMax + slopeMin) / 2;
+                    }
+                    if (xbaseMax < s.xbase) {
+                        xbaseMax = s.xbase;
+                        xbaseAvg = (xbaseMax + xbaseMin) / 2;
+                    }
+                    if (y1 > s.y1) {
+                        y1 = s.y1;
+                    }
+                    if (y2 < s.y2) {
+                        y2 = s.y2;
+                    }
+                    if (xbaseMax - xbaseMin >= 2 * MAX_BASE_DRIFT || slopeMax - slopeMin >= 2 * MAX_SLOPE_DRIFT) {
+                        break;
+                    }
+                }
+                result.add(new Segment(y1, y2, xbaseAvg, slopeAvg));
+            }
+        }
+        return result;
+    }
+
 
     private Point intersect(Line h, Line v) {
 

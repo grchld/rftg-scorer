@@ -207,4 +207,105 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
     }
 
 }
+
+struct Segment {
+    short ymin;
+    short ymax;
+    short x;
+    short slope;
+};
+
+#define DIVISOR 64
+
+JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jlong imageAddr, jint bordermask, jint origin, jint minSlope, jint maxSlope, jint maxGap, jint minLength, jlong segmentsAddr);
+
+JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jlong imageAddr, jint bordermask, jint origin, jint minSlope, jint maxSlope, jint maxGap, jint minLength, jlong segmentsAddr) {
+
+    Mat& image = *(Mat*)imageAddr;
+    Mat& segmentsMat = *(Mat*)segmentsAddr;
+
+    CV_Assert(image.channels() == 1);
+    CV_Assert(image.depth() == CV_8U);
+
+    CV_Assert(segmentsMat.channels() == 4);
+    CV_Assert(segmentsMat.depth() == CV_16S);
+    CV_Assert(segmentsMat.rows == 1);
+
+    int segmentNumber = 0;
+    int maxSegments = segmentsMat.cols;
+    
+    Segment* segments = segmentsMat.ptr<Segment>(0);
+
+    int cols = image.cols;
+    int rows = image.rows;
+    uchar mask = bordermask;
+
+    for (int xbase = 0 ; xbase < cols; xbase++) {
+        for (int slope = minSlope ; slope <= maxSlope ; slope++) {
+            int xbig = xbase * DIVISOR - slope * origin;
+            int count = 0;
+            int length;
+            int last;
+            for (int y = 0; y < rows; y++) {
+                int x = xbig / DIVISOR;
+                xbig += slope;
+                if (x >= 0 && x < cols) {
+                    if (image.ptr<uchar>(y)[x] & mask) {
+                        if (count) {
+                            // Line continues
+                            count++;
+                            length += y-last;
+                            last = y;
+                        } else {
+                            // Beginning of the line
+                            count = 1;
+                            length = 1;
+                            last = y;
+                        }
+                    } else if (count) {
+                        if (y - last > maxGap) {
+                            // line stops
+                            if (count > minLength) {
+                                // save line
+                                Segment& segment = segments[segmentNumber];
+
+                                segment.ymin = last - length + 1;
+                                segment.ymax = last;
+                                segment.x = xbase;
+                                segment.slope = slope;
+                                
+                                if (++segmentNumber == maxSegments) {
+                                    // segment stack is full
+                                    return maxSegments;
+                                }
+                            }
+                            // clear line
+                            count = 0;
+                        }
+                        
+                    }
+                }
+            }
+            // force to end the line
+            if (count != 0 && count > minLength) {
+                // save line
+                Segment& segment = segments[segmentNumber];
+
+                segment.ymin = last - length + 1;
+                segment.ymax = last;
+                segment.x = xbase;
+                segment.slope = slope;
+
+                if (++segmentNumber == maxSegments) {
+                    // segment stack is full
+                    return maxSegments;
+                }
+           }
+        }
+    }
+
+    return segmentNumber;
+}
+
+
 }

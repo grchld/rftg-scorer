@@ -383,79 +383,76 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
             uint32x4_t aE = src.ptr<uint32x4_t>(16*y+14)[x];
             uint32x4_t aF = src.ptr<uint32x4_t>(16*y+15)[x];
 
-            uint32x4x2_t b0 = vtrnq_u32(a4, a0);
-            uint32x4x2_t b1 = vtrnq_u32(a5, a1);
-            uint32x4x2_t b2 = vtrnq_u32(a6, a2);
-            uint32x4x2_t b3 = vtrnq_u32(a7, a3);
+            uint32x4x2_t b0 = vtrnq_u32(a0, a4);
+            uint32x4x2_t b1 = vtrnq_u32(a1, a5);
+            uint32x4x2_t b2 = vtrnq_u32(a2, a6);
+            uint32x4x2_t b3 = vtrnq_u32(a3, a7);
 
-            uint32x4x2_t b4 = vtrnq_u32(aC, a8);
-            uint32x4x2_t b5 = vtrnq_u32(aD, a9);
-            uint32x4x2_t b6 = vtrnq_u32(aE, aA);
-            uint32x4x2_t b7 = vtrnq_u32(aF, aB);
-
-            
-            uint16x8x2_t c0 = vtrnq_u16(vreinterpretq_u16_u32(b2.val[1]/*2*/), vreinterpretq_u16_u32(b0.val[1]/*0*/));
-            uint16x8x2_t c1 = vtrnq_u16(vreinterpretq_u16_u32(b3.val[1]/*3*/), vreinterpretq_u16_u32(b1.val[1]/*1*/));
-
-            uint16x8x2_t c2 = vtrnq_u16(vreinterpretq_u16_u32(b2.val[0]/*6*/), vreinterpretq_u16_u32(b0.val[0]/*4*/));
-            uint16x8x2_t c3 = vtrnq_u16(vreinterpretq_u16_u32(b3.val[0]/*7*/), vreinterpretq_u16_u32(b1.val[0]/*5*/));
-
-            uint16x8x2_t c4 = vtrnq_u16(vreinterpretq_u16_u32(b6.val[1]/*A*/), vreinterpretq_u16_u32(b4.val[1]/*8*/));
-            uint16x8x2_t c5 = vtrnq_u16(vreinterpretq_u16_u32(b7.val[1]/*B*/), vreinterpretq_u16_u32(b5.val[1]/*9*/));
-
-            uint16x8x2_t c6 = vtrnq_u16(vreinterpretq_u16_u32(b6.val[0]/*E*/), vreinterpretq_u16_u32(b4.val[0]/*C*/));
-            uint16x8x2_t c7 = vtrnq_u16(vreinterpretq_u16_u32(b7.val[0]/*F*/), vreinterpretq_u16_u32(b5.val[0]/*D*/));
+            uint32x4x2_t b4 = vtrnq_u32(a8, aC);
+            uint32x4x2_t b5 = vtrnq_u32(a9, aD);
+            uint32x4x2_t b6 = vtrnq_u32(aA, aE);
+            uint32x4x2_t b7 = vtrnq_u32(aB, aF);
 
             
-            uint8x16x2_t d0 = vtrnq_u8(vreinterpretq_u8_u16(c1.val[1]/*1*/), vreinterpretq_u8_u16(c0.val[1]/*0*/));
-            uint8x16x2_t d1 = vtrnq_u8(vreinterpretq_u8_u16(c1.val[0]/*3*/), vreinterpretq_u8_u16(c0.val[0]/*2*/));
+            uint16x8x2_t c0 = vtrnq_u16(vreinterpretq_u16_u32(b0.val[0]/*0*/), vreinterpretq_u16_u32(b2.val[0]/*2*/));
+            uint16x8x2_t c1 = vtrnq_u16(vreinterpretq_u16_u32(b1.val[0]/*1*/), vreinterpretq_u16_u32(b3.val[0]/*3*/));
 
-            uint8x16x2_t d2 = vtrnq_u8(vreinterpretq_u8_u16(c3.val[1]/*5*/), vreinterpretq_u8_u16(c2.val[1]/*4*/));
-            uint8x16x2_t d3 = vtrnq_u8(vreinterpretq_u8_u16(c3.val[0]/*7*/), vreinterpretq_u8_u16(c2.val[0]/*6*/));
+            uint16x8x2_t c2 = vtrnq_u16(vreinterpretq_u16_u32(b0.val[1]/*4*/), vreinterpretq_u16_u32(b2.val[1]/*6*/));
+            uint16x8x2_t c3 = vtrnq_u16(vreinterpretq_u16_u32(b1.val[1]/*5*/), vreinterpretq_u16_u32(b3.val[1]/*7*/));
 
-            uint8x16x2_t d4 = vtrnq_u8(vreinterpretq_u8_u16(c5.val[1]/*9*/), vreinterpretq_u8_u16(c4.val[1]/*8*/));
-            uint8x16x2_t d5 = vtrnq_u8(vreinterpretq_u8_u16(c5.val[0]/*11*/), vreinterpretq_u8_u16(c4.val[0]/*10*/));
+            uint16x8x2_t c4 = vtrnq_u16(vreinterpretq_u16_u32(b4.val[0]/*8*/), vreinterpretq_u16_u32(b6.val[0]/*A*/));
+            uint16x8x2_t c5 = vtrnq_u16(vreinterpretq_u16_u32(b5.val[0]/*9*/), vreinterpretq_u16_u32(b7.val[0]/*B*/));
 
-            uint8x16x2_t d6 = vtrnq_u8(vreinterpretq_u8_u16(c7.val[1]/*13*/), vreinterpretq_u8_u16(c6.val[1]/*12*/));
-            uint8x16x2_t d7 = vtrnq_u8(vreinterpretq_u8_u16(c7.val[0]/*15*/), vreinterpretq_u8_u16(c6.val[0]/*14*/));
+            uint16x8x2_t c6 = vtrnq_u16(vreinterpretq_u16_u32(b4.val[1]/*C*/), vreinterpretq_u16_u32(b6.val[1]/*E*/));
+            uint16x8x2_t c7 = vtrnq_u16(vreinterpretq_u16_u32(b5.val[1]/*D*/), vreinterpretq_u16_u32(b7.val[1]/*F*/));
 
+            
+            uint8x16x2_t d0 = vtrnq_u8(vreinterpretq_u8_u16(c0.val[0]/*0*/), vreinterpretq_u8_u16(c1.val[0]/*1*/));
+            uint8x16x2_t d1 = vtrnq_u8(vreinterpretq_u8_u16(c0.val[1]/*2*/), vreinterpretq_u8_u16(c1.val[1]/*3*/));
 
-            dst.ptr<uint8x8_t>(16*x+ 0)[2*y  ] = vget_low_u8(d0.val[1]);
-            dst.ptr<uint8x8_t>(16*x+ 0)[2*y+1] = vget_low_u8(d4.val[1]);
-            dst.ptr<uint8x8_t>(16*x+ 1)[2*y  ] = vget_low_u8(d0.val[0]);
-            dst.ptr<uint8x8_t>(16*x+ 1)[2*y+1] = vget_low_u8(d4.val[0]);
-            dst.ptr<uint8x8_t>(16*x+ 2)[2*y  ] = vget_low_u8(d1.val[1]);
-            dst.ptr<uint8x8_t>(16*x+ 2)[2*y+1] = vget_low_u8(d5.val[1]);
-            dst.ptr<uint8x8_t>(16*x+ 3)[2*y  ] = vget_low_u8(d1.val[0]);
-            dst.ptr<uint8x8_t>(16*x+ 3)[2*y+1] = vget_low_u8(d5.val[0]);
-            dst.ptr<uint8x8_t>(16*x+ 4)[2*y  ] = vget_low_u8(d2.val[1]);
-            dst.ptr<uint8x8_t>(16*x+ 4)[2*y+1] = vget_low_u8(d6.val[1]);
-            dst.ptr<uint8x8_t>(16*x+ 5)[2*y  ] = vget_low_u8(d2.val[0]);
-            dst.ptr<uint8x8_t>(16*x+ 5)[2*y+1] = vget_low_u8(d6.val[0]);
-            dst.ptr<uint8x8_t>(16*x+ 6)[2*y  ] = vget_low_u8(d3.val[1]);
-            dst.ptr<uint8x8_t>(16*x+ 6)[2*y+1] = vget_low_u8(d7.val[1]);
-            dst.ptr<uint8x8_t>(16*x+ 7)[2*y  ] = vget_low_u8(d3.val[0]);
-            dst.ptr<uint8x8_t>(16*x+ 7)[2*y+1] = vget_low_u8(d7.val[0]);
+            uint8x16x2_t d2 = vtrnq_u8(vreinterpretq_u8_u16(c2.val[0]/*4*/), vreinterpretq_u8_u16(c3.val[0]/*5*/));
+            uint8x16x2_t d3 = vtrnq_u8(vreinterpretq_u8_u16(c2.val[1]/*6*/), vreinterpretq_u8_u16(c3.val[1]/*7*/));
 
-            dst.ptr<uint8x8_t>(16*x+ 8)[2*y  ] = vget_high_u8(d0.val[1]);
-            dst.ptr<uint8x8_t>(16*x+ 8)[2*y+1] = vget_high_u8(d4.val[1]);
-            dst.ptr<uint8x8_t>(16*x+ 9)[2*y  ] = vget_high_u8(d0.val[0]);
-            dst.ptr<uint8x8_t>(16*x+ 9)[2*y+1] = vget_high_u8(d4.val[0]);
-            dst.ptr<uint8x8_t>(16*x+10)[2*y  ] = vget_high_u8(d1.val[1]);
-            dst.ptr<uint8x8_t>(16*x+10)[2*y+1] = vget_high_u8(d5.val[1]);
-            dst.ptr<uint8x8_t>(16*x+11)[2*y  ] = vget_high_u8(d1.val[0]);
-            dst.ptr<uint8x8_t>(16*x+11)[2*y+1] = vget_high_u8(d5.val[0]);
-            dst.ptr<uint8x8_t>(16*x+12)[2*y  ] = vget_high_u8(d2.val[1]);
-            dst.ptr<uint8x8_t>(16*x+12)[2*y+1] = vget_high_u8(d6.val[1]);
-            dst.ptr<uint8x8_t>(16*x+13)[2*y  ] = vget_high_u8(d2.val[0]);
-            dst.ptr<uint8x8_t>(16*x+13)[2*y+1] = vget_high_u8(d6.val[0]);
-            dst.ptr<uint8x8_t>(16*x+14)[2*y  ] = vget_high_u8(d3.val[1]);
-            dst.ptr<uint8x8_t>(16*x+14)[2*y+1] = vget_high_u8(d7.val[1]);
-            dst.ptr<uint8x8_t>(16*x+15)[2*y  ] = vget_high_u8(d3.val[0]);
-            dst.ptr<uint8x8_t>(16*x+15)[2*y+1] = vget_high_u8(d7.val[0]);
+            uint8x16x2_t d4 = vtrnq_u8(vreinterpretq_u8_u16(c4.val[0]/*8*/), vreinterpretq_u8_u16(c5.val[0]/*9*/));
+            uint8x16x2_t d5 = vtrnq_u8(vreinterpretq_u8_u16(c4.val[1]/*10*/), vreinterpretq_u8_u16(c5.val[1]/*11*/));
+
+            uint8x16x2_t d6 = vtrnq_u8(vreinterpretq_u8_u16(c6.val[0]/*12*/), vreinterpretq_u8_u16(c7.val[0]/*13*/));
+            uint8x16x2_t d7 = vtrnq_u8(vreinterpretq_u8_u16(c6.val[1]/*14*/), vreinterpretq_u8_u16(c7.val[1]/*15*/));
 
 
+            dst.ptr<uint8x8_t>(16*x+ 0)[2*y  ] = vget_low_u8(d0.val[0]);
+            dst.ptr<uint8x8_t>(16*x+ 0)[2*y+1] = vget_low_u8(d4.val[0]);
+            dst.ptr<uint8x8_t>(16*x+ 1)[2*y  ] = vget_low_u8(d0.val[1]);
+            dst.ptr<uint8x8_t>(16*x+ 1)[2*y+1] = vget_low_u8(d4.val[1]);
+            dst.ptr<uint8x8_t>(16*x+ 2)[2*y  ] = vget_low_u8(d1.val[0]);
+            dst.ptr<uint8x8_t>(16*x+ 2)[2*y+1] = vget_low_u8(d5.val[0]);
+            dst.ptr<uint8x8_t>(16*x+ 3)[2*y  ] = vget_low_u8(d1.val[1]);
+            dst.ptr<uint8x8_t>(16*x+ 3)[2*y+1] = vget_low_u8(d5.val[1]);
+            dst.ptr<uint8x8_t>(16*x+ 4)[2*y  ] = vget_low_u8(d2.val[0]);
+            dst.ptr<uint8x8_t>(16*x+ 4)[2*y+1] = vget_low_u8(d6.val[0]);
+            dst.ptr<uint8x8_t>(16*x+ 5)[2*y  ] = vget_low_u8(d2.val[1]);
+            dst.ptr<uint8x8_t>(16*x+ 5)[2*y+1] = vget_low_u8(d6.val[1]);
+            dst.ptr<uint8x8_t>(16*x+ 6)[2*y  ] = vget_low_u8(d3.val[0]);
+            dst.ptr<uint8x8_t>(16*x+ 6)[2*y+1] = vget_low_u8(d7.val[0]);
+            dst.ptr<uint8x8_t>(16*x+ 7)[2*y  ] = vget_low_u8(d3.val[1]);
+            dst.ptr<uint8x8_t>(16*x+ 7)[2*y+1] = vget_low_u8(d7.val[1]);
 
+            dst.ptr<uint8x8_t>(16*x+ 8)[2*y  ] = vget_high_u8(d0.val[0]);
+            dst.ptr<uint8x8_t>(16*x+ 8)[2*y+1] = vget_high_u8(d4.val[0]);
+            dst.ptr<uint8x8_t>(16*x+ 9)[2*y  ] = vget_high_u8(d0.val[1]);
+            dst.ptr<uint8x8_t>(16*x+ 9)[2*y+1] = vget_high_u8(d4.val[1]);
+            dst.ptr<uint8x8_t>(16*x+10)[2*y  ] = vget_high_u8(d1.val[0]);
+            dst.ptr<uint8x8_t>(16*x+10)[2*y+1] = vget_high_u8(d5.val[0]);
+            dst.ptr<uint8x8_t>(16*x+11)[2*y  ] = vget_high_u8(d1.val[1]);
+            dst.ptr<uint8x8_t>(16*x+11)[2*y+1] = vget_high_u8(d5.val[1]);
+            dst.ptr<uint8x8_t>(16*x+12)[2*y  ] = vget_high_u8(d2.val[0]);
+            dst.ptr<uint8x8_t>(16*x+12)[2*y+1] = vget_high_u8(d6.val[0]);
+            dst.ptr<uint8x8_t>(16*x+13)[2*y  ] = vget_high_u8(d2.val[1]);
+            dst.ptr<uint8x8_t>(16*x+13)[2*y+1] = vget_high_u8(d6.val[1]);
+            dst.ptr<uint8x8_t>(16*x+14)[2*y  ] = vget_high_u8(d3.val[0]);
+            dst.ptr<uint8x8_t>(16*x+14)[2*y+1] = vget_high_u8(d7.val[0]);
+            dst.ptr<uint8x8_t>(16*x+15)[2*y  ] = vget_high_u8(d3.val[1]);
+            dst.ptr<uint8x8_t>(16*x+15)[2*y+1] = vget_high_u8(d7.val[1]);
             
         }
     }

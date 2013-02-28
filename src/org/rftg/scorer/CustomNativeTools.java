@@ -91,4 +91,10 @@ class CustomNativeTools {
     }
 
     private native int houghVertical(long imageAddr, int bordermask, int origin, int minSlope, int maxSlope, int maxGap, int minLength, long segmentsAddr);
+
+    public void transpose(Mat src, Mat dst) {
+        transpose(src.getNativeObjAddr(), dst.getNativeObjAddr());
+    }
+
+    private native void transpose(long src, long dst);
 }

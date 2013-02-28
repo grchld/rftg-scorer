@@ -170,7 +170,7 @@ class Recognizer {
         frameTimer = System.currentTimeMillis();
 
         /**/
-       Mat sub = frame.submat(0,real.rows(),0,real.cols());
+        Mat sub = frame.submat(0,real.rows(),0,real.cols());
         real.copyTo(sub);
         sub.release();
         /**/
@@ -187,11 +187,11 @@ class Recognizer {
 
         Log.e("rftg", "Sobel: " + (System.currentTimeMillis() - time));
 
-        time = System.currentTimeMillis();
+//        time = System.currentTimeMillis();
 
         Core.transpose(sobel, sobelTransposed);
 
-        Log.e("rftg", "Transpose: " + (System.currentTimeMillis() - time));
+//        Log.e("rftg", "Transpose: " + (System.currentTimeMillis() - time));
 
         time = System.currentTimeMillis();
 
@@ -213,9 +213,15 @@ class Recognizer {
 
         Log.e("rftg", "HoughVertical: " + (System.currentTimeMillis() - time));
 
+        time = System.currentTimeMillis();
+        main.customNativeTools.transpose(gray, sobelTransposed);
+        Log.e("rftg", "Transpose: " + (System.currentTimeMillis() - time));
+
+        Core.transpose(sobelTransposed, sobel);
+
         Imgproc.cvtColor(sobel, frame, Imgproc.COLOR_GRAY2RGB);
 
-
+                                         /*
         Scalar green = new Scalar(0, 255, 0);
         Scalar red = new Scalar(255, 0, 0);
         Scalar blue = new Scalar(0, 0, 255);
@@ -248,7 +254,7 @@ class Recognizer {
                     new Point(segment.y2, segment.x2),
                     blue);
         }
-
+                                */
         return frame;
     }
 

@@ -435,6 +435,8 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
                 "vldmia r2, {q15}\n\t"
                 "vtrn.8 q14, q15\n\t"
 
+                "pld [r3]\n\t"
+                
                 "vtrn.32 q0, q4\n\t"
                 "vtrn.32 q1, q5\n\t"
                 "vtrn.32 q2, q6\n\t"

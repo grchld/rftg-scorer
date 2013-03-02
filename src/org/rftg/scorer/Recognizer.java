@@ -59,10 +59,6 @@ class Recognizer {
     private Hough houghTop;
     private Hough houghBottom;
 
-//    private Mat result;
-
-    private int counter;
-
     private double minX;
     private double minY;
     private double maxX;
@@ -72,9 +68,6 @@ class Recognizer {
     private int yOrigin;
 
     private TreeMap<Double, MatOfPoint> tempRects = new TreeMap<Double, MatOfPoint>();
-
-    List<Line> horizontal = new ArrayList<Line>(MAX_LINES);
-    List<Line> vertical = new ArrayList<Line>(MAX_LINES);
 
     private long frameTimer;
 
@@ -144,18 +137,12 @@ class Recognizer {
         final int y2;
         final int xbase;
         final int slope;
-        final int origin;
-
-        Segment(int origin, short[] v) {
-            this(origin, v[0], v[1], v[2], v[3]);
-        }
 
         Segment(int origin, int y1, int y2, int xbase, int slope) {
             this.y1 = y1;
             this.y2 = y2;
             this.xbase = xbase;
             this.slope = slope;
-            this.origin = origin;
 
             x1 = xbase + slope * (y1 - origin)/64;
             x2 = xbase + slope * (y2 - origin)/64;
@@ -182,16 +169,15 @@ class Recognizer {
         Imgproc.cvtColor(frame, gray, Imgproc.COLOR_BGR2GRAY);
         Log.e("rftg", "Convert color: " + (System.currentTimeMillis() - time));
         time = System.currentTimeMillis();
-//        Imgproc.Sobel(gray, sobelX, CvType.CV_8U, 1, 0, 3, 0.25, 128);
         main.customNativeTools.sobel(gray, sobel, 100);
 
         Log.e("rftg", "Sobel: " + (System.currentTimeMillis() - time));
 
-//        time = System.currentTimeMillis();
+        time = System.currentTimeMillis();
 
-        Core.transpose(sobel, sobelTransposed);
+        main.customNativeTools.transpose(sobel, sobelTransposed);
 
-//        Log.e("rftg", "Transpose: " + (System.currentTimeMillis() - time));
+        Log.e("rftg", "Transpose: " + (System.currentTimeMillis() - time));
 
         time = System.currentTimeMillis();
 
@@ -211,17 +197,10 @@ class Recognizer {
             throw new RuntimeException(e);
         }
 
-        Log.e("rftg", "HoughVertical: " + (System.currentTimeMillis() - time));
-
-        time = System.currentTimeMillis();
-        main.customNativeTools.transpose(gray, sobelTransposed);
-        Log.e("rftg", "Transpose: " + (System.currentTimeMillis() - time));
-
-        Core.transpose(sobelTransposed, sobel);
+        Log.e("rftg", "Hough: " + (System.currentTimeMillis() - time));
 
         Imgproc.cvtColor(sobel, frame, Imgproc.COLOR_GRAY2RGB);
 
-                                         /*
         Scalar green = new Scalar(0, 255, 0);
         Scalar red = new Scalar(255, 0, 0);
         Scalar blue = new Scalar(0, 0, 255);
@@ -254,7 +233,7 @@ class Recognizer {
                     new Point(segment.y2, segment.x2),
                     blue);
         }
-                                */
+
         return frame;
     }
 
@@ -264,6 +243,8 @@ class Recognizer {
         private int origin;
         private Mat segmentsStack;
         private List<Segment> segments;
+        private short[] segmentData = new short[4];
+        private Segment[] segmentsBuffer = new Segment[MAX_LINES];
 
         Hough(Mat image, int mask, int origin, Mat segmentsStack, List<Segment> segments) {
             this.image = image;
@@ -275,59 +256,61 @@ class Recognizer {
 
         @Override
         public void run() {
-            segments.clear();
 
             int segmentCount = main.customNativeTools.houghVertical(image, mask, origin, MIN_SLOPE, MAX_SLOPE, MAX_GAP, MIN_LENGTH, segmentsStack);
 
-            short[] segmentData = new short[4];
             for (int i = 0 ; i < segmentCount ; i++) {
                 segmentsStack.get(0, i, segmentData);
-                segments.add(new Segment(origin, segmentData));
+                segmentsBuffer[i] = new Segment(origin, segmentData[0], segmentData[1], segmentData[2], segmentData[3]);
             }
+
+            group(segmentCount);
         }
-    }
 
-    private List<Segment> group(int origin, Segment[] segments) {
-        List<Segment> result = new ArrayList<Segment>(segments.length);
-        for (int i = 0 ; i < segments.length ; i++) {
-            Segment base = segments[i];
-            if (base != null) {
-                int y1 = base.y1;
-                int y2 = base.y2;
-                int slope = base.slope;
-                int xbaseMin = base.xbase;
-                int xbaseMax = base.xbase;
+        private void group(int size) {
+            segments.clear();
 
-                for (int j = i+1 ; j < segments.length ; j++) {
-                    Segment s = segments[j];
-                    if (s == null) {
-                        continue;
-                    }
-                    if (s.xbase > xbaseMax + MAX_BASE_GAP) {
-                        break;
-                    }
-                    if (s.slope != slope) {
-                        continue;
-                    }
+            for (int i = 0 ; i < size ; i++) {
+                Segment base = segmentsBuffer[i];
+                if (base != null) {
+                    int y1 = base.y1;
+                    int y2 = base.y2;
+                    int slope = base.slope;
+                    int xbaseMin = base.xbase;
+                    int xbaseMax = base.xbase;
+                    int length = y2 - y1;
 
-                    if (s.y1 > y2 || s.y2 < y1) {
-                        continue;
+                    for (int j = i+1 ; j < size ; j++) {
+                        Segment s = segmentsBuffer[j];
+                        if (s == null) {
+                            continue;
+                        }
+                        if (s.slope != slope || s.xbase > xbaseMax + MAX_BASE_GAP) {
+                            break;
+                        }
+
+                        if (s.y1 > y2 || s.y2 < y1) {
+                            continue;
+                        }
+                        segmentsBuffer[j] = null;
+                        xbaseMax = s.xbase;
+                        if (y1 > s.y1) {
+                            y1 = s.y1;
+                        }
+                        if (y2 < s.y2) {
+                            y2 = s.y2;
+                        }
+                        int l = s.y2 - s.y1;
+                        if (l > length) {
+                            length = l;
+                        }
                     }
-                    segments[j] = null;
-                    xbaseMax = s.xbase;
-                    if (y1 > s.y1) {
-                        y1 = s.y1;
-                    }
-                    if (y2 < s.y2) {
-                        y2 = s.y2;
-                    }
+                    segments.add(new Segment(origin, y1, y2, (xbaseMin + xbaseMax)/2, slope));
                 }
-                result.add(new Segment(origin, y1, y2, (xbaseMin + xbaseMax)/2, slope));
             }
         }
-        return result;
-    }
 
+    }
 
     private Point intersect(Line h, Line v) {
 

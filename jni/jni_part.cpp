@@ -380,45 +380,59 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
                 "mov r1, %[DA]\n\t"
                 "mov r2, %[S]\n\t"
                 "mov r3, %[D]\n\t"
+
                 "vldmia r2, {q0}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q1}\n\t"
                 "add r2, r2, r0\n\t"
+                "pld [r2]\n\t"
+                "vtrn.8 q0, q1\n\t"
+                
                 "vldmia r2, {q2}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q3}\n\t"
                 "add r2, r2, r0\n\t"
+                "pld [r2]\n\t"
+                "vtrn.8 q2, q3\n\t"
+                
                 "vldmia r2, {q4}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q5}\n\t"
                 "add r2, r2, r0\n\t"
+                "pld [r2]\n\t"
+                "vtrn.8 q4, q5\n\t"
+                
                 "vldmia r2, {q6}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q7}\n\t"
                 "add r2, r2, r0\n\t"
+                "pld [r2]\n\t"
+                "vtrn.8 q6, q7\n\t"
+                
                 "vldmia r2, {q8}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q9}\n\t"
                 "add r2, r2, r0\n\t"
+                "pld [r2]\n\t"
+                "vtrn.8 q8, q9\n\t"
+                
                 "vldmia r2, {q10}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q11}\n\t"
                 "add r2, r2, r0\n\t"
+                "pld [r2]\n\t"
+                "vtrn.8 q10, q11\n\t"
+                
                 "vldmia r2, {q12}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q13}\n\t"
                 "add r2, r2, r0\n\t"
+                "pld [r2]\n\t"
+                "vtrn.8 q12, q13\n\t"
+                
                 "vldmia r2, {q14}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q15}\n\t"
-/*
-                "vtrn.8 q0, q1\n\t"
-                "vtrn.8 q2, q3\n\t"
-                "vtrn.8 q4, q5\n\t"
-                "vtrn.8 q6, q7\n\t"
-                "vtrn.8 q8, q9\n\t"
-                "vtrn.8 q10, q11\n\t"
-                "vtrn.8 q12, q13\n\t"
                 "vtrn.8 q14, q15\n\t"
 
                 "vtrn.32 q0, q4\n\t"
@@ -442,30 +456,37 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
                 "vtrn.16 q13, q15\n\t"
 
                 "vswp d1, d16\n\t"
-                "vswp d3, d18\n\t"
-                "vswp d5, d20\n\t"
-                "vswp d7, d22\n\t"
-                "vswp d9, d24\n\t"
-                "vswp d11, d26\n\t"
-                "vswp d13, d28\n\t"
-                "vswp d15, d30\n\t"
-*/
                 "vstmia r3, {q0}\n\t"
                 "add r3, r3, r1\n\t"
+
+                "vswp d3, d18\n\t"
                 "vstmia r3, {q1}\n\t"
                 "add r3, r3, r1\n\t"
+
+                "vswp d5, d20\n\t"
                 "vstmia r3, {q2}\n\t"
                 "add r3, r3, r1\n\t"
+
+                "vswp d7, d22\n\t"
                 "vstmia r3, {q3}\n\t"
                 "add r3, r3, r1\n\t"
+
+                "vswp d9, d24\n\t"
                 "vstmia r3, {q4}\n\t"
                 "add r3, r3, r1\n\t"
+
+                "vswp d11, d26\n\t"
                 "vstmia r3, {q5}\n\t"
                 "add r3, r3, r1\n\t"
+
+                "vswp d13, d28\n\t"
                 "vstmia r3, {q6}\n\t"
                 "add r3, r3, r1\n\t"
+
+                "vswp d15, d30\n\t"
                 "vstmia r3, {q7}\n\t"
                 "add r3, r3, r1\n\t"
+
                 "vstmia r3, {q8}\n\t"
                 "add r3, r3, r1\n\t"
                 "vstmia r3, {q9}\n\t"

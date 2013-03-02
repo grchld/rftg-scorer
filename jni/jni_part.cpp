@@ -363,14 +363,17 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
 
     #if HAVE_NEON == 1
 
+    const uchar* su = &src.ptr<uchar>(0)[0];
+    const uchar* du = &dst.ptr<uchar>(0)[0];
+
     const int sa = src.ptr<uchar>(1) - src.ptr<uchar>(0);
     const int da = dst.ptr<uchar>(1) - dst.ptr<uchar>(0);
-    
-    for (int y = 0 ; y < rows/16; y++) {
-        for (int x = 0 ; x < cols/16; x++) {
 
-            uchar* s = &src.ptr<uchar>(16*y)[16*x];
-            uchar* d = &dst.ptr<uchar>(16*x)[16*y];
+    for (int y = 0 ; y < rows; y+=16) {
+        for (int x = 0 ; x < cols; x+=16) {
+
+            const uchar* s = su + sa * y + x;
+            const uchar* d = du + da * x + y;
 
             asm (
                 "mov r0, %[SA]\n\t"
@@ -408,6 +411,15 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
                 "vldmia r2, {q14}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q15}\n\t"
+/*
+                "vtrn.8 q0, q1\n\t"
+                "vtrn.8 q2, q3\n\t"
+                "vtrn.8 q4, q5\n\t"
+                "vtrn.8 q6, q7\n\t"
+                "vtrn.8 q8, q9\n\t"
+                "vtrn.8 q10, q11\n\t"
+                "vtrn.8 q12, q13\n\t"
+                "vtrn.8 q14, q15\n\t"
 
                 "vtrn.32 q0, q4\n\t"
                 "vtrn.32 q1, q5\n\t"
@@ -423,20 +435,11 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
                 "vtrn.16 q1, q3\n\t"
                 "vtrn.16 q4, q6\n\t"
                 "vtrn.16 q5, q7\n\t"
-                
+
                 "vtrn.16 q8, q10\n\t"
                 "vtrn.16 q9, q11\n\t"
                 "vtrn.16 q12, q14\n\t"
                 "vtrn.16 q13, q15\n\t"
-
-                "vtrn.8 q0, q1\n\t"
-                "vtrn.8 q2, q3\n\t"
-                "vtrn.8 q4, q5\n\t"
-                "vtrn.8 q6, q7\n\t"
-                "vtrn.8 q8, q9\n\t"
-                "vtrn.8 q10, q11\n\t"
-                "vtrn.8 q12, q13\n\t"
-                "vtrn.8 q14, q15\n\t"
 
                 "vswp d1, d16\n\t"
                 "vswp d3, d18\n\t"
@@ -446,7 +449,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
                 "vswp d11, d26\n\t"
                 "vswp d13, d28\n\t"
                 "vswp d15, d30\n\t"
-
+*/
                 "vstmia r3, {q0}\n\t"
                 "add r3, r3, r1\n\t"
                 "vstmia r3, {q1}\n\t"
@@ -479,12 +482,12 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
                 "add r3, r3, r1\n\t"
                 "vstmia r3, {q15}\n\t"
 
-                
+
                 :
                 : [S]"r" (s), [D]"r" (d), [SA]"r" (sa), [DA]"r" (da)
                 : "memory", "r0", "r1", "r2", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
             );
-
+            
         }
     }
 

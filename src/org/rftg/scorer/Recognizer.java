@@ -62,7 +62,9 @@ class Recognizer {
     private List<Line> linesTop = new ArrayList<Line>(MAX_LINES);
     private List<Line> linesBottom = new ArrayList<Line>(MAX_LINES);
 
-    private List<MatOfPoint> rectangles = new ArrayList<MatOfPoint>(MAX_RECTANGLES);
+    private List<MatOfPoint2f> rectangles = new ArrayList<MatOfPoint2f>(MAX_RECTANGLES);
+
+    private Mat[] selection = new Mat[MAX_RECTANGLES];
 
     private Hough houghLeft;
     private Hough houghRight;
@@ -118,6 +120,10 @@ class Recognizer {
 
 //        result = new Mat(height, width, CvType.CV_8UC4);
 
+        for (int i = 0 ; i < MAX_RECTANGLES ; i++) {
+            selection[i] = new Mat(SamplesMatcher.SAMPLE_HEIGHT, SamplesMatcher.SAMPLE_WIDTH, CvType.CV_8UC3);
+        }
+
         maxX = width / 2;
         minX = maxX / 5;
 
@@ -135,6 +141,9 @@ class Recognizer {
         segmentsStackRight.release();
         segmentsStackTop.release();
         segmentsStackBottom.release();
+        for (Mat mat : selection) {
+            mat.release();
+        }
     }
 
     class Segment {
@@ -174,7 +183,7 @@ class Recognizer {
 
         /**/
         Mat sub = frame.submat(0,real.rows(),0,real.cols());
-//        real.copyTo(sub);
+        real.copyTo(sub);
         sub.release();
         /**/
 //        tempRects.clear();
@@ -219,9 +228,31 @@ class Recognizer {
         extractRectangles();
         Log.e("rftg", "Extraction: " + (System.currentTimeMillis() - time));
 
+        time = System.currentTimeMillis();
+        int selectionCounter = 0;
+        List<Future> selectionFutures = new ArrayList<Future>(rectangles.size());
+        for (MatOfPoint2f rect : rectangles) {
+            selectionFutures.add(main.executorService.submit(new SamplesMatcher.SampleExtractor(frame, rect, selection[selectionCounter++])));
+        }
+        for (Future future : selectionFutures) {
+            try {
+                future.get();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        Log.e("rftg", "Scaling " + (System.currentTimeMillis() - time));
+        //////////
+
         Scalar rectColor = new Scalar(255, 255, 255);
 
-        Core.polylines(frame, rectangles, true, rectColor, 3);
+        List<MatOfPoint> rectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
+        for (MatOfPoint2f rect : rectangles) {
+            rectanglesToDraw.add(new MatOfPoint(rect.toArray()));
+        }
+        Core.polylines(frame, rectanglesToDraw, true, rectColor, 3);
 
         Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1 ,1, rectColor);
 
@@ -570,7 +601,7 @@ class Recognizer {
                         Point p3 = intersect(right, bottom);
                         Point p4 = intersect(left, bottom);
 
-                        MatOfPoint rect = new MatOfPoint(p1, p2, p3, p4);
+                        MatOfPoint2f rect = new MatOfPoint2f(p1, p2, p3, p4);
                         rectangles.add(rect);
                         if (rectangles.size() >= MAX_RECTANGLES) {
                             return;

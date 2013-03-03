@@ -12,7 +12,7 @@ import java.util.concurrent.Callable;
 /**
  * @author gc
  */
-class SamplesLoader {
+class SamplesMatcher {
 
     public final static int ORIGINAL_SAMPLE_HEIGHT = 520;
     public final static int ORIGINAL_SAMPLE_WIDTH = 372;
@@ -20,11 +20,15 @@ class SamplesLoader {
 
     public final static int SAMPLE_HEIGHT = 7 * SIZE_MULTIPLIER;
     public final static int SAMPLE_WIDTH = 5 * SIZE_MULTIPLIER;
+
+    public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
+    public final static MatOfPoint2f SAMPLE_RECT = new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(0, SAMPLE_HEIGHT), new Point(SAMPLE_WIDTH, SAMPLE_HEIGHT));
+
     private Mat[] samples;
     private Normalizer normalizer = new Normalizer();
 
-    public SamplesLoader(final MainActivity main, int maxCardNum) {
-/*
+    public SamplesMatcher(final MainActivity main, int maxCardNum) {
+
         samples = new Mat[maxCardNum + 1];
         final Size size = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
 
@@ -78,16 +82,33 @@ class SamplesLoader {
         Log.i("rftg", "Parallel loading time: " + (System.currentTimeMillis() - time));
 
         scaleDown.release();
-  */
     }
 
     public void release() {
-/*
         for (Mat sample : samples) {
             if (sample != null) {
                 sample.release();
             }
         }
-        */
     }
+
+    static class SampleExtractor implements Runnable {
+        private Mat image;
+        private MatOfPoint2f rect;
+        private Mat destination;
+
+        SampleExtractor(Mat image, MatOfPoint2f rect, Mat destination) {
+            this.image = image;
+            this.rect = rect;
+            this.destination = destination;
+        }
+
+        @Override
+        public void run() {
+
+            final Mat scaleDown = Imgproc.getPerspectiveTransform(rect, SAMPLE_RECT);
+            Imgproc.warpPerspective(image, destination, scaleDown, SAMPLE_SIZE, Imgproc.INTER_LINEAR);
+        }
+    }
+
 }

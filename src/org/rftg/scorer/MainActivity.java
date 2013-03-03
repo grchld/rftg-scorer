@@ -16,7 +16,7 @@ import java.util.concurrent.Executors;
 public class MainActivity extends Activity implements CvCameraViewListener {
 
     ExecutorService executorService;
-    SamplesLoader samplesLoader;
+    SamplesMatcher samplesMatcher;
     Recognizer recognizer;
     CustomNativeTools customNativeTools;
 
@@ -29,7 +29,7 @@ public class MainActivity extends Activity implements CvCameraViewListener {
                 case LoaderCallbackInterface.SUCCESS:
 
                     customNativeTools = new CustomNativeTools();
-                    samplesLoader = new SamplesLoader(MainActivity.this, Card.GameType.EXP1.maxCardNum);
+                    samplesMatcher = new SamplesMatcher(MainActivity.this, Card.GameType.EXP1.maxCardNum);
 
 
                     openCvCameraView.enableView();
@@ -71,9 +71,9 @@ public class MainActivity extends Activity implements CvCameraViewListener {
     public void onDestroy() {
         if (openCvCameraView != null)
             openCvCameraView.disableView();
-        if (samplesLoader != null) {
-            samplesLoader.release();
-            samplesLoader = null;
+        if (samplesMatcher != null) {
+            samplesMatcher.release();
+            samplesMatcher = null;
         }
         executorService.shutdown();
         super.onDestroy();

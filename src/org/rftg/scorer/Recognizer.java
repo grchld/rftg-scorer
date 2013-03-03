@@ -18,8 +18,8 @@ class Recognizer {
     private static final int MAX_LINES = 1000;
     private static final int MAX_RECTANGLES = 100;
 
-    private static final int MIN_SLOPE = -12;
-    private static final int MAX_SLOPE = 12;
+    private static final int MIN_SLOPE = -15;
+    private static final int MAX_SLOPE = 15;
     private static final int MAX_GAP = 4;
     private static final int MIN_LENGTH = 70;
 
@@ -30,14 +30,14 @@ class Recognizer {
     private static final double RECT_MIN_ASPECT = (7./5.)/1.2;
     private static final double RECT_MAX_ASPECT = (7./5.)*1.2;
 
-    private static final int RECT_SLOPE_BOUND = 3;
+    private static final int RECT_SLOPE_BOUND = 5;
     /*
     private static final int RECT_MIN_WIDTH = 70;
     private static final int RECT_MAX_WIDTH = 400;
     private static final int RECT_MIN_HEIGHT = 100;
     private static final int RECT_MAX_HEIGHT = 700;
     */
-    private static final double RECT_MIN_LINE_LENGTH_PERCENT = 60;
+    private static final double RECT_MIN_LINE_LENGTH_PERCENT = 35;
 
     private static final int MASK_LEFT = 0x10;
     private static final int MASK_RIGHT = 0x20;
@@ -118,11 +118,11 @@ class Recognizer {
 
 //        result = new Mat(height, width, CvType.CV_8UC4);
 
-        maxX = width / 3;
-        minX = maxX / 3;
+        maxX = width / 2;
+        minX = maxX / 5;
 
-        maxY = height / 1.8;
-        minY = maxY / 3;
+        maxY = height / 1.3;
+        minY = maxY / 5;
     }
 
     void release() {
@@ -221,13 +221,15 @@ class Recognizer {
 
         Scalar rectColor = new Scalar(255, 255, 255);
 
-        Core.polylines(frame, rectangles, true, rectColor);
+        Core.polylines(frame, rectangles, true, rectColor, 3);
+
+        Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1 ,1, rectColor);
 
 //        Imgproc.cvtColor(sobel, frame, Imgproc.COLOR_GRAY2RGB);
 
         Scalar green = new Scalar(0, 255, 0);
         Scalar red = new Scalar(255, 0, 0);
-        Scalar blue = new Scalar(0, 0, 255);
+        Scalar blue = new Scalar(255, 0, 255);
         Scalar yellow = new Scalar(255, 255, 0);
 
         for (Line line : linesLeft) {
@@ -235,6 +237,7 @@ class Recognizer {
                     new Point(line.x1, line.y1),
                     new Point(line.x2, line.y2),
                     red);
+            Core.putText(frame, line.toString(), new Point(line.mx - 10, line.my), 1, 1, red);
         }
 
         for (Line line : linesRight) {
@@ -242,6 +245,7 @@ class Recognizer {
                     new Point(line.x1, line.y1),
                     new Point(line.x2, line.y2),
                     green);
+            Core.putText(frame, line.toString(), new Point(line.mx + 10, line.my), 1, 1, green);
         }
 
         for (Line line : linesTop) {
@@ -249,6 +253,7 @@ class Recognizer {
                     new Point(line.x1, line.y1),
                     new Point(line.x2, line.y2),
                     yellow);
+            Core.putText(frame, line.toString(), new Point(line.mx, line.my - 20), 1, 1, yellow);
         }
 
         for (Line line : linesBottom) {
@@ -256,6 +261,7 @@ class Recognizer {
                     new Point(line.x1, line.y1),
                     new Point(line.x2, line.y2),
                     blue);
+            Core.putText(frame, line.toString(), new Point(line.mx, line.my + 20), 1, 1, blue);
         }
 
 
@@ -465,6 +471,10 @@ class Recognizer {
             cross = x2 * y1 - x1 * y2;
         }
 
+        @Override
+        public String toString() {
+            return "" + mx + ":" + my + ":" + slope;
+        }
     }
 
     class Rectangle {

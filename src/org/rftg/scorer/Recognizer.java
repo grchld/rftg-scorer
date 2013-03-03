@@ -47,6 +47,7 @@ class Recognizer {
     final MainActivity main;
 
     private Mat real;
+    private Mat rgb;
     private Mat gray;
     private Mat canny;
     private Mat sobel;
@@ -95,11 +96,13 @@ class Recognizer {
             throw new RuntimeException(e);
         }
 
-        real = new Mat(tempReal.rows(), tempReal.cols(), CvType.CV_8UC4);
+        real = new Mat(tempReal.rows(), tempReal.cols(), CvType.CV_8UC3);
 
-        Imgproc.cvtColor(tempReal, real, Imgproc.COLOR_BGR2RGBA);
+        Imgproc.cvtColor(tempReal, real, Imgproc.COLOR_BGR2RGB);
 
         tempReal.release();
+
+        rgb = new Mat(height, width, CvType.CV_8UC3);
 
         gray = new Mat(height, width, CvType.CV_8UC1);
 
@@ -132,6 +135,7 @@ class Recognizer {
     }
 
     void release() {
+        rgb.release();
         real.release();
         gray.release();
         canny.release();
@@ -181,6 +185,9 @@ class Recognizer {
         }
         frameTimer = System.currentTimeMillis();
 
+        Imgproc.cvtColor(frame, rgb, Imgproc.COLOR_RGBA2RGB);
+        frame = rgb;
+
         /**/
         Mat sub = frame.submat(0,real.rows(),0,real.cols());
         real.copyTo(sub);
@@ -191,7 +198,7 @@ class Recognizer {
 
         long time;
         time = System.currentTimeMillis();
-        Imgproc.cvtColor(frame, gray, Imgproc.COLOR_BGR2GRAY);
+        Imgproc.cvtColor(frame, gray, Imgproc.COLOR_RGB2GRAY);
         Log.e("rftg", "Convert color: " + (System.currentTimeMillis() - time));
         time = System.currentTimeMillis();
         main.customNativeTools.sobel(gray, sobel, 100);
@@ -232,7 +239,7 @@ class Recognizer {
         int selectionCounter = 0;
         List<Future> selectionFutures = new ArrayList<Future>(rectangles.size());
         for (MatOfPoint2f rect : rectangles) {
-            selectionFutures.add(main.executorService.submit(new SamplesMatcher.SampleExtractor(frame, rect, selection[selectionCounter++])));
+            selectionFutures.add(main.executorService.submit(main.samplesMatcher.new SampleExtractor(frame, rect, selection[selectionCounter++])));
         }
         for (Future future : selectionFutures) {
             try {
@@ -244,9 +251,15 @@ class Recognizer {
             }
         }
         Log.e("rftg", "Scaling " + (System.currentTimeMillis() - time));
-        //////////
 
         Scalar rectColor = new Scalar(255, 255, 255);
+
+        for (int i = 0 ; i < selectionCounter ; i++) {
+            Mat s = selection[i];
+            Mat d = new Mat();
+            Imgproc.resize(s, d, new Size(50, 70));
+            d.copyTo(frame.submat(80*(i/10), d.rows() + 80*(i/10), 60*(i%10), d.cols()+ 60*(i%10)));
+        }
 
         List<MatOfPoint> rectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
         for (MatOfPoint2f rect : rectangles) {
@@ -256,8 +269,7 @@ class Recognizer {
 
         Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1 ,1, rectColor);
 
-//        Imgproc.cvtColor(sobel, frame, Imgproc.COLOR_GRAY2RGB);
-
+/*
         Scalar green = new Scalar(0, 255, 0);
         Scalar red = new Scalar(255, 0, 0);
         Scalar blue = new Scalar(255, 0, 255);
@@ -294,7 +306,7 @@ class Recognizer {
                     blue);
             Core.putText(frame, line.toString(), new Point(line.mx, line.my + 20), 1, 1, blue);
         }
-
+  */
 
         return frame;
     }

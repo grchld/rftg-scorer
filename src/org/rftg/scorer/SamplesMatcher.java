@@ -22,7 +22,7 @@ class SamplesMatcher {
     public final static int SAMPLE_WIDTH = 5 * SIZE_MULTIPLIER;
 
     public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
-    public final static MatOfPoint2f SAMPLE_RECT = new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(0, SAMPLE_HEIGHT), new Point(SAMPLE_WIDTH, SAMPLE_HEIGHT));
+    public final static MatOfPoint2f SAMPLE_RECT = new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(SAMPLE_WIDTH, SAMPLE_HEIGHT), new Point(0, SAMPLE_HEIGHT));
 
     private Mat[] samples;
     private Normalizer normalizer = new Normalizer();
@@ -92,7 +92,7 @@ class SamplesMatcher {
         }
     }
 
-    static class SampleExtractor implements Runnable {
+    class SampleExtractor implements Runnable {
         private Mat image;
         private MatOfPoint2f rect;
         private Mat destination;
@@ -108,6 +108,7 @@ class SamplesMatcher {
 
             final Mat scaleDown = Imgproc.getPerspectiveTransform(rect, SAMPLE_RECT);
             Imgproc.warpPerspective(image, destination, scaleDown, SAMPLE_SIZE, Imgproc.INTER_LINEAR);
+            normalizer.normalize(destination);
         }
     }
 

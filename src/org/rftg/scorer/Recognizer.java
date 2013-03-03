@@ -16,6 +16,7 @@ import java.util.concurrent.Future;
 class Recognizer {
 
     private static final int MAX_LINES = 1000;
+    private static final int MAX_RECTANGLES = 100;
 
     private static final int MIN_SLOPE = -12;
     private static final int MAX_SLOPE = 12;
@@ -26,16 +27,22 @@ class Recognizer {
     private static final int MAX_BASE_DISTANCE = 10;
     private static final int LEAST_BASE_DISTANCE = 20;
 
-    private static double MIN_RATIO = (7./5.)/1.2;
-    private static double MAX_RATIO = (7./5.)*1.2;
-    private static double PARALLEL_ANGLE_BOUND = 0.1;
+    private static final double RECT_MIN_ASPECT = (7./5.)/1.2;
+    private static final double RECT_MAX_ASPECT = (7./5.)*1.2;
 
-    private static double ANGLE_BOUND = 0.2;
+    private static final int RECT_SLOPE_BOUND = 3;
+    /*
+    private static final int RECT_MIN_WIDTH = 70;
+    private static final int RECT_MAX_WIDTH = 400;
+    private static final int RECT_MIN_HEIGHT = 100;
+    private static final int RECT_MAX_HEIGHT = 700;
+    */
+    private static final double RECT_MIN_LINE_LENGTH_PERCENT = 60;
 
-    private static int MASK_LEFT = 0x10;
-    private static int MASK_RIGHT = 0x20;
-    private static int MASK_TOP = 0x40;
-    private static int MASK_BOTTOM = 0x80;
+    private static final int MASK_LEFT = 0x10;
+    private static final int MASK_RIGHT = 0x20;
+    private static final int MASK_BOTTOM = 0x40;
+    private static final int MASK_TOP = 0x80;
 
     final MainActivity main;
 
@@ -50,10 +57,12 @@ class Recognizer {
     private Mat segmentsStackTop;
     private Mat segmentsStackBottom;
 
-    private List<Line> segmentsLeft = new ArrayList<Line>(MAX_LINES);
-    private List<Line> segmentsRight = new ArrayList<Line>(MAX_LINES);
-    private List<Line> segmentsTop = new ArrayList<Line>(MAX_LINES);
-    private List<Line> segmentsBottom = new ArrayList<Line>(MAX_LINES);
+    private List<Line> linesLeft = new ArrayList<Line>(MAX_LINES);
+    private List<Line> linesRight = new ArrayList<Line>(MAX_LINES);
+    private List<Line> linesTop = new ArrayList<Line>(MAX_LINES);
+    private List<Line> linesBottom = new ArrayList<Line>(MAX_LINES);
+
+    private List<MatOfPoint> rectangles = new ArrayList<MatOfPoint>(MAX_RECTANGLES);
 
     private Hough houghLeft;
     private Hough houghRight;
@@ -65,9 +74,6 @@ class Recognizer {
     private double maxX;
     private double maxY;
 
-    private int xOrigin;
-    private int yOrigin;
-
     private TreeMap<Double, MatOfPoint> tempRects = new TreeMap<Double, MatOfPoint>();
 
     private long frameTimer;
@@ -76,8 +82,8 @@ class Recognizer {
     Recognizer(MainActivity main, int width, int height) {
         this.main = main;
 
-        xOrigin = width/2;
-        yOrigin = height/2;
+        int xOrigin = width/2;
+        int yOrigin = height/2;
 
         Mat tempReal;
         try {
@@ -105,10 +111,10 @@ class Recognizer {
         segmentsStackTop = new Mat(1, MAX_LINES, CvType.CV_16SC4);
         segmentsStackBottom = new Mat(1, MAX_LINES, CvType.CV_16SC4);
 
-        houghLeft = new Hough(false, MASK_LEFT, yOrigin, segmentsStackLeft, segmentsLeft);
-        houghRight = new Hough(false, MASK_RIGHT, yOrigin, segmentsStackRight, segmentsRight);
-        houghTop = new Hough(true, MASK_TOP, xOrigin, segmentsStackTop, segmentsTop);
-        houghBottom = new Hough(true, MASK_BOTTOM, xOrigin, segmentsStackBottom, segmentsBottom);
+        houghLeft = new Hough(false, MASK_LEFT, yOrigin, segmentsStackLeft, linesLeft);
+        houghRight = new Hough(false, MASK_RIGHT, yOrigin, segmentsStackRight, linesRight);
+        houghTop = new Hough(true, MASK_TOP, xOrigin, segmentsStackTop, linesTop);
+        houghBottom = new Hough(true, MASK_BOTTOM, xOrigin, segmentsStackBottom, linesBottom);
 
 //        result = new Mat(height, width, CvType.CV_8UC4);
 
@@ -209,41 +215,49 @@ class Recognizer {
 
         Log.e("rftg", "Hough: " + (System.currentTimeMillis() - time));
 
+        time = System.currentTimeMillis();
+        extractRectangles();
+        Log.e("rftg", "Extraction: " + (System.currentTimeMillis() - time));
 
-        Imgproc.cvtColor(sobel, frame, Imgproc.COLOR_GRAY2RGB);
+        Scalar rectColor = new Scalar(255, 255, 255);
+
+        Core.polylines(frame, rectangles, true, rectColor);
+
+//        Imgproc.cvtColor(sobel, frame, Imgproc.COLOR_GRAY2RGB);
 
         Scalar green = new Scalar(0, 255, 0);
         Scalar red = new Scalar(255, 0, 0);
         Scalar blue = new Scalar(0, 0, 255);
         Scalar yellow = new Scalar(255, 255, 0);
 
-        for (Line line : segmentsLeft) {
+        for (Line line : linesLeft) {
             Core.line(frame,
                     new Point(line.x1, line.y1),
                     new Point(line.x2, line.y2),
                     red);
         }
 
-        for (Line line : segmentsRight) {
+        for (Line line : linesRight) {
             Core.line(frame,
                     new Point(line.x1, line.y1),
                     new Point(line.x2, line.y2),
                     green);
         }
 
-        for (Line line : segmentsTop) {
+        for (Line line : linesTop) {
             Core.line(frame,
                     new Point(line.x1, line.y1),
                     new Point(line.x2, line.y2),
                     yellow);
         }
 
-        for (Line line : segmentsBottom) {
+        for (Line line : linesBottom) {
             Core.line(frame,
                     new Point(line.x1, line.y1),
                     new Point(line.x2, line.y2),
                     blue);
         }
+
 
         return frame;
     }
@@ -253,16 +267,16 @@ class Recognizer {
         private int mask;
         private int origin;
         private Mat segmentsStack;
-        private List<Line> segments;
+        private List<Line> lines;
         private short[] segmentData = new short[4];
         private Segment[] segmentsBuffer = new Segment[MAX_LINES];
 
-        Hough(boolean transposed, int mask, int origin, Mat segmentsStack, List<Line> segments) {
+        Hough(boolean transposed, int mask, int origin, Mat segmentsStack, List<Line> lines) {
             this.transposed = transposed;
             this.mask = mask;
             this.origin = origin;
             this.segmentsStack = segmentsStack;
-            this.segments = segments;
+            this.lines = lines;
         }
 
         @Override
@@ -321,7 +335,7 @@ class Recognizer {
                 }
             }
 
-            segments.clear();
+            lines.clear();
 
             int selections = 0;
             nextbase:
@@ -341,13 +355,13 @@ class Recognizer {
 
             for (int i = 0 ; i < selections ; i++) {
                 Segment segment = segmentsBuffer[i];
-                segments.add(transposed
-                        ?new Line(segment.y1, segment.x1, segment.y2, segment.x2, (segment.y2 + segment.y1)/2)
-                        :new Line(segment.x1, segment.y1, segment.x2, segment.y2, (segment.x2 + segment.x1)/2)
+                lines.add(transposed
+                        ? new Line(segment.y1, segment.x1, segment.y2, segment.x2, segment.slope)
+                        : new Line(segment.x1, segment.y1, segment.x2, segment.y2, segment.slope)
                 );
             }
 
-            Collections.sort(segments, Line.M_COMPARATOR);
+            Collections.sort(lines, Line.MX_COMPARATOR);
         }
 
         private boolean closeEnough(Segment s1, Segment s2) {
@@ -405,12 +419,12 @@ class Recognizer {
         return new Point(x,y);
     }
 
-    static class Line{
+    static class Line {
 
-        final static Comparator<Line> M_COMPARATOR = new Comparator<Line>() {
+        final static Comparator<Line> MX_COMPARATOR = new Comparator<Line>() {
             @Override
             public int compare(Line line1, Line line2) {
-                double r = line1.m - line2.m;
+                double r = line1.mx - line2.mx;
                 if (r > 0) {
                     return 1;
                 } else if (r < 0) {
@@ -429,36 +443,131 @@ class Recognizer {
         final int dx;
         final int dy;
 
-        final int m;
+        final int mx;
+        final int my;
 
         final int cross;
 
-//        double tan;
-//        boolean horizontal;
+        final int slope;
 
-        Line(int x1, int y1, int x2, int y2, int m) {
+        Line(int x1, int y1, int x2, int y2, int slope) {
             this.x1 = x1;
             this.y1 = y1;
             this.x2 = x2;
             this.y2 = y2;
 
-            this.m = m;
+            this.mx = (x1 + x2)/2;
+            this.my = (y1 + y2)/2;
+            this.slope = slope;
 
-            dx = x1 - x2;
-            dy = y1 - y2;
-/*
-            mx = (x1 + x2) / 2;
-            my = (y1 + y2) / 2;
-        */
-            cross = x1 * y2 - x2 * y1;
-          /*
-            horizontal = Math.abs(dx) > Math.abs(dy);
-            if (horizontal) {
-                tan = dy / dx;
-            } else {
-                tan = dx / dy;
+            dx = x2 - x1;
+            dy = y2 - y1;
+            cross = x2 * y1 - x1 * y2;
+        }
+
+    }
+
+    class Rectangle {
+        public final Point r1;
+        public final Point r2;
+        public final Point r3;
+        public final Point r4;
+
+        Rectangle(Point r1, Point r2, Point r3, Point r4) {
+            this.r1 = r1;
+            this.r2 = r2;
+            this.r3 = r3;
+            this.r4 = r4;
+        }
+    }
+
+    private void extractRectangles() {
+        rectangles.clear();
+
+        int minRight = 0;
+        int minTop = 0;
+        int minBottom = 0;
+
+
+        rectanglesDone:
+        for (int leftIndex = 0 ; leftIndex < linesLeft.size() ; leftIndex++ ) {
+            Line left = linesLeft.get(leftIndex);
+            for (int rightIndex = minRight ; rightIndex < linesRight.size() ; rightIndex++ ) {
+                Line right = linesRight.get(rightIndex);
+                if (left.mx + minX > right.mx) {
+                    minRight++;
+                    if (minRight == linesRight.size()) {
+                        break rectanglesDone;
+                    }
+                    continue;
+                }
+                if (left.mx + maxX < right.mx) {
+                    break;
+                }
+                int slopeDiffX = left.slope - right.slope;
+                if (slopeDiffX > RECT_SLOPE_BOUND || slopeDiffX < -RECT_SLOPE_BOUND) {
+                    continue;
+                }
+
+                for (int topIndex = minTop ; topIndex < linesTop.size() ; topIndex++ ) {
+                    Line top = linesTop.get(topIndex);
+                    if (left.mx > top.mx) {
+                        minTop++;
+                        if (minTop == linesTop.size()) {
+                            break rectanglesDone;
+                        }
+                        continue;
+                    }
+                    if (right.mx < top.mx || top.my > right.my || top.my > left.my) {
+                        continue;
+                    }
+
+                    for (int bottomIndex = minBottom ; bottomIndex < linesBottom.size() ; bottomIndex++ ) {
+                        Line bottom = linesBottom.get(bottomIndex);
+                        if (left.mx > bottom.mx) {
+                            minBottom++;
+                            if (minBottom == linesBottom.size()) {
+                                break rectanglesDone;
+                            }
+                            continue;
+                        }
+                        if (right.mx < bottom.mx || bottom.my < right.my || bottom.my < left.my) {
+                            continue;
+                        }
+                        int slopeDiffY = top.slope - bottom.slope;
+                        if (slopeDiffY > RECT_SLOPE_BOUND || slopeDiffY < -RECT_SLOPE_BOUND) {
+                            continue;
+                        }
+
+                        int height = bottom.my - top.my;
+                        if (height < minY || height > maxY) {
+                            continue;
+                        }
+                        int width = right.mx - left.mx;
+                        double aspect = ((double)height)/width;
+                        if (aspect < RECT_MIN_ASPECT || aspect > RECT_MAX_ASPECT) {
+                            continue;
+                        }
+
+                        if (height * RECT_MIN_LINE_LENGTH_PERCENT > left.dy * 100 || height * RECT_MIN_LINE_LENGTH_PERCENT > right.dy * 100
+                                || width * RECT_MIN_LINE_LENGTH_PERCENT > top.dx * 100 || width * RECT_MIN_LINE_LENGTH_PERCENT > bottom.dx * 100) {
+                            continue;
+                        }
+
+
+                        Point p1 = intersect(left, top);
+                        Point p2 = intersect(right, top);
+                        Point p3 = intersect(right, bottom);
+                        Point p4 = intersect(left, bottom);
+
+                        MatOfPoint rect = new MatOfPoint(p1, p2, p3, p4);
+                        rectangles.add(rect);
+                        if (rectangles.size() >= MAX_RECTANGLES) {
+                            return;
+                        }
+                    }
+                }
             }
-            */
         }
 
     }

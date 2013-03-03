@@ -17,9 +17,9 @@ class Recognizer {
 
     private static final int MAX_LINES = 1000;
 
-    private static final int MIN_SLOPE = -11;
+    private static final int MIN_SLOPE = -12;
     private static final int MAX_SLOPE = 12;
-    private static final int MAX_GAP = 5;
+    private static final int MAX_GAP = 4;
     private static final int MIN_LENGTH = 70;
 
     private static final int MAX_BASE_GAP = 2;
@@ -50,10 +50,10 @@ class Recognizer {
     private Mat segmentsStackTop;
     private Mat segmentsStackBottom;
 
-    private List<Segment> segmentsLeft = new ArrayList<Segment>(MAX_LINES);
-    private List<Segment> segmentsRight = new ArrayList<Segment>(MAX_LINES);
-    private List<Segment> segmentsTop = new ArrayList<Segment>(MAX_LINES);
-    private List<Segment> segmentsBottom = new ArrayList<Segment>(MAX_LINES);
+    private List<Line> segmentsLeft = new ArrayList<Line>(MAX_LINES);
+    private List<Line> segmentsRight = new ArrayList<Line>(MAX_LINES);
+    private List<Line> segmentsTop = new ArrayList<Line>(MAX_LINES);
+    private List<Line> segmentsBottom = new ArrayList<Line>(MAX_LINES);
 
     private Hough houghLeft;
     private Hough houghRight;
@@ -105,10 +105,10 @@ class Recognizer {
         segmentsStackTop = new Mat(1, MAX_LINES, CvType.CV_16SC4);
         segmentsStackBottom = new Mat(1, MAX_LINES, CvType.CV_16SC4);
 
-        houghLeft = new Hough(sobel, MASK_LEFT, yOrigin, segmentsStackLeft, segmentsLeft);
-        houghRight = new Hough(sobel, MASK_RIGHT, yOrigin, segmentsStackRight, segmentsRight);
-        houghTop = new Hough(sobelTransposed, MASK_TOP, xOrigin, segmentsStackTop, segmentsTop);
-        houghBottom = new Hough(sobelTransposed, MASK_BOTTOM, xOrigin, segmentsStackBottom, segmentsBottom);
+        houghLeft = new Hough(false, MASK_LEFT, yOrigin, segmentsStackLeft, segmentsLeft);
+        houghRight = new Hough(false, MASK_RIGHT, yOrigin, segmentsStackRight, segmentsRight);
+        houghTop = new Hough(true, MASK_TOP, xOrigin, segmentsStackTop, segmentsTop);
+        houghBottom = new Hough(true, MASK_BOTTOM, xOrigin, segmentsStackBottom, segmentsBottom);
 
 //        result = new Mat(height, width, CvType.CV_8UC4);
 
@@ -209,6 +209,7 @@ class Recognizer {
 
         Log.e("rftg", "Hough: " + (System.currentTimeMillis() - time));
 
+
         Imgproc.cvtColor(sobel, frame, Imgproc.COLOR_GRAY2RGB);
 
         Scalar green = new Scalar(0, 255, 0);
@@ -216,31 +217,31 @@ class Recognizer {
         Scalar blue = new Scalar(0, 0, 255);
         Scalar yellow = new Scalar(255, 255, 0);
 
-        for (Segment segment : segmentsLeft) {
+        for (Line line : segmentsLeft) {
             Core.line(frame,
-                    new Point(segment.x1, segment.y1),
-                    new Point(segment.x2, segment.y2),
+                    new Point(line.x1, line.y1),
+                    new Point(line.x2, line.y2),
                     red);
         }
 
-        for (Segment segment : segmentsRight) {
+        for (Line line : segmentsRight) {
             Core.line(frame,
-                    new Point(segment.x1, segment.y1),
-                    new Point(segment.x2, segment.y2),
+                    new Point(line.x1, line.y1),
+                    new Point(line.x2, line.y2),
                     green);
         }
 
-        for (Segment segment : segmentsTop) {
+        for (Line line : segmentsTop) {
             Core.line(frame,
-                    new Point(segment.y1, segment.x1),
-                    new Point(segment.y2, segment.x2),
+                    new Point(line.x1, line.y1),
+                    new Point(line.x2, line.y2),
                     yellow);
         }
 
-        for (Segment segment : segmentsBottom) {
+        for (Line line : segmentsBottom) {
             Core.line(frame,
-                    new Point(segment.y1, segment.x1),
-                    new Point(segment.y2, segment.x2),
+                    new Point(line.x1, line.y1),
+                    new Point(line.x2, line.y2),
                     blue);
         }
 
@@ -248,16 +249,16 @@ class Recognizer {
     }
 
     class Hough implements Runnable {
-        private Mat image;
+        private boolean transposed;
         private int mask;
         private int origin;
         private Mat segmentsStack;
-        private List<Segment> segments;
+        private List<Line> segments;
         private short[] segmentData = new short[4];
         private Segment[] segmentsBuffer = new Segment[MAX_LINES];
 
-        Hough(Mat image, int mask, int origin, Mat segmentsStack, List<Segment> segments) {
-            this.image = image;
+        Hough(boolean transposed, int mask, int origin, Mat segmentsStack, List<Line> segments) {
+            this.transposed = transposed;
             this.mask = mask;
             this.origin = origin;
             this.segmentsStack = segmentsStack;
@@ -267,7 +268,7 @@ class Recognizer {
         @Override
         public void run() {
 
-            int segmentCount = main.customNativeTools.houghVertical(image, mask, origin, MIN_SLOPE, MAX_SLOPE, MAX_GAP, MIN_LENGTH, segmentsStack);
+            int segmentCount = main.customNativeTools.houghVertical(transposed?sobelTransposed:sobel, mask, origin, MIN_SLOPE, MAX_SLOPE, MAX_GAP, MIN_LENGTH, segmentsStack);
 
             for (int i = 0 ; i < segmentCount ; i++) {
                 segmentsStack.get(0, i, segmentData);
@@ -279,7 +280,7 @@ class Recognizer {
 
         private void group(int size) {
 
-            int g = 0;
+            int groups = 0;
 
             for (int i = 0 ; i < size ; i++) {
                 Segment base = segmentsBuffer[i];
@@ -316,27 +317,37 @@ class Recognizer {
                             length = l;
                         }
                     }
-                    segmentsBuffer[g++] = new Segment(origin, y1, y2, (xbaseMin + xbaseMax)/2, slope, length);
+                    segmentsBuffer[groups++] = new Segment(origin, y1, y2, (xbaseMin + xbaseMax)/2, slope, length);
                 }
             }
 
             segments.clear();
 
+            int selections = 0;
             nextbase:
-            for (int i = 0 ; i < g ; i++) {
+            for (int i = 0 ; i < groups ; i++) {
                 Segment segment = segmentsBuffer[i];
-                for (int j = 0 ; j < segments.size() ; j++) {
-                    Segment base = segments.get(j);
+                for (int j = 0 ; j < selections ; j++) {
+                    Segment base = segmentsBuffer[j];
                     if (closeEnough(base, segment)) {
                         if (segment.length > base.length) {
-                            segments.set(j, segment);
+                            segmentsBuffer[j] = segment;
                         }
                         continue nextbase;
                     }
                 }
-                segments.add(segment);
+                segmentsBuffer[selections++] = segment;
             }
 
+            for (int i = 0 ; i < selections ; i++) {
+                Segment segment = segmentsBuffer[i];
+                segments.add(transposed
+                        ?new Line(segment.y1, segment.x1, segment.y2, segment.x2, (segment.y2 + segment.y1)/2)
+                        :new Line(segment.x1, segment.y1, segment.x2, segment.y2, (segment.x2 + segment.x1)/2)
+                );
+            }
+
+            Collections.sort(segments, Line.M_COMPARATOR);
         }
 
         private boolean closeEnough(Segment s1, Segment s2) {
@@ -396,10 +407,10 @@ class Recognizer {
 
     static class Line{
 
-        final static Comparator<Line> MX_COMPARATOR = new Comparator<Line>() {
+        final static Comparator<Line> M_COMPARATOR = new Comparator<Line>() {
             @Override
             public int compare(Line line1, Line line2) {
-                double r = line1.mx - line2.mx;
+                double r = line1.m - line2.m;
                 if (r > 0) {
                     return 1;
                 } else if (r < 0) {
@@ -410,42 +421,44 @@ class Recognizer {
             }
         };
 
-        double x1;
-        double y1;
-        double x2;
-        double y2;
+        final int x1;
+        final int y1;
+        final int x2;
+        final int y2;
 
-        double dx;
-        double dy;
+        final int dx;
+        final int dy;
 
-        double mx;
-        double my;
+        final int m;
 
-        double cross;
+        final int cross;
 
-        double tan;
-        boolean horizontal;
+//        double tan;
+//        boolean horizontal;
 
-        Line(double[] points) {
-            x1 = points[0];
-            y1 = points[1];
-            x2 = points[2];
-            y2 = points[3];
+        Line(int x1, int y1, int x2, int y2, int m) {
+            this.x1 = x1;
+            this.y1 = y1;
+            this.x2 = x2;
+            this.y2 = y2;
+
+            this.m = m;
 
             dx = x1 - x2;
             dy = y1 - y2;
-
+/*
             mx = (x1 + x2) / 2;
             my = (y1 + y2) / 2;
-
+        */
             cross = x1 * y2 - x2 * y1;
-
+          /*
             horizontal = Math.abs(dx) > Math.abs(dy);
             if (horizontal) {
                 tan = dy / dx;
             } else {
                 tan = dx / dy;
             }
+            */
         }
 
     }

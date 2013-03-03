@@ -23,7 +23,8 @@ class Recognizer {
     private static final int MIN_LENGTH = 70;
 
     private static final int MAX_BASE_GAP = 2;
-    private static final int MAX_BASE_DISTANCE = 5;
+    private static final int MAX_BASE_DISTANCE = 10;
+    private static final int LEAST_BASE_DISTANCE = 20;
 
     private static double MIN_RATIO = (7./5.)/1.2;
     private static double MAX_RATIO = (7./5.)*1.2;
@@ -137,15 +138,24 @@ class Recognizer {
         final int y2;
         final int xbase;
         final int slope;
+        final int length;
+        final int original;
 
-        Segment(int origin, int y1, int y2, int xbase, int slope) {
+        Segment(int origin, int y1, int y2, int xbase, int slope, int length) {
             this.y1 = y1;
             this.y2 = y2;
             this.xbase = xbase;
             this.slope = slope;
 
-            x1 = xbase + slope * (y1 - origin)/64;
-            x2 = xbase + slope * (y2 - origin)/64;
+            this.original = origin;
+            this.length = length;
+
+            x1 = calcX(y1);
+            x2 = calcX(y2);
+        }
+
+        int calcX(int y) {
+            return xbase + slope * (y - original)/64;
         }
     }
 
@@ -261,14 +271,15 @@ class Recognizer {
 
             for (int i = 0 ; i < segmentCount ; i++) {
                 segmentsStack.get(0, i, segmentData);
-                segmentsBuffer[i] = new Segment(origin, segmentData[0], segmentData[1], segmentData[2], segmentData[3]);
+                segmentsBuffer[i] = new Segment(origin, segmentData[0], segmentData[1], segmentData[2], segmentData[3], 0);
             }
 
             group(segmentCount);
         }
 
         private void group(int size) {
-            segments.clear();
+
+            int g = 0;
 
             for (int i = 0 ; i < size ; i++) {
                 Segment base = segmentsBuffer[i];
@@ -305,9 +316,70 @@ class Recognizer {
                             length = l;
                         }
                     }
-                    segments.add(new Segment(origin, y1, y2, (xbaseMin + xbaseMax)/2, slope));
+                    segmentsBuffer[g++] = new Segment(origin, y1, y2, (xbaseMin + xbaseMax)/2, slope, length);
                 }
             }
+
+            segments.clear();
+
+            nextbase:
+            for (int i = 0 ; i < g ; i++) {
+                Segment segment = segmentsBuffer[i];
+                for (int j = 0 ; j < segments.size() ; j++) {
+                    Segment base = segments.get(j);
+                    if (closeEnough(base, segment)) {
+                        if (segment.length > base.length) {
+                            segments.set(j, segment);
+                        }
+                        continue nextbase;
+                    }
+                }
+                segments.add(segment);
+            }
+
+        }
+
+        private boolean closeEnough(Segment s1, Segment s2) {
+            int baseDist = s1.xbase - s2.xbase;
+            if (baseDist > LEAST_BASE_DISTANCE || baseDist < -LEAST_BASE_DISTANCE || s1.y1 > s2.y2 || s2.y1 > s1.y2) {
+                return false;
+            }
+
+            int a1;
+            int a2;
+            if (s1.y1 < s2.y1) {
+                a1 = s1.calcX(s2.y1);
+                a2 = s2.x1;
+            } else if (s1.y1 > s2.y1) {
+                a1 = s1.x1;
+                a2 = s2.calcX(s1.y1);
+            } else {
+                a1 = s1.x1;
+                a2 = s2.x1;
+            }
+            int a = a1 - a2;
+            if (a > MAX_BASE_DISTANCE || a < -MAX_BASE_DISTANCE) {
+                return false;
+            }
+
+            int b1;
+            int b2;
+            if (s1.y2 > s2.y2) {
+                b1 = s1.calcX(s2.y2);
+                b2 = s2.x2;
+            } else if (s1.y2 < s2.y2) {
+                b1 = s1.x2;
+                b2 = s2.calcX(s1.y2);
+            } else {
+                b1 = s1.x2;
+                b2 = s2.x2;
+            }
+            int b = b1 - b2;
+            if (b > MAX_BASE_DISTANCE || b < -MAX_BASE_DISTANCE) {
+                return false;
+            }
+
+            return true;
         }
 
     }

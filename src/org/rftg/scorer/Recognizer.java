@@ -41,8 +41,8 @@ class Recognizer {
 
     private static final int MASK_LEFT = 0x10;
     private static final int MASK_RIGHT = 0x20;
-    private static final int MASK_BOTTOM = 0x40;
-    private static final int MASK_TOP = 0x80;
+    private static final int MASK_TOP = 0x40;
+    private static final int MASK_BOTTOM = 0x80;
 
     final MainActivity main;
 
@@ -174,7 +174,7 @@ class Recognizer {
 
         /**/
         Mat sub = frame.submat(0,real.rows(),0,real.cols());
-        real.copyTo(sub);
+//        real.copyTo(sub);
         sub.release();
         /**/
 //        tempRects.clear();

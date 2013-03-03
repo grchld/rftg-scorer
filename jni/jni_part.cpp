@@ -186,9 +186,9 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
 
             uchar result;
             if (horizontal >= bound) {
-                result = 0x80;
-            } else if (horizontal <= -bound) {
                 result = 0x40;
+            } else if (horizontal <= -bound) {
+                result = 0x80;
             } else {
                 result = 0;
             }

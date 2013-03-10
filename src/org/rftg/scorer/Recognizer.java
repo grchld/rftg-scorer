@@ -7,8 +7,6 @@ import org.opencv.imgproc.Imgproc;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * @author gc
@@ -44,7 +42,7 @@ class Recognizer {
     private static final int MASK_TOP = 0x40;
     private static final int MASK_BOTTOM = 0x80;
 
-    final MainActivity main;
+    final RecognizerResources recognizerResources;
 
     private Mat real;
     private Mat rgb;
@@ -82,8 +80,8 @@ class Recognizer {
     private long frameTimer;
 
 
-    Recognizer(MainActivity main, int width, int height) {
-        this.main = main;
+    Recognizer(RecognizerResources recognizerResources, int width, int height) {
+        this.recognizerResources = recognizerResources;
 
         int xOrigin = width/2;
         int yOrigin = height/2;
@@ -91,7 +89,7 @@ class Recognizer {
         Mat tempReal;
         try {
 
-            tempReal = Utils.loadResource(main, R.drawable.real);
+            tempReal = Utils.loadResource(recognizerResources.resourceContext, R.drawable.real);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -124,7 +122,7 @@ class Recognizer {
 //        result = new Mat(height, width, CvType.CV_8UC4);
 
         for (int i = 0 ; i < MAX_RECTANGLES ; i++) {
-            selection[i] = new Mat(SamplesMatcher.SAMPLE_HEIGHT, SamplesMatcher.SAMPLE_WIDTH, CvType.CV_8UC3);
+            selection[i] = new Mat(CardPatterns.SAMPLE_HEIGHT, CardPatterns.SAMPLE_WIDTH, CvType.CV_8UC3);
         }
 
         maxX = width / 2;
@@ -201,33 +199,24 @@ class Recognizer {
         Imgproc.cvtColor(frame, gray, Imgproc.COLOR_RGB2GRAY);
         Log.e("rftg", "Convert color: " + (System.currentTimeMillis() - time));
         time = System.currentTimeMillis();
-        main.customNativeTools.sobel(gray, sobel, 100);
+        recognizerResources.customNativeTools.sobel(gray, sobel, 100);
 
         Log.e("rftg", "Sobel: " + (System.currentTimeMillis() - time));
 
         time = System.currentTimeMillis();
 
-        main.customNativeTools.transpose(sobel, sobelTransposed);
+        recognizerResources.customNativeTools.transpose(sobel, sobelTransposed);
 
         Log.e("rftg", "Transpose: " + (System.currentTimeMillis() - time));
 
         time = System.currentTimeMillis();
 
-        Future futureLeft = main.executorService.submit(houghLeft);
-        Future futureRight = main.executorService.submit(houghRight);
-        Future futureTop = main.executorService.submit(houghTop);
-        Future futureBottom = main.executorService.submit(houghBottom);
+        recognizerResources.executor.submit(houghLeft);
+        recognizerResources.executor.submit(houghRight);
+        recognizerResources.executor.submit(houghTop);
+        recognizerResources.executor.submit(houghBottom);
 
-        try {
-            futureLeft.get();
-            futureRight.get();
-            futureTop.get();
-            futureBottom.get();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } catch (ExecutionException e) {
-            throw new RuntimeException(e);
-        }
+        recognizerResources.executor.sync();
 
         Log.e("rftg", "Hough: " + (System.currentTimeMillis() - time));
 
@@ -237,30 +226,26 @@ class Recognizer {
 
         time = System.currentTimeMillis();
         int selectionCounter = 0;
-        List<Future> selectionFutures = new ArrayList<Future>(rectangles.size());
         for (MatOfPoint2f rect : rectangles) {
-            selectionFutures.add(main.executorService.submit(main.samplesMatcher.new SampleExtractor(frame, rect, selection[selectionCounter++])));
+            recognizerResources.executor.submit(new SampleExtractor(frame, rect, selection[selectionCounter++]));
         }
-        for (Future future : selectionFutures) {
-            try {
-                future.get();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            } catch (ExecutionException e) {
-                throw new RuntimeException(e);
-            }
-        }
+
+        recognizerResources.executor.sync();
         Log.e("rftg", "Scaling " + (System.currentTimeMillis() - time));
+
+
+
 
         Scalar rectColor = new Scalar(255, 255, 255);
 
+        /*
         for (int i = 0 ; i < selectionCounter ; i++) {
             Mat s = selection[i];
             Mat d = new Mat();
             Imgproc.resize(s, d, new Size(50, 70));
             d.copyTo(frame.submat(80*(i/10), d.rows() + 80*(i/10), 60*(i%10), d.cols()+ 60*(i%10)));
         }
-
+          */
         List<MatOfPoint> rectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
         for (MatOfPoint2f rect : rectangles) {
             rectanglesToDraw.add(new MatOfPoint(rect.toArray()));
@@ -331,7 +316,7 @@ class Recognizer {
         @Override
         public void run() {
 
-            int segmentCount = main.customNativeTools.houghVertical(transposed?sobelTransposed:sobel, mask, origin, MIN_SLOPE, MAX_SLOPE, MAX_GAP, MIN_LENGTH, segmentsStack);
+            int segmentCount = recognizerResources.customNativeTools.houghVertical(transposed?sobelTransposed:sobel, mask, origin, MIN_SLOPE, MAX_SLOPE, MAX_GAP, MIN_LENGTH, segmentsStack);
 
             for (int i = 0 ; i < segmentCount ; i++) {
                 segmentsStack.get(0, i, segmentData);

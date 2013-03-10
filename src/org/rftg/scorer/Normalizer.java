@@ -19,7 +19,7 @@ class Normalizer {
     public static final int HISTOGRAM_SIZE = 256;
     public static final double NORMALIZE_THRESHOLD = .05;
 
-    public void normalize(Mat image) {
+    public static void normalize(Mat image) {
 
         List<Mat> splits = new ArrayList<Mat>(3);
         Core.split(image, splits);

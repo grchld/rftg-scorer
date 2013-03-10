@@ -5,14 +5,12 @@ import org.opencv.android.Utils;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.Callable;
 
 /**
  * @author gc
  */
-class SamplesMatcher {
+class CardPatterns {
 
     public final static int ORIGINAL_SAMPLE_HEIGHT = 520;
     public final static int ORIGINAL_SAMPLE_WIDTH = 372;
@@ -24,10 +22,9 @@ class SamplesMatcher {
     public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
     public final static MatOfPoint2f SAMPLE_RECT = new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(SAMPLE_WIDTH, SAMPLE_HEIGHT), new Point(0, SAMPLE_HEIGHT));
 
-    private Mat[] samples;
-    private Normalizer normalizer = new Normalizer();
+    private final Mat[] samples;
 
-    public SamplesMatcher(final MainActivity main, int maxCardNum) {
+    public CardPatterns(final RecognizerResources recognizerResources, int maxCardNum) {
 
         samples = new Mat[maxCardNum + 1];
         final Size size = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
@@ -50,14 +47,14 @@ class SamplesMatcher {
             public Void call() throws Exception {
                 Mat tempSample;
 
-                int id = main.getResources().getIdentifier("card_" + num, "drawable", "org.rftg.scorer");
+                int id = recognizerResources.resourceContext.getResources().getIdentifier("card_" + num, "drawable", "org.rftg.scorer");
 
-                tempSample = Utils.loadResource(main, id);
+                tempSample = Utils.loadResource(recognizerResources.resourceContext, id);
 
                 Mat scaled = new Mat(SAMPLE_WIDTH, SAMPLE_HEIGHT, CvType.CV_8UC3);
                 Imgproc.warpAffine(tempSample, scaled, scaleDown, size, Imgproc.INTER_LINEAR);
 
-                normalizer.normalize(scaled);
+                Normalizer.normalize(scaled);
 
                 samples[num] = scaled;
                 tempSample.release();
@@ -67,17 +64,10 @@ class SamplesMatcher {
 
         }
 
-        List<Callable<Void>> tasks = new ArrayList<Callable<Void>>(maxCardNum + 1);
-
         for (int num = 0; num <= maxCardNum; num++) {
-            tasks.add(new Task(num));
+            recognizerResources.executor.submit(new Task(num));
         }
-
-        try {
-            main.executorService.invokeAll(tasks);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        recognizerResources.executor.sync();
 
         Log.i("rftg", "Parallel loading time: " + (System.currentTimeMillis() - time));
 
@@ -89,26 +79,6 @@ class SamplesMatcher {
             if (sample != null) {
                 sample.release();
             }
-        }
-    }
-
-    class SampleExtractor implements Runnable {
-        private Mat image;
-        private MatOfPoint2f rect;
-        private Mat destination;
-
-        SampleExtractor(Mat image, MatOfPoint2f rect, Mat destination) {
-            this.image = image;
-            this.rect = rect;
-            this.destination = destination;
-        }
-
-        @Override
-        public void run() {
-
-            final Mat scaleDown = Imgproc.getPerspectiveTransform(rect, SAMPLE_RECT);
-            Imgproc.warpPerspective(image, destination, scaleDown, SAMPLE_SIZE, Imgproc.INTER_LINEAR);
-            normalizer.normalize(destination);
         }
     }
 

@@ -10,17 +10,13 @@ import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 public class MainActivity extends Activity implements CvCameraViewListener {
 
-    ExecutorService executorService;
-    SamplesMatcher samplesMatcher;
-    Recognizer recognizer;
-    CustomNativeTools customNativeTools;
-
     private CameraBridgeViewBase openCvCameraView;
+
+    private volatile RecognizerResources recognizerResources;
+
+    private volatile Recognizer recognizer;
 
     private BaseLoaderCallback loaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -28,9 +24,9 @@ public class MainActivity extends Activity implements CvCameraViewListener {
             switch (status) {
                 case LoaderCallbackInterface.SUCCESS:
 
-                    customNativeTools = new CustomNativeTools();
-                    samplesMatcher = new SamplesMatcher(MainActivity.this, Card.GameType.EXP1.maxCardNum);
-
+                    if (recognizerResources == null) {
+                        recognizerResources = new RecognizerResources(MainActivity.this);
+                    }
 
                     openCvCameraView.enableView();
                     break;
@@ -43,8 +39,6 @@ public class MainActivity extends Activity implements CvCameraViewListener {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 
@@ -71,17 +65,16 @@ public class MainActivity extends Activity implements CvCameraViewListener {
     public void onDestroy() {
         if (openCvCameraView != null)
             openCvCameraView.disableView();
-        if (samplesMatcher != null) {
-            samplesMatcher.release();
-            samplesMatcher = null;
+        if (recognizerResources != null) {
+            recognizerResources.release();
+            recognizerResources = null;
         }
-        executorService.shutdown();
         super.onDestroy();
     }
 
     @Override
     public synchronized void onCameraViewStarted(int width, int height) {
-        recognizer = new Recognizer(this, width, height);
+        recognizer = new Recognizer(recognizerResources, width, height);
     }
 
     @Override

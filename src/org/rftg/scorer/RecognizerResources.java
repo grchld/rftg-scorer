@@ -11,12 +11,13 @@ class RecognizerResources {
     final Executor executor;
     final CardPatterns cardPatterns;
     final CustomNativeTools customNativeTools;
+    final int maxCardNum = Card.GameType.EXP1.maxCardNum;
 
     RecognizerResources(Context resourceContext) {
         this.resourceContext = resourceContext;
         this.executor = new Executor();
         this.customNativeTools = new CustomNativeTools();
-        cardPatterns = new CardPatterns(this, Card.GameType.EXP1.maxCardNum);
+        cardPatterns = new CardPatterns(this);
     }
 
     public void release() {

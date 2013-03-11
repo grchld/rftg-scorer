@@ -24,9 +24,9 @@ class CardPatterns {
 
     private final Mat[] samples;
 
-    public CardPatterns(final RecognizerResources recognizerResources, int maxCardNum) {
+    public CardPatterns(final RecognizerResources recognizerResources) {
 
-        samples = new Mat[maxCardNum + 1];
+        samples = new Mat[recognizerResources.maxCardNum + 1];
         final Size size = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
 
         final Mat scaleDown = Imgproc.getAffineTransform(
@@ -64,7 +64,7 @@ class CardPatterns {
 
         }
 
-        for (int num = 0; num <= maxCardNum; num++) {
+        for (int num = 0; num <= recognizerResources.maxCardNum; num++) {
             recognizerResources.executor.submit(new Task(num));
         }
         recognizerResources.executor.sync();
@@ -79,6 +79,25 @@ class CardPatterns {
             if (sample != null) {
                 sample.release();
             }
+        }
+    }
+
+    public void invokeAnalyse(Mat selection, int selectionNumber, CardMatch[] cardMatches) {
+
+
+
+    }
+
+    public static class CardMatch {
+
+        public final int selectionNumber;
+        public final int cardNumber;
+        public final int score;
+
+        public CardMatch(int selectionNumber, int cardNumber, int score) {
+            this.selectionNumber = selectionNumber;
+            this.cardNumber = cardNumber;
+            this.score = score;
         }
     }
 

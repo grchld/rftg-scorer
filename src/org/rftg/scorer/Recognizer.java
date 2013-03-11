@@ -8,6 +8,8 @@ import org.opencv.imgproc.Imgproc;
 import java.io.IOException;
 import java.util.*;
 
+import static org.rftg.scorer.CardPatterns.CardMatch;
+
 /**
  * @author gc
  */
@@ -65,6 +67,8 @@ class Recognizer {
 
     private Mat[] selection = new Mat[MAX_RECTANGLES];
 
+    private CardMatch[] cardMatches;
+
     private Hough houghLeft;
     private Hough houghRight;
     private Hough houghTop;
@@ -75,13 +79,13 @@ class Recognizer {
     private double maxX;
     private double maxY;
 
-    private TreeMap<Double, MatOfPoint> tempRects = new TreeMap<Double, MatOfPoint>();
-
     private long frameTimer;
 
 
     Recognizer(RecognizerResources recognizerResources, int width, int height) {
         this.recognizerResources = recognizerResources;
+
+        cardMatches = new CardMatch[recognizerResources.maxCardNum + 1];
 
         int xOrigin = width/2;
         int yOrigin = height/2;
@@ -191,8 +195,6 @@ class Recognizer {
         real.copyTo(sub);
         sub.release();
         /**/
-//        tempRects.clear();
-        /**/
 
         long time;
         time = System.currentTimeMillis();
@@ -233,7 +235,14 @@ class Recognizer {
         recognizerResources.executor.sync();
         Log.e("rftg", "Scaling " + (System.currentTimeMillis() - time));
 
+        Arrays.fill(cardMatches, null);
 
+        time = System.currentTimeMillis();
+        for (int i = 0 ; i < selectionCounter ; i++) {
+            recognizerResources.cardPatterns.invokeAnalyse(selection[i], i, cardMatches);
+        }
+        recognizerResources.executor.sync();
+        Log.e("rftg", "Matching " + (System.currentTimeMillis() - time));
 
 
         Scalar rectColor = new Scalar(255, 255, 255);

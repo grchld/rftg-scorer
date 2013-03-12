@@ -8,8 +8,6 @@ import org.opencv.imgproc.Imgproc;
 import java.io.IOException;
 import java.util.*;
 
-import static org.rftg.scorer.CardPatterns.CardMatch;
-
 /**
  * @author gc
  */
@@ -58,12 +56,14 @@ class Recognizer {
     private Mat segmentsStackTop;
     private Mat segmentsStackBottom;
 
-    private List<Line> linesLeft = new ArrayList<Line>(MAX_LINES);
-    private List<Line> linesRight = new ArrayList<Line>(MAX_LINES);
-    private List<Line> linesTop = new ArrayList<Line>(MAX_LINES);
-    private List<Line> linesBottom = new ArrayList<Line>(MAX_LINES);
+    private List<Line> linesLeft = new ArrayList<Line>(/*MAX_LINES*/);
+    private List<Line> linesRight = new ArrayList<Line>(/*MAX_LINES*/);
+    private List<Line> linesTop = new ArrayList<Line>(/*MAX_LINES*/);
+    private List<Line> linesBottom = new ArrayList<Line>(/*MAX_LINES*/);
 
-    private List<MatOfPoint2f> rectangles = new ArrayList<MatOfPoint2f>(MAX_RECTANGLES);
+    private List<Point[]> rectangles = new ArrayList<Point[]>(/*MAX_RECTANGLES*/);
+
+    private List<CardMatch> matches = new ArrayList<CardMatch>();
 
     private Mat[] selection = new Mat[MAX_RECTANGLES];
 
@@ -234,7 +234,7 @@ class Recognizer {
 
         time = System.currentTimeMillis();
         int selectionCounter = 0;
-        for (MatOfPoint2f rect : rectangles) {
+        for (Point[] rect : rectangles) {
             recognizerResources.executor.submit(new SampleExtractor(frame, rect, selection[selectionCounter++]));
         }
 
@@ -245,34 +245,38 @@ class Recognizer {
 
         time = System.currentTimeMillis();
         for (int i = 0 ; i < selectionCounter ; i++) {
-            recognizerResources.cardPatterns.invokeAnalyse(selection[i], i, cardMatches);
+            recognizerResources.cardPatterns.invokeAnalyse(selection[i], cardMatches, rectangles.get(i));
         }
         recognizerResources.executor.sync();
         Log.e("rftg", "Matching " + (System.currentTimeMillis() - time));
 
-
-        Scalar rectColor = new Scalar(255, 255, 255);
-/*
-        for (int i = 0 ; i < selectionCounter ; i++) {
-            draw(frame, selection[i], 130*(i/10), 130*(i%10));
-        }
-  */
-//        draw(frame, recognizerResources.cardPatterns.samples[10], 300, 700);
-
-
-        List<MatOfPoint> rectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
-
+        matches.clear();
         for (int cardNumber = 0 ; cardNumber <= recognizerResources.maxCardNum ; cardNumber ++ ) {
             CardMatch match = cardMatches[cardNumber];
             if (match != null) {
+                matches.add(match);
+            }
+        }
 
-//                draw(frame, recognizerResources.cardPatterns.samples[cardNumber], 500, 700);
+        Collections.sort(matches, CardMatch.MATCH_SCORE_COMPARATOR);
+
+/*
+        time = System.currentTimeMillis();
 
 
-                MatOfPoint2f rect = rectangles.get(match.selectionNumber);
-                Point[] points = rect.toArray();
+
+        Log.e("rftg", "Intersect " + (System.currentTimeMillis() - time));
+ */
+
+        Scalar rectColor = new Scalar(255, 255, 255);
+
+        List<MatOfPoint> rectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
+
+        for (CardMatch match : matches) {
+            if (match != null) {
+                Point[] points = match.rect;
                 rectanglesToDraw.add(new MatOfPoint(points));
-                Core.putText(frame, ""+cardNumber + " - " + match.score, new Point(points[0].x+40,points[0].y+40), 1 ,1, rectColor);
+                Core.putText(frame, ""+match.cardNumber + " - " + match.score, new Point(points[0].x+50,points[0].y+50), 1, 1, rectColor);
             }
         }
 
@@ -544,20 +548,6 @@ class Recognizer {
         }
     }
 
-    class Rectangle {
-        public final Point r1;
-        public final Point r2;
-        public final Point r3;
-        public final Point r4;
-
-        Rectangle(Point r1, Point r2, Point r3, Point r4) {
-            this.r1 = r1;
-            this.r2 = r2;
-            this.r3 = r3;
-            this.r4 = r4;
-        }
-    }
-
     private void extractRectangles() {
         rectangles.clear();
 
@@ -637,8 +627,7 @@ class Recognizer {
                         Point p3 = intersect(right, bottom);
                         Point p4 = intersect(left, bottom);
 
-                        MatOfPoint2f rect = new MatOfPoint2f(p1, p2, p3, p4);
-                        rectangles.add(rect);
+                        rectangles.add(new Point[]{p1, p2, p3, p4});
                         if (rectangles.size() >= MAX_RECTANGLES) {
                             return;
                         }

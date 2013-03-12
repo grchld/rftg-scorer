@@ -22,7 +22,7 @@ class CardPatterns {
     public final static int SAMPLE_HEIGHT = 64;
     public final static int SAMPLE_WIDTH = 64;
 
-    public final static int MATCHER_MINIMAL_BOUND = 4000;
+    public final static int MATCHER_MINIMAL_BOUND = 1000;
 
 
     public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
@@ -96,7 +96,7 @@ class CardPatterns {
         }
     }
 
-    public void invokeAnalyse(final Mat selection, final int selectionNumber, final CardMatch[] cardMatches) {
+    public void invokeAnalyse(final Mat selection, final CardMatch[] cardMatches, final Point[] rect) {
         recognizerResources.executor.submit(new Runnable() {
             @Override
             public void run() {
@@ -127,7 +127,7 @@ class CardPatterns {
                     synchronized (cardMatches) {
                         CardMatch match = cardMatches[bestCardNumber];
                         if (match == null || match.score < bestScore) {
-                            cardMatches[bestCardNumber] = new CardMatch(selectionNumber, bestCardNumber, bestScore);
+                            cardMatches[bestCardNumber] = new CardMatch(bestCardNumber, bestScore, rect);
                         }
                     }
                 }
@@ -135,19 +135,6 @@ class CardPatterns {
             }
 
         });
-    }
-
-    public static class CardMatch {
-
-        public final int selectionNumber;
-        public final int cardNumber;
-        public final int score;
-
-        public CardMatch(int selectionNumber, int cardNumber, int score) {
-            this.selectionNumber = selectionNumber;
-            this.cardNumber = cardNumber;
-            this.score = score;
-        }
     }
 
 }

@@ -22,7 +22,7 @@ class CardPatterns {
     public final static int SAMPLE_HEIGHT = 64;
     public final static int SAMPLE_WIDTH = 64;
 
-    public final static int MATCHER_MINIMAL_BOUND = 1000;
+    public final static int MATCHER_MINIMAL_BOUND = 4000;
 
 
     public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);

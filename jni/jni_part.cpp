@@ -12,8 +12,7 @@ using namespace std;
 using namespace cv;
 
 extern "C" {
-JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*, jobject, jlong addrImage, jdouble lowerPercent, jdouble upperPercent);
-
+    
 JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*, jobject, jlong addrImage, jdouble lowerPercent, jdouble upperPercent)
 {
     Mat& image = *(Mat*)addrImage;
@@ -59,8 +58,6 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*
 
     return hist[channels*256-1];
 }
-
-JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr, jint bound);
 
 JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr, jint bound)
 {
@@ -233,8 +230,6 @@ int segmentCompare(void const *a1, void const* a2) {
 }
 
 jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint minSlope, jint maxSlope, jint maxGap, jint minLength, jlong segmentsAddr);
-
-JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jlong imageAddr, jint bordermask, jint origin, jint minSlope, jint maxSlope, jint maxGap, jint minLength, jlong segmentsAddr);
 
 JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jlong imageAddr, jint bordermask, jint origin, jint minSlope, jint maxSlope, jint maxGap, jint minLength, jlong segmentsAddr) {
     jint segmentNumber = houghVerticalUnsorted(imageAddr, bordermask, origin, minSlope, maxSlope, maxGap, minLength, segmentsAddr);
@@ -524,6 +519,52 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
 
     #endif
 
+}
+
+JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, jobject, jlong selectionAddr, jlong patternAddr)
+{
+    Mat& selection = *(Mat*)selectionAddr;
+    Mat& pattern = *(Mat*)patternAddr;
+
+    int cols = selection.cols;
+    int rows = selection.rows;
+
+    CV_Assert(selection.depth() == CV_8U);
+    CV_Assert(pattern.depth() == CV_8U);
+    CV_Assert(pattern.rows == rows);
+    CV_Assert(pattern.cols == cols);
+    CV_Assert(selection.channels() == 3);
+    CV_Assert(pattern.channels() == 3);
+
+    CV_Assert(selection.ptr<uchar>(1) - selection.ptr<uchar>(0) == 3*cols);
+
+    jint score = 0;
+
+    uchar* s = selection.ptr<uchar>(0);
+    uchar* p = pattern.ptr<uchar>(0);
+
+    for (int i = cols*rows ; i > 0 ; i--) {
+        int a1 = (int)((*(s++))>>1) - (int)((*(p++))>>1);
+        if (a1 < 0) {
+            a1 = -a1;
+        }
+        int a2 = (int)((*(s++))>>1) - (int)((*(p++))>>1);
+        if (a2 < 0) {
+            a2 = -a2;
+        }
+        int a3 = (int)((*(s++))>>1) - (int)((*(p++))>>1);
+        if (a3 < 0) {
+            a3 = -a3;
+        }
+        int a = a1 + a2 + a3;
+        if (a <= 40) {
+            score += 2;
+        } else if (a <= 80) {
+            score ++;
+        }
+    }
+    
+    return score;
 }
 
 }

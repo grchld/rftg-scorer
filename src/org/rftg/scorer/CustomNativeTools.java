@@ -99,6 +99,8 @@ class CustomNativeTools {
     private native void transpose(long src, long dst);
 
     public int compare(Mat selection, Mat pattern) {
+
+        /*
         byte[] a = new byte[3];
         byte[] b = new byte[3];
 
@@ -109,9 +111,9 @@ class CustomNativeTools {
                 pattern.get(r, c, a);
                 selection.get(r, c, b);
                 int d = dist(a[0], b[0]) + dist(a[1], b[1]) + dist(a[2], b[2]);
-                if (d < 40) {
+                if (d < 60) {
                     score++;
-                    if (d < 20) {
+                    if (d < 30) {
                         score++;
                     }
                 }
@@ -119,7 +121,11 @@ class CustomNativeTools {
         }
 
         return score;
+        */
+        return compare(selection.getNativeObjAddr(), pattern.getNativeObjAddr());
     }
+
+    private native int compare(long selection, long pattern);
 
     private static int dist(byte a, byte b) {
         int ai = a;

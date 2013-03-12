@@ -226,6 +226,12 @@ class Recognizer {
         extractRectangles();
         Log.e("rftg", "Extraction: " + (System.currentTimeMillis() - time));
 
+        ////
+//        MatOfPoint2f r = rectangles.get(0);
+//        rectangles.clear();
+//        rectangles.add(r);
+        ////
+
         time = System.currentTimeMillis();
         int selectionCounter = 0;
         for (MatOfPoint2f rect : rectangles) {
@@ -246,19 +252,36 @@ class Recognizer {
 
 
         Scalar rectColor = new Scalar(255, 255, 255);
+/*
+        for (int i = 0 ; i < selectionCounter ; i++) {
+            draw(frame, selection[i], 130*(i/10), 130*(i%10));
+        }
+  */
+//        draw(frame, recognizerResources.cardPatterns.samples[10], 300, 700);
+
+
+        List<MatOfPoint> rectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
+
+        for (int cardNumber = 0 ; cardNumber <= recognizerResources.maxCardNum ; cardNumber ++ ) {
+            CardMatch match = cardMatches[cardNumber];
+            if (match != null) {
+
+//                draw(frame, recognizerResources.cardPatterns.samples[cardNumber], 500, 700);
+
+
+                MatOfPoint2f rect = rectangles.get(match.selectionNumber);
+                Point[] points = rect.toArray();
+                rectanglesToDraw.add(new MatOfPoint(points));
+                Core.putText(frame, ""+cardNumber + " - " + match.score, new Point(points[0].x+40,points[0].y+40), 1 ,1, rectColor);
+            }
+        }
 
         /*
-        for (int i = 0 ; i < selectionCounter ; i++) {
-            Mat s = selection[i];
-            Mat d = new Mat();
-            Imgproc.resize(s, d, new Size(50, 70));
-            d.copyTo(frame.submat(80*(i/10), d.rows() + 80*(i/10), 60*(i%10), d.cols()+ 60*(i%10)));
-        }
-          */
-        List<MatOfPoint> rectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
         for (MatOfPoint2f rect : rectangles) {
             rectanglesToDraw.add(new MatOfPoint(rect.toArray()));
         }
+        */
+
         Core.polylines(frame, rectanglesToDraw, true, rectColor, 3);
 
         Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1 ,1, rectColor);
@@ -303,6 +326,13 @@ class Recognizer {
   */
 
         return frame;
+    }
+
+    private void draw(Mat frame, Mat image, int x, int y) {
+        Mat d = new Mat();
+        Imgproc.resize(image, d, new Size(128, 128));
+        d.copyTo(frame.submat(x, d.rows() + x, y, d.cols()+ y));
+        d.release();
     }
 
     class Hough implements Runnable {

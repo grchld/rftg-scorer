@@ -14,17 +14,27 @@ class CardPatterns {
 
     public final static int ORIGINAL_SAMPLE_HEIGHT = 520;
     public final static int ORIGINAL_SAMPLE_WIDTH = 372;
-    private final static int SIZE_MULTIPLIER = 2;
+//    private final static int SIZE_MULTIPLIER = 2;
 
-    public final static int SAMPLE_HEIGHT = 7 * SIZE_MULTIPLIER;
-    public final static int SAMPLE_WIDTH = 5 * SIZE_MULTIPLIER;
+//    public final static int SAMPLE_HEIGHT = 7 * SIZE_MULTIPLIER;
+//    public final static int SAMPLE_WIDTH = 5 * SIZE_MULTIPLIER;
+
+    public final static int SAMPLE_HEIGHT = 64;
+    public final static int SAMPLE_WIDTH = 64;
+
+    public final static int MATCHER_MINIMAL_BOUND = 1000;
+
 
     public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
     public final static MatOfPoint2f SAMPLE_RECT = new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(SAMPLE_WIDTH, SAMPLE_HEIGHT), new Point(0, SAMPLE_HEIGHT));
 
-    private final Mat[] samples;
+    /*private */final Mat[] samples;
+
+    private final RecognizerResources recognizerResources;
 
     public CardPatterns(final RecognizerResources recognizerResources) {
+
+        this.recognizerResources = recognizerResources;
 
         samples = new Mat[recognizerResources.maxCardNum + 1];
         final Size size = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
@@ -45,11 +55,15 @@ class CardPatterns {
 
             @Override
             public Void call() throws Exception {
-                Mat tempSample;
-
                 int id = recognizerResources.resourceContext.getResources().getIdentifier("card_" + num, "drawable", "org.rftg.scorer");
 
-                tempSample = Utils.loadResource(recognizerResources.resourceContext, id);
+                Mat tempSampleBGR = Utils.loadResource(recognizerResources.resourceContext, id);
+
+                Mat tempSample = new Mat();
+
+                Imgproc.cvtColor(tempSampleBGR, tempSample, Imgproc.COLOR_BGR2RGB);
+
+                tempSampleBGR.release();
 
                 Mat scaled = new Mat(SAMPLE_WIDTH, SAMPLE_HEIGHT, CvType.CV_8UC3);
                 Imgproc.warpAffine(tempSample, scaled, scaleDown, size, Imgproc.INTER_LINEAR);
@@ -82,10 +96,45 @@ class CardPatterns {
         }
     }
 
-    public void invokeAnalyse(Mat selection, int selectionNumber, CardMatch[] cardMatches) {
+    public void invokeAnalyse(final Mat selection, final int selectionNumber, final CardMatch[] cardMatches) {
+        recognizerResources.executor.submit(new Runnable() {
+            @Override
+            public void run() {
 
+                int bestCardNumber = 0;
+                int secondBestScore = 0;
+                int bestScore = 0;
 
+                for (int cardNumber = 0 ; cardNumber <= recognizerResources.maxCardNum ; cardNumber++) {
 
+                    Mat sample = samples[cardNumber];
+
+                    int score = recognizerResources.customNativeTools.compare(selection, sample);
+
+                    if (score > MATCHER_MINIMAL_BOUND) {
+                        if (bestScore < score) {
+                            secondBestScore = bestScore;
+                            bestScore = score;
+                            bestCardNumber = cardNumber;
+                        } else if (secondBestScore < score) {
+                            secondBestScore = score;
+                        }
+                    }
+
+                }
+
+                if (bestScore > MATCHER_MINIMAL_BOUND) {
+                    synchronized (cardMatches) {
+                        CardMatch match = cardMatches[bestCardNumber];
+                        if (match == null || match.score < bestScore) {
+                            cardMatches[bestCardNumber] = new CardMatch(selectionNumber, bestCardNumber, bestScore);
+                        }
+                    }
+                }
+
+            }
+
+        });
     }
 
     public static class CardMatch {

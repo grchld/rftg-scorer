@@ -17,7 +17,7 @@ import java.util.List;
 class Normalizer {
 
     public static final int HISTOGRAM_SIZE = 256;
-    public static final double NORMALIZE_THRESHOLD = .05;
+//    public static final double NORMALIZE_THRESHOLD = .05;
 
     public static void normalize(Mat image) {
 
@@ -31,6 +31,26 @@ class Normalizer {
 
             Imgproc.calcHist(Collections.singletonList(splits.get(channelNumber)), new MatOfInt(0), new Mat(), hist, new MatOfInt(HISTOGRAM_SIZE), new MatOfFloat(0, HISTOGRAM_SIZE));
 
+            double sum = 0;
+            double sq = 0;
+            for (int i = 0 ; i < HISTOGRAM_SIZE ; i++) {
+                double v = hist.get(i, 0)[0];
+                sum += v*(double)i;
+                sq += v*(double)i*(double)i;
+            }
+
+            sq /= image.cols()*image.rows();
+            sum /= image.cols()*image.rows();
+
+            double dispersion = (sq - sum*sum);
+            if (dispersion < 1) {
+                continue;
+            }
+            double alpha = Math.sqrt(70*70/dispersion);
+
+            double beta = 128. - alpha*sum;
+
+            /*
             double sum = 0;
             for (int i = 0 ; i < HISTOGRAM_SIZE ; i++) {
                 sum += hist.get(i, 0)[0];
@@ -51,10 +71,12 @@ class Normalizer {
                 max--;
                 sum -= hist.get(max, 0)[0];
             } while (sum > 0);
+            */
+
             hist.release();
 
             Mat m = new Mat();
-            splits.get(channelNumber).convertTo(m, -1, 255./(max-min), -255.*min/(max-min));
+            splits.get(channelNumber).convertTo(m, -1, alpha, beta);
             channels[channelNumber] = m;
         }
 

@@ -187,9 +187,11 @@ class Recognizer {
         frame = rgb;
 
         /**/
+        /*
         Mat sub = frame.submat(0,real.rows(),0,real.cols());
         real.copyTo(sub);
         sub.release();
+        */
         /**/
 
         long time;
@@ -223,9 +225,11 @@ class Recognizer {
         Log.e("rftg", "Extraction: " + (System.currentTimeMillis() - time));
 
         ////
-//        MatOfPoint2f r = rectangles.get(0);
-//        rectangles.clear();
-//        rectangles.add(r);
+/*
+        Point[] r = rectangles.get(2);
+        rectangles.clear();
+        rectangles.add(r);
+  */
         ////
 
         time = System.currentTimeMillis();
@@ -296,7 +300,19 @@ class Recognizer {
             if (match != null) {
                 Point[] points = match.rect;
                 rectanglesToDraw.add(new MatOfPoint(points));
-                Core.putText(frame, ""+match.cardNumber + " - " + match.score, new Point(points[0].x+50,points[0].y+50), 1, 1, rectColor);
+                Core.putText(frame, ""+match.cardNumber + " - " + match.score, new Point(points[0].x+50,points[0].y+150), 1, 1, rectColor);
+
+                /*
+                Mat bestSample = recognizerResources.cardPatterns.samples[match.cardNumber];
+                draw(frame, bestSample, 400, 500);
+
+                draw(frame, selection[0], 250, 500);
+
+                Mat report = new Mat(bestSample.rows(), bestSample.cols(), CvType.CV_8UC3);
+                recognizerResources.customNativeTools.compare(selection[0], bestSample, report);
+                draw(frame, report, 400, 650);
+                report.release();
+                                 */
             }
         }
 

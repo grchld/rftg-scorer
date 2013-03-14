@@ -12,7 +12,7 @@ using namespace std;
 using namespace cv;
 
 extern "C" {
-    
+
 JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*, jobject, jlong addrImage, jdouble lowerPercent, jdouble upperPercent)
 {
     Mat& image = *(Mat*)addrImage;
@@ -382,56 +382,56 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
                 "add r2, r2, r0\n\t"
                 "pld [r2]\n\t"
                 "vtrn.8 q0, q1\n\t"
-                
+
                 "vldmia r2, {q2}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q3}\n\t"
                 "add r2, r2, r0\n\t"
                 "pld [r2]\n\t"
                 "vtrn.8 q2, q3\n\t"
-                
+
                 "vldmia r2, {q4}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q5}\n\t"
                 "add r2, r2, r0\n\t"
                 "pld [r2]\n\t"
                 "vtrn.8 q4, q5\n\t"
-                
+
                 "vldmia r2, {q6}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q7}\n\t"
                 "add r2, r2, r0\n\t"
                 "pld [r2]\n\t"
                 "vtrn.8 q6, q7\n\t"
-                
+
                 "vldmia r2, {q8}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q9}\n\t"
                 "add r2, r2, r0\n\t"
                 "pld [r2]\n\t"
                 "vtrn.8 q8, q9\n\t"
-                
+
                 "vldmia r2, {q10}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q11}\n\t"
                 "add r2, r2, r0\n\t"
                 "pld [r2]\n\t"
                 "vtrn.8 q10, q11\n\t"
-                
+
                 "vldmia r2, {q12}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q13}\n\t"
                 "add r2, r2, r0\n\t"
                 "pld [r2]\n\t"
                 "vtrn.8 q12, q13\n\t"
-                
+
                 "vldmia r2, {q14}\n\t"
                 "add r2, r2, r0\n\t"
                 "vldmia r2, {q15}\n\t"
                 "vtrn.8 q14, q15\n\t"
 
                 "pld [r3]\n\t"
-                
+
                 "vtrn.32 q0, q4\n\t"
                 "vtrn.32 q1, q5\n\t"
                 "vtrn.32 q2, q6\n\t"
@@ -505,7 +505,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
                 : [S]"r" (s), [D]"r" (d), [SA]"r" (sa), [DA]"r" (da)
                 : "memory", "r0", "r1", "r2", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
             );
-            
+
         }
     }
 
@@ -548,6 +548,57 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
         if (a1 < 0) {
             a1 = -a1;
         }
+//        if (a1 > 13) continue;
+        int a2 = (int)((*(s++))>>1) - (int)((*(p++))>>1);
+        if (a2 < 0) {
+            a2 = -a2;
+        }
+//        if (a2 > 13) continue;
+        int a3 = (int)((*(s++))>>1) - (int)((*(p++))>>1);
+        if (a3 < 0) {
+            a3 = -a3;
+        }
+//        if (a3 > 13) continue;
+        int a = a1 + a2 + a3;
+        if (a <= 20) {
+            score += 3;
+        } else if (a <= 40) {
+            score += 2;
+//        } else if (a <= 60) {
+//            score += 1;
+        }
+    }
+
+    return score;
+}
+
+JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_compareWithReport(JNIEnv*, jobject, jlong selectionAddr, jlong patternAddr, jlong reportAddr)
+{
+    Mat& selection = *(Mat*)selectionAddr;
+    Mat& pattern = *(Mat*)patternAddr;
+    Mat& report = *(Mat*)reportAddr;
+
+    int cols = selection.cols;
+    int rows = selection.rows;
+
+    CV_Assert(selection.depth() == CV_8U);
+    CV_Assert(pattern.depth() == CV_8U);
+    CV_Assert(pattern.rows == rows);
+    CV_Assert(pattern.cols == cols);
+    CV_Assert(selection.channels() == 3);
+    CV_Assert(pattern.channels() == 3);
+
+    CV_Assert(selection.ptr<uchar>(1) - selection.ptr<uchar>(0) == 3*cols);
+
+    uchar* s = selection.ptr<uchar>(0);
+    uchar* p = pattern.ptr<uchar>(0);
+    uchar* r = report.ptr<uchar>(0);
+
+    for (int i = cols*rows ; i > 0 ; i--) {
+        int a1 = (int)((*(s++))>>1) - (int)((*(p++))>>1);
+        if (a1 < 0) {
+            a1 = -a1;
+        }
         int a2 = (int)((*(s++))>>1) - (int)((*(p++))>>1);
         if (a2 < 0) {
             a2 = -a2;
@@ -557,12 +608,28 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
             a3 = -a3;
         }
         int a = a1 + a2 + a3;
-        if (a <= 40) {
-            score ++;
+
+        if (a <= 20) {
+            *(r++) = 0;
+            *(r++) = 255;
+            *(r++) = 0;
+        } else if (a <= 40) {
+            *(r++) = 255;
+            *(r++) = 255;
+            *(r++) = 0;
+        } else if (a <= 60) {
+            *(r++) = 255;
+            *(r++) = 0;
+            *(r++) = 0;
+        } else {
+            *(r++) = 0;
+            *(r++) = 0;
+            *(r++) = 0;
         }
+
     }
-    
-    return score;
 }
+
+
 
 }

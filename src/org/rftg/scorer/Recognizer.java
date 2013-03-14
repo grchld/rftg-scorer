@@ -61,10 +61,6 @@ class Recognizer {
     private List<Line> linesTop = new ArrayList<Line>(/*MAX_LINES*/);
     private List<Line> linesBottom = new ArrayList<Line>(/*MAX_LINES*/);
 
-    private List<Point[]> rectangles = new ArrayList<Point[]>(/*MAX_RECTANGLES*/);
-
-    private List<CardMatch> matches = new ArrayList<CardMatch>();
-
     private Mat[] selection = new Mat[MAX_RECTANGLES];
 
     private CardMatch[] cardMatches;
@@ -223,7 +219,7 @@ class Recognizer {
         Log.e("rftg", "Hough: " + (System.currentTimeMillis() - time));
 
         time = System.currentTimeMillis();
-        extractRectangles();
+        List<Point[]> rectangles = extractRectangles();
         Log.e("rftg", "Extraction: " + (System.currentTimeMillis() - time));
 
         ////
@@ -263,15 +259,26 @@ class Recognizer {
         recognizerResources.executor.sync();
         Log.e("rftg", "Matching " + (System.currentTimeMillis() - time));
 
-        matches.clear();
+        List<CardMatch> allMatches = new ArrayList<CardMatch>(64);
         for (int cardNumber = 0 ; cardNumber <= recognizerResources.maxCardNum ; cardNumber ++ ) {
             CardMatch match = cardMatches[cardNumber];
             if (match != null) {
-                matches.add(match);
+                allMatches.add(match);
             }
         }
 
-        Collections.sort(matches, CardMatch.MATCH_SCORE_COMPARATOR);
+        Collections.sort(allMatches, CardMatch.MATCH_SCORE_COMPARATOR);
+        List<CardMatch> matches = new ArrayList<CardMatch>(32);
+        matchIntersect:
+        for (CardMatch match : allMatches) {
+            for (CardMatch goodMatch : matches) {
+                if (goodMatch.isIntersects(match)) {
+                    continue matchIntersect;
+                }
+            }
+            matches.add(match);
+        }
+
 
 /*
         time = System.currentTimeMillis();
@@ -561,8 +568,8 @@ class Recognizer {
         }
     }
 
-    private void extractRectangles() {
-        rectangles.clear();
+    private List<Point[]> extractRectangles() {
+        List<Point[]> rectangles = new ArrayList<Point[]>(MAX_RECTANGLES);
 
         int minRight = 0;
         int minTop = 0;
@@ -642,13 +649,13 @@ class Recognizer {
 
                         rectangles.add(new Point[]{p1, p2, p3, p4});
                         if (rectangles.size() >= MAX_RECTANGLES) {
-                            return;
+                            return rectangles;
                         }
                     }
                 }
             }
         }
-
+        return rectangles;
     }
 
 }

@@ -9,14 +9,19 @@ import java.util.Comparator;
 */
 public class CardMatch {
 
-    public final int cardNumber;
-    public final int score;
-    public final Point[] rect;
+    final int cardNumber;
+    final int score;
+    final Point[] rect;
+    final double minx, maxx, miny, maxy;
 
-    public CardMatch(int cardNumber, int score, Point[] rect) {
+    CardMatch(int cardNumber, int score, Point[] rect) {
         this.cardNumber = cardNumber;
         this.score = score;
         this.rect = rect;
+        minx = Math.max(rect[0].x, rect[3].x);
+        maxx = Math.min(rect[1].x, rect[2].x);
+        miny = Math.max(rect[0].y, rect[1].y);
+        maxy = Math.min(rect[2].y, rect[3].y);
     }
 
     final static Comparator<CardMatch> MATCH_SCORE_COMPARATOR = new Comparator<CardMatch>() {
@@ -32,5 +37,9 @@ public class CardMatch {
             }
         }
     };
+
+    boolean isIntersects(CardMatch match) {
+        return minx <= match.maxx && match.minx <= maxx && miny <= match.maxy && match.miny <= maxy;
+    }
 
 }

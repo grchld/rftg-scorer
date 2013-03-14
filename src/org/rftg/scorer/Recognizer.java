@@ -237,9 +237,22 @@ class Recognizer {
         for (Point[] rect : rectangles) {
             recognizerResources.executor.submit(new SampleExtractor(frame, rect, selection[selectionCounter++]));
         }
-
         recognizerResources.executor.sync();
         Log.e("rftg", "Scaling " + (System.currentTimeMillis() - time));
+
+        time = System.currentTimeMillis();
+        for (int i = 0 ; i < rectangles.size() ; i++) {
+            final Mat image = selection[i++];
+            recognizerResources.executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    Normalizer.normalize(image);
+                }
+            });
+        }
+        recognizerResources.executor.sync();
+        Log.e("rftg", "Normalize " + (System.currentTimeMillis() - time));
+
 
         Arrays.fill(cardMatches, null);
 

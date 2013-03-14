@@ -2,7 +2,7 @@ LOCAL_PATH := $(call my-dir)
 
 include $(CLEAR_VARS)
 
-include /home/gc/OpenCV-2.4.3.2-android-sdk/sdk/native/jni/OpenCV.mk
+include ~/OpenCV-android-sdk/sdk/native/jni/OpenCV.mk
 
 LOCAL_MODULE    := rftg_scorer
 LOCAL_SRC_FILES := jni_part.cpp

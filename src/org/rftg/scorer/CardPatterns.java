@@ -22,7 +22,8 @@ class CardPatterns {
     public final static int SAMPLE_HEIGHT = 64;
     public final static int SAMPLE_WIDTH = 64;
 
-    public final static int MATCHER_MINIMAL_BOUND = 1000;
+    public final static int MATCHER_MINIMAL_BOUND = 2000;
+    public final static int MATCHER_MINIMAL_GAP = 300;
 
 
     public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
@@ -123,7 +124,7 @@ class CardPatterns {
 
                 }
 
-                if (bestScore > MATCHER_MINIMAL_BOUND) {
+                if (bestScore > MATCHER_MINIMAL_BOUND && bestScore - secondBestScore > MATCHER_MINIMAL_GAP) {
                     synchronized (cardMatches) {
                         CardMatch match = cardMatches[bestCardNumber];
                         if (match == null || match.score < bestScore) {

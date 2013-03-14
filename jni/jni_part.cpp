@@ -558,8 +558,6 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
         }
         int a = a1 + a2 + a3;
         if (a <= 40) {
-            score += 2;
-        } else if (a <= 80) {
             score ++;
         }
     }

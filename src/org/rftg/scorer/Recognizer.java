@@ -300,7 +300,13 @@ class Recognizer {
             if (match != null) {
                 Point[] points = match.rect;
                 rectanglesToDraw.add(new MatOfPoint(points));
-                Core.putText(frame, ""+match.cardNumber + " - " + match.score, new Point(points[0].x+50,points[0].y+150), 1, 1, rectColor);
+                Core.fillConvexPoly(frame, new MatOfPoint(
+                        new Point(points[0].x + 50, points[0].y + 100),
+                        new Point(points[0].x + 50, points[0].y + 80),
+                        new Point(points[0].x + 150, points[0].y + 80),
+                        new Point(points[0].x + 150, points[0].y + 100)
+                ), new Scalar(0,0,0));
+                Core.putText(frame, "" + match.cardNumber + " - " + match.score, new Point(points[0].x + 53, points[0].y + 96), 1, 1, new Scalar(255,255,255));
 
                 /*
                 Mat bestSample = recognizerResources.cardPatterns.samples[match.cardNumber];

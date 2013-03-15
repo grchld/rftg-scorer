@@ -568,8 +568,10 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
         "vld3.8 {d6,d8,d10}, [r1]!\n\t"
         "vld3.8 {d7,d9,d11}, [r1]!\n\t"
         "vabd.u8 q6, q0, q3\n\t"
-        "vaba.u8 q6, q1, q4\n\t"
-        "vaba.u8 q6, q2, q5\n\t"
+        "vabd.u8 q7, q1, q4\n\t"
+        "vabd.u8 q8, q2, q5\n\t"
+        "vqadd.u8 q6, q6, q7\n\t"
+        "vqadd.u8 q6, q6, q8\n\t"
         "vcle.u8 q7, q6, q14\n\t" /* q7: < 80 */
         "vcle.u8 q6, q6, q15\n\t" /* q6: < 40 */
         "vand q7, q7, q12\n\t"

@@ -10,13 +10,13 @@ class CustomNativeTools {
     public CustomNativeTools() {
         System.loadLibrary("rftg_scorer");
     }
-
+/*
     public long normalize(Mat mat, double lowerPercent, double upperPercent) {
         return normalize(mat.getNativeObjAddr(), lowerPercent, upperPercent);
     }
 
     private native long normalize(long mat, double lowerPercent, double upperPercent);
-
+  */
     public void sobel(Mat src, Mat dst, int bound) {
         sobel(src.getNativeObjAddr(), dst.getNativeObjAddr(), bound);
     }
@@ -103,23 +103,16 @@ class CustomNativeTools {
     }
 
     private native int compare(long selection, long pattern);
-
+/*
     public void compare(Mat selection, Mat pattern, Mat report) {
         compareWithReport(selection.getNativeObjAddr(), pattern.getNativeObjAddr(), report.getNativeObjAddr());
     }
 
     private native void compareWithReport(long selection, long pattern, long report);
+*/
+	public void normalize(Mat image) {
+		normalize(image.getNativeObjAddr());
+	}
 
-    private static int dist(byte a, byte b) {
-        int ai = a;
-        int bi = b;
-        ai = ai & 0xff;
-        bi = bi & 0xff;
-        if (ai > bi) {
-            return ai-bi;
-        } else {
-            return bi-ai;
-        }
-    }
-
+	private native void normalize(long image);
 }

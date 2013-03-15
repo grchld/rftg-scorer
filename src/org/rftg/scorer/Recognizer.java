@@ -246,7 +246,8 @@ class Recognizer {
             recognizerResources.executor.submit(new Runnable() {
                 @Override
                 public void run() {
-                    Normalizer.normalize(image);
+                    //Normalizer.normalize(image);
+	                recognizerResources.customNativeTools.normalize(image);
                 }
             });
         }

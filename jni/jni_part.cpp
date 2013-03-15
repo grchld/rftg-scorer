@@ -3,6 +3,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <vector>
+#include <math.h>
 
 #if HAVE_NEON == 1
 #include <arm_neon.h>
@@ -12,7 +13,7 @@ using namespace std;
 using namespace cv;
 
 extern "C" {
-
+/*
 JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*, jobject, jlong addrImage, jdouble lowerPercent, jdouble upperPercent)
 {
     Mat& image = *(Mat*)addrImage;
@@ -58,7 +59,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*
 
     return hist[channels*256-1];
 }
-
+*/
 JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr, jint bound)
 {
     Mat& src = *(Mat*)srcAddr;
@@ -571,7 +572,7 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
 
     return score;
 }
-
+/*
 JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_compareWithReport(JNIEnv*, jobject, jlong selectionAddr, jlong patternAddr, jlong reportAddr)
 {
     Mat& selection = *(Mat*)selectionAddr;
@@ -629,7 +630,116 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_compareWithReport(
 
     }
 }
+*/
+#define NORMAL_DISPERSION 70.*70.
+#define NORMAL_MEDIAN 127.5
 
+JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*, jobject, jlong imageAddr)
+{
+    Mat& image = *(Mat*)imageAddr;
 
+    int cols = image.cols;
+    int rows = image.rows;
+    int total = cols*rows;
+
+    CV_Assert(image.depth() == CV_8U);
+    CV_Assert(image.channels() == 3);
+
+    CV_Assert(image.ptr<uchar>(1) - image.ptr<uchar>(0) == 3*cols);
+    
+    int sum0 = 0, sum1 = 0, sum2 = 0;
+    int sq0 = 0, sq1 = 0, sq2 = 0;
+    
+    uchar* a = image.ptr<uchar>(0);
+
+    for (int i = total ; i > 0 ; i--) {
+        uchar v0 = *(a++);
+        sum0 += v0;
+        sq0 += v0*v0;
+
+        uchar v1 = *(a++);
+        sum1 += v1;
+        sq1 += v1*v1;
+
+        uchar v2 = *(a++);
+        sum2 += v2;
+        sq2 += v2*v2;
+    }
+  
+    float sum0norm = sum0 / total;
+    float sq0norm = sq0 / total;
+    float disp0 = sq0norm - sum0norm*sum0norm;
+    float alpha0, beta0;
+    if (disp0 < 1) {
+        alpha0 = 1;
+        beta0 = 0;
+    } else {
+        alpha0 = sqrt(NORMAL_DISPERSION/disp0);
+        beta0 = NORMAL_MEDIAN - alpha0 * sum0norm;
+    }
+ 
+    float sum1norm = sum1 / total;
+    float sq1norm = sq1 / total;
+    float disp1 = sq1norm - sum1norm*sum1norm;
+    float alpha1, beta1;
+    if (disp1 < 1) {
+        alpha1 = 1;
+        beta1 = 0;
+    } else {
+        alpha1 = sqrt(NORMAL_DISPERSION/disp1);
+        beta1 = NORMAL_MEDIAN - alpha1 * sum1norm;
+    }
+
+    float sum2norm = sum2 / total;
+    float sq2norm = sq2 / total;
+    float disp2 = sq2norm - sum2norm*sum2norm;
+    float alpha2, beta2;
+    if (disp2 < 1) {
+        alpha2 = 1;
+        beta2 = 0;
+    } else {
+        alpha2 = sqrt(NORMAL_DISPERSION/disp2);
+        beta2 = NORMAL_MEDIAN - alpha2 * sum2norm;
+    }
+    
+    a = image.ptr<uchar>(0);
+
+    for (int i = total ; i > 0 ; i--) {
+        uchar v0 = *a;
+        float f0 = alpha0 * v0 + beta0;
+        if (f0 <= 0) {
+            *a = 0;
+        } else if (f0 >= 255) {
+            *a = 255;
+        } else {
+            *a = f0;
+        }
+        a++;
+        
+        uchar v1 = *a;
+        float f1 = alpha1 * v1 + beta1;
+        if (f1 <= 0) {
+            *a = 0;
+        } else if (f1 >= 255) {
+            *a = 255;
+        } else {
+            *a = f1;
+        }
+        a++;
+
+        uchar v2 = *a;
+        float f2 = alpha2 * v2 + beta2;
+        if (f1 <= 0) {
+            *a = 0;
+        } else if (f2 >= 255) {
+            *a = 255;
+        } else {
+            *a = f2;
+        }
+        a++;
+        
+    }
+    
+}
 
 }

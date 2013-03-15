@@ -69,7 +69,8 @@ class CardPatterns {
                 Mat scaled = new Mat(SAMPLE_WIDTH, SAMPLE_HEIGHT, CvType.CV_8UC3);
                 Imgproc.warpAffine(tempSample, scaled, scaleDown, size, Imgproc.INTER_LINEAR);
 
-                Normalizer.normalize(scaled);
+                //Normalizer.normalize(scaled);
+	            recognizerResources.customNativeTools.normalize(scaled);
 
                 samples[num] = scaled;
                 tempSample.release();

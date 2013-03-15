@@ -17,8 +17,6 @@ class Recognizer {
     private static final int MAX_RECTANGLES = 100;
 
     private static final int MAX_BASE_GAP = 2;
-    private static final int MAX_BASE_DISTANCE = 10;
-    private static final int LEAST_BASE_DISTANCE = 20;
 
     private static final double RECT_MIN_ASPECT = (7./5.)/1.2;
     private static final double RECT_MAX_ASPECT = (7./5.)*1.2;
@@ -426,7 +424,7 @@ class Recognizer {
                 Segment segment = segmentsBuffer[i];
                 for (int j = 0 ; j < selections ; j++) {
                     Segment base = segmentsBuffer[j];
-                    if (closeEnough(base, segment)) {
+                    if (base.closeEnough(segment)) {
                         if (segment.length > base.length) {
                             segmentsBuffer[j] = segment;
                         }
@@ -447,48 +445,6 @@ class Recognizer {
             Collections.sort(lines, Line.MX_COMPARATOR);
         }
 
-        private boolean closeEnough(Segment s1, Segment s2) {
-            int baseDist = s1.xbase - s2.xbase;
-            if (baseDist > LEAST_BASE_DISTANCE || baseDist < -LEAST_BASE_DISTANCE || s1.y1 > s2.y2 || s2.y1 > s1.y2) {
-                return false;
-            }
-
-            int a1;
-            int a2;
-            if (s1.y1 < s2.y1) {
-                a1 = s1.calcX(s2.y1);
-                a2 = s2.x1;
-            } else if (s1.y1 > s2.y1) {
-                a1 = s1.x1;
-                a2 = s2.calcX(s1.y1);
-            } else {
-                a1 = s1.x1;
-                a2 = s2.x1;
-            }
-            int a = a1 - a2;
-            if (a > MAX_BASE_DISTANCE || a < -MAX_BASE_DISTANCE) {
-                return false;
-            }
-
-            int b1;
-            int b2;
-            if (s1.y2 > s2.y2) {
-                b1 = s1.calcX(s2.y2);
-                b2 = s2.x2;
-            } else if (s1.y2 < s2.y2) {
-                b1 = s1.x2;
-                b2 = s2.calcX(s1.y2);
-            } else {
-                b1 = s1.x2;
-                b2 = s2.x2;
-            }
-            int b = b1 - b2;
-            if (b > MAX_BASE_DISTANCE || b < -MAX_BASE_DISTANCE) {
-                return false;
-            }
-
-            return true;
-        }
 
     }
 

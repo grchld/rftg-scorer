@@ -183,18 +183,22 @@ class Recognizer {
         }
         frameTimer = System.currentTimeMillis();
 
+        long time;
+
+        time = System.currentTimeMillis();
+
+
         Imgproc.cvtColor(frame, rgb, Imgproc.COLOR_RGBA2RGB);
         frame = rgb;
 
         /**/
-        /*
         Mat sub = frame.submat(0,real.rows(),0,real.cols());
         real.copyTo(sub);
         sub.release();
-        */
         /**/
 
-        long time;
+        Log.e("rftg", "Prepare image: " + (System.currentTimeMillis() - time));
+
         time = System.currentTimeMillis();
         Imgproc.cvtColor(frame, gray, Imgproc.COLOR_RGB2GRAY);
         Log.e("rftg", "Convert color: " + (System.currentTimeMillis() - time));
@@ -247,7 +251,7 @@ class Recognizer {
                 @Override
                 public void run() {
                     //Normalizer.normalize(image);
-	                recognizerResources.customNativeTools.normalize(image);
+                    recognizerResources.customNativeTools.normalize(image);
                 }
             });
         }
@@ -263,6 +267,9 @@ class Recognizer {
         }
         recognizerResources.executor.sync();
         Log.e("rftg", "Matching " + (System.currentTimeMillis() - time));
+
+
+        time = System.currentTimeMillis();
 
         List<CardMatch> allMatches = new ArrayList<CardMatch>(64);
         for (int cardNumber = 0 ; cardNumber <= recognizerResources.maxCardNum ; cardNumber ++ ) {
@@ -284,6 +291,8 @@ class Recognizer {
             matches.add(match);
         }
 
+        Log.e("rftg", "Match filtering: " + (System.currentTimeMillis() - time));
+
 
 /*
         time = System.currentTimeMillis();
@@ -292,6 +301,8 @@ class Recognizer {
 
         Log.e("rftg", "Intersect " + (System.currentTimeMillis() - time));
  */
+
+        time = System.currentTimeMillis();
 
         Scalar rectColor = new Scalar(255, 255, 255);
 
@@ -371,6 +382,9 @@ class Recognizer {
             Core.putText(frame, line.toString(), new Point(line.mx, line.my + 20), 1, 1, blue);
         }
   */
+        Log.e("rftg", "Drawing: " + (System.currentTimeMillis() - time));
+
+        Log.e("rftg", "Total calc time: " + (System.currentTimeMillis() - frameTimer));
 
         return frame;
     }

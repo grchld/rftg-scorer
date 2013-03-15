@@ -266,7 +266,7 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
 
     const int cols = image.cols;
     const int rows = image.rows;
-    const uchar mask = bordermask;
+    const uint mask = bordermask;
 
     int totalStates = cols * SLOPE_COUNT;
 
@@ -274,51 +274,57 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
     memset(states, 0, sizeof(SegmentState) * totalStates);
 
     for (int y = 0; y < rows; y++) {
-        uchar* row = image.ptr<uchar>(y);
-        for (int x = 0 ; x < cols; x++) {
-            uchar value = row[x];
-            if (value & mask) {
-                for (int slope = MIN_SLOPE ; slope <= MAX_SLOPE ; slope++) {
-                    int xbase = x + slope * (origin - y) / DIVISOR;
-
-                    if (xbase < 0 || xbase >= cols) {
-                        continue;
-                    }
-
-                    SegmentState& state = states[SLOPE_COUNT * xbase + (slope - MIN_SLOPE)];
-
-                    if (state.count) {
-                        if (y - state.last <= MAX_GAP) {
-                            // line continues
-                            state.count += y-state.last;
-                            state.last = y;
-                        } else {
-                            // previous line stops
-                            if (state.count > MIN_LENGTH) {
-                                // save line
-                                Segment& segment = segments[segmentNumber];
-
-                                segment.ymin = state.last - state.count + 1;
-                                segment.ymax = state.last;
-                                segment.x = xbase;
-                                segment.slope = slope;
-
-                                if (++segmentNumber == maxSegments) {
-                                    // segment stack is full
-                                    return maxSegments;
+        uint* row = image.ptr<uint>(y);
+        int x = 0;
+        for (int i = cols/sizeof(uint); i > 0 ; i--) {
+            uint value = *(row++);
+            for (int j = sizeof(uint) ; j > 0 ; j--)
+            {
+                if (value & mask) {
+                    for (int slope = MIN_SLOPE ; slope <= MAX_SLOPE ; slope++) {
+                        int xbase = x + slope * (origin - y) / DIVISOR;
+    
+                        if (xbase < 0 || xbase >= cols) {
+                            continue;
+                        }
+    
+                        SegmentState& state = states[SLOPE_COUNT * xbase + (slope - MIN_SLOPE)];
+    
+                        if (state.count) {
+                            if (y - state.last <= MAX_GAP) {
+                                // line continues
+                                state.count += y-state.last;
+                                state.last = y;
+                            } else {
+                                // previous line stops
+                                if (state.count > MIN_LENGTH) {
+                                    // save line
+                                    Segment& segment = segments[segmentNumber];
+    
+                                    segment.ymin = state.last - state.count + 1;
+                                    segment.ymax = state.last;
+                                    segment.x = xbase;
+                                    segment.slope = slope;
+    
+                                    if (++segmentNumber == maxSegments) {
+                                        // segment stack is full
+                                        return maxSegments;
+                                    }
                                 }
+                                // staring new line
+                                state.count = 1;
+                                state.last = y;
                             }
-                            // staring new line
+                        } else {
+                            // starting new line
                             state.count = 1;
                             state.last = y;
                         }
-                    } else {
-                        // starting new line
-                        state.count = 1;
-                        state.last = y;
+    
                     }
-
                 }
+                value >>= 8;
+                x++;
             }
         }
     }

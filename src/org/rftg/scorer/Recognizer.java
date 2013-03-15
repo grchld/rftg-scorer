@@ -179,9 +179,10 @@ class Recognizer {
     Mat onFrame(Mat frame) {
 
         if (frameTimer != 0) {
-            Log.e("rftg", "Total frame time: " + (System.currentTimeMillis() - frameTimer));
+            Log.e("rftg", "Inter frame time: " + (System.currentTimeMillis() - frameTimer));
         }
-        frameTimer = System.currentTimeMillis();
+
+        long totalTimer = System.currentTimeMillis();
 
         long time;
 
@@ -384,7 +385,9 @@ class Recognizer {
   */
         Log.e("rftg", "Drawing: " + (System.currentTimeMillis() - time));
 
-        Log.e("rftg", "Total calc time: " + (System.currentTimeMillis() - frameTimer));
+        Log.e("rftg", "Total calc time: " + (System.currentTimeMillis() - totalTimer));
+
+        frameTimer = System.currentTimeMillis();
 
         return frame;
     }

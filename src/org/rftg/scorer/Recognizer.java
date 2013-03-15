@@ -24,12 +24,7 @@ class Recognizer {
     private static final double RECT_MAX_ASPECT = (7./5.)*1.2;
 
     private static final int RECT_SLOPE_BOUND = 5;
-    /*
-    private static final int RECT_MIN_WIDTH = 70;
-    private static final int RECT_MAX_WIDTH = 400;
-    private static final int RECT_MIN_HEIGHT = 100;
-    private static final int RECT_MAX_HEIGHT = 700;
-    */
+
     private static final double RECT_MIN_LINE_LENGTH_PERCENT = 35;
 
     private static final int MASK_LEFT = 0x10;
@@ -51,10 +46,10 @@ class Recognizer {
     private Mat segmentsStackTop;
     private Mat segmentsStackBottom;
 
-    private List<Line> linesLeft = new ArrayList<Line>(/*MAX_LINES*/);
-    private List<Line> linesRight = new ArrayList<Line>(/*MAX_LINES*/);
-    private List<Line> linesTop = new ArrayList<Line>(/*MAX_LINES*/);
-    private List<Line> linesBottom = new ArrayList<Line>(/*MAX_LINES*/);
+    private List<Line> linesLeft = new ArrayList<Line>();
+    private List<Line> linesRight = new ArrayList<Line>();
+    private List<Line> linesTop = new ArrayList<Line>();
+    private List<Line> linesBottom = new ArrayList<Line>();
 
     private Mat[] selection = new Mat[MAX_RECTANGLES];
 
@@ -114,8 +109,6 @@ class Recognizer {
         houghTop = new Hough(true, MASK_TOP, xOrigin, segmentsStackTop, linesTop);
         houghBottom = new Hough(true, MASK_BOTTOM, xOrigin, segmentsStackBottom, linesBottom);
 
-//        result = new Mat(height, width, CvType.CV_8UC4);
-
         for (int i = 0 ; i < MAX_RECTANGLES ; i++) {
             selection[i] = new Mat(CardPatterns.SAMPLE_HEIGHT, CardPatterns.SAMPLE_WIDTH, CvType.CV_8UC3);
         }
@@ -140,34 +133,6 @@ class Recognizer {
         segmentsStackBottom.release();
         for (Mat mat : selection) {
             mat.release();
-        }
-    }
-
-    class Segment {
-        final int x1;
-        final int x2;
-        final int y1;
-        final int y2;
-        final int xbase;
-        final int slope;
-        final int length;
-        final int original;
-
-        Segment(int origin, int y1, int y2, int xbase, int slope, int length) {
-            this.y1 = y1;
-            this.y2 = y2;
-            this.xbase = xbase;
-            this.slope = slope;
-
-            this.original = origin;
-            this.length = length;
-
-            x1 = calcX(y1);
-            x2 = calcX(y2);
-        }
-
-        int calcX(int y) {
-            return xbase + slope * (y - original)/64;
         }
     }
 
@@ -224,14 +189,6 @@ class Recognizer {
         List<Point[]> rectangles = extractRectangles();
         Log.e("rftg", "Extraction: " + (System.currentTimeMillis() - time));
 
-        ////
-/*
-        Point[] r = rectangles.get(2);
-        rectangles.clear();
-        rectangles.add(r);
-  */
-        ////
-
         time = System.currentTimeMillis();
         int selectionCounter = 0;
         for (Point[] rect : rectangles) {
@@ -246,7 +203,6 @@ class Recognizer {
             recognizerResources.executor.submit(new Runnable() {
                 @Override
                 public void run() {
-                    //Normalizer.normalize(image);
                     recognizerResources.customNativeTools.normalize(image);
                 }
             });
@@ -289,14 +245,6 @@ class Recognizer {
 
         Log.e("rftg", "Match filtering: " + (System.currentTimeMillis() - time));
 
-
-/*
-        time = System.currentTimeMillis();
-
-
-
-        Log.e("rftg", "Intersect " + (System.currentTimeMillis() - time));
- */
 
         time = System.currentTimeMillis();
 
@@ -419,17 +367,12 @@ class Recognizer {
 
             Log.e("rftg", "Hough-native: " + (System.currentTimeMillis() - time));
 
-            time = System.currentTimeMillis();
-
             for (int i = 0 ; i < segmentCount ; i++) {
                 segmentsStack.get(0, i, segmentData);
                 segmentsBuffer[i] = new Segment(origin, segmentData[0], segmentData[1], segmentData[2], segmentData[3], 0);
             }
-            Log.e("rftg", "Hough-read-segments: " + (System.currentTimeMillis() - time));
 
-            time = System.currentTimeMillis();
             group(segmentCount);
-            Log.e("rftg", "Hough-group: " + (System.currentTimeMillis() - time));
         }
 
         private void group(int size) {
@@ -549,68 +492,6 @@ class Recognizer {
 
     }
 
-    private Point intersect(Line h, Line v) {
-
-        double divisor = v.dx * h.dy - h.dx * v.dy;
-
-        double x = (v.cross * h.dx - h.cross * v.dx) / divisor;
-        double y = (v.cross * h.dy - h.cross * v.dy) / divisor;
-
-        return new Point(x,y);
-    }
-
-    static class Line {
-
-        final static Comparator<Line> MX_COMPARATOR = new Comparator<Line>() {
-            @Override
-            public int compare(Line line1, Line line2) {
-                double r = line1.mx - line2.mx;
-                if (r > 0) {
-                    return 1;
-                } else if (r < 0) {
-                    return -1;
-                } else {
-                    return 0;
-                }
-            }
-        };
-
-        final int x1;
-        final int y1;
-        final int x2;
-        final int y2;
-
-        final int dx;
-        final int dy;
-
-        final int mx;
-        final int my;
-
-        final int cross;
-
-        final int slope;
-
-        Line(int x1, int y1, int x2, int y2, int slope) {
-            this.x1 = x1;
-            this.y1 = y1;
-            this.x2 = x2;
-            this.y2 = y2;
-
-            this.mx = (x1 + x2)/2;
-            this.my = (y1 + y2)/2;
-            this.slope = slope;
-
-            dx = x2 - x1;
-            dy = y2 - y1;
-            cross = x2 * y1 - x1 * y2;
-        }
-
-        @Override
-        public String toString() {
-            return "" + mx + ":" + my + ":" + slope;
-        }
-    }
-
     private List<Point[]> extractRectangles() {
         List<Point[]> rectangles = new ArrayList<Point[]>(MAX_RECTANGLES);
 
@@ -684,11 +565,10 @@ class Recognizer {
                             continue;
                         }
 
-
-                        Point p1 = intersect(left, top);
-                        Point p2 = intersect(right, top);
-                        Point p3 = intersect(right, bottom);
-                        Point p4 = intersect(left, bottom);
+                        Point p1 = left.intersect(top);
+                        Point p2 = right.intersect(top);
+                        Point p3 = right.intersect(bottom);
+                        Point p4 = left.intersect(bottom);
 
                         rectangles.add(new Point[]{p1, p2, p3, p4});
                         if (rectangles.size() >= MAX_RECTANGLES) {

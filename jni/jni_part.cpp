@@ -219,10 +219,11 @@ struct SegmentState {
 };
 
 #define DIVISOR 64
-#define MIN_SLOPE -15
+#define MIN_SLOPE (-15)
 #define MAX_SLOPE 15
 #define MAX_GAP 4
 #define MIN_LENGTH 70
+#define SLOPE_COUNT (MAX_SLOPE - MIN_SLOPE + 1)
 
 
 int segmentCompare(void const *a1, void const* a2) {
@@ -259,16 +260,15 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
     CV_Assert(segmentsMat.rows == 1);
 
     int segmentNumber = 0;
-    int maxSegments = segmentsMat.cols;
+    const int maxSegments = segmentsMat.cols;
 
     Segment* segments = segmentsMat.ptr<Segment>(0);
 
-    int cols = image.cols;
-    int rows = image.rows;
-    uchar mask = bordermask;
-    int slopeCount = MAX_SLOPE - MIN_SLOPE + 1;
+    const int cols = image.cols;
+    const int rows = image.rows;
+    const uchar mask = bordermask;
 
-    int totalStates = cols * slopeCount;
+    int totalStates = cols * SLOPE_COUNT;
 
     cv::AutoBuffer<SegmentState, 32> states(totalStates);
     memset(states, 0, sizeof(SegmentState) * totalStates);
@@ -285,7 +285,7 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
                         continue;
                     }
 
-                    SegmentState& state = states[slopeCount * xbase + (slope - MIN_SLOPE)];
+                    SegmentState& state = states[SLOPE_COUNT * xbase + (slope - MIN_SLOPE)];
 
                     if (state.count) {
                         if (y - state.last <= MAX_GAP) {

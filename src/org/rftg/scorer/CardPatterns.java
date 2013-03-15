@@ -14,23 +14,13 @@ class CardPatterns {
 
     public final static int ORIGINAL_SAMPLE_HEIGHT = 520;
     public final static int ORIGINAL_SAMPLE_WIDTH = 372;
-//    private final static int SIZE_MULTIPLIER = 2;
-
-//    public final static int SAMPLE_HEIGHT = 7 * SIZE_MULTIPLIER;
-//    public final static int SAMPLE_WIDTH = 5 * SIZE_MULTIPLIER;
-
     public final static int SAMPLE_HEIGHT = 64;
     public final static int SAMPLE_WIDTH = 64;
-
     public final static int MATCHER_MINIMAL_BOUND = 4500;
     public final static int MATCHER_MINIMAL_GAP = 500;
-
-
     public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
     public final static MatOfPoint2f SAMPLE_RECT = new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(SAMPLE_WIDTH, SAMPLE_HEIGHT), new Point(0, SAMPLE_HEIGHT));
-
     /*private */final Mat[] samples;
-
     private final RecognizerResources recognizerResources;
 
     public CardPatterns(final RecognizerResources recognizerResources) {
@@ -69,8 +59,7 @@ class CardPatterns {
                 Mat scaled = new Mat(SAMPLE_WIDTH, SAMPLE_HEIGHT, CvType.CV_8UC3);
                 Imgproc.warpAffine(tempSample, scaled, scaleDown, size, Imgproc.INTER_LINEAR);
 
-                //Normalizer.normalize(scaled);
-	            recognizerResources.customNativeTools.normalize(scaled);
+                recognizerResources.customNativeTools.normalize(scaled);
 
                 samples[num] = scaled;
                 tempSample.release();
@@ -107,7 +96,7 @@ class CardPatterns {
                 int secondBestScore = 0;
                 int bestScore = 0;
 
-                for (int cardNumber = 0 ; cardNumber <= recognizerResources.maxCardNum ; cardNumber++) {
+                for (int cardNumber = 0; cardNumber <= recognizerResources.maxCardNum; cardNumber++) {
 
                     Mat sample = samples[cardNumber];
 

@@ -544,31 +544,77 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
     uchar* s = selection.ptr<uchar>(0);
     uchar* p = pattern.ptr<uchar>(0);
 
+    #if HAVE_NEON == 1
+
+    asm (
+        "mov r0, #80\n\t"
+        "vdup.8 q14, r0\n\t" /* q14: 80 */
+        "mov r0, #40\n\t"
+        "vdup.8 q15, r0\n\t" /* q15: 40 */
+        "mov r0, 2\n\t"
+        "vdup.8 q12, r0\n\t" /* q12: 2 */
+        "mov r0, 1\n\t"
+        "vdup.8 q13, r0\n\t" /* q13: 1 */
+        "mov r0, 0\n\t"
+        "vdup.8 q10, r0\n\t" /* q10: scorer */
+
+        "mov r3, %[SIZE]\n\t"
+        "mov r0, %[S]\n\t"
+        "mov r1, %[P]\n\t"
+        "mov r2, %[S]\n\t"
+        "CustomNativeTools_compare_loop:\n\t"
+        "vld3.8 {d0,d2,d4}, [r0]!\n\t"
+        "vld3.8 {d1,d3,d5}, [r0]!\n\t"
+        "vld3.8 {d6,d8,d10}, [r1]!\n\t"
+        "vld3.8 {d7,d9,d11}, [r1]!\n\t"
+        "vabd.u8 q6, q0, q3\n\t"
+        "vaba.u8 q6, q1, q4\n\t"
+        "vaba.u8 q6, q2, q5\n\t"
+        "vcle.u8 q7, q6, q14\n\t" /* q7: < 80 */
+        "vcle.u8 q6, q6, q15\n\t" /* q6: < 40 */
+        "vand q7, q7, q12\n\t"
+        "vand q6, q6, q13\n\t"
+        "vadd.i8 q7, q7, q6\n\t"
+        "vpadal.u8 q10, q7\n\t"
+        "subs r3, r3, 1\n\t"
+        "bgt CustomNativeTools_compare_loop\n\t"
+        "vpaddl.u16 q10, q10\n\t"
+        "vpaddl.u32 q10, q10\n\t"
+        "vadd.i64 d20, d20, d21\n\t"
+        "vmov.u32 r0, d20[0]\n\t"
+        "mov %[SCORE], r0\n\t"
+        : [SCORE]"=r" (score)
+        : [S]"r" (s), [P]"r" (p), [SIZE]"r" (cols*rows/16)
+        : "memory", "r0", "r1", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
+    );
+
+    #else
+
     for (int i = cols*rows ; i > 0 ; i--) {
-        int a1 = (int)((*(s++))>>1) - (int)((*(p++))>>1);
+        int a1 = (int)(*(s++)) - (int)(*(p++));
         if (a1 < 0) {
             a1 = -a1;
         }
-//        if (a1 > 13) continue;
-        int a2 = (int)((*(s++))>>1) - (int)((*(p++))>>1);
+
+        int a2 = (int)(*(s++)) - (int)(*(p++));
         if (a2 < 0) {
             a2 = -a2;
         }
-//        if (a2 > 13) continue;
-        int a3 = (int)((*(s++))>>1) - (int)((*(p++))>>1);
+
+        int a3 = (int)(*(s++)) - (int)(*(p++));
         if (a3 < 0) {
             a3 = -a3;
         }
-//        if (a3 > 13) continue;
+
         int a = a1 + a2 + a3;
-        if (a <= 20) {
+        if (a <= 40) {
             score += 3;
-        } else if (a <= 40) {
+        } else if (a <= 80) {
             score += 2;
-//        } else if (a <= 60) {
-//            score += 1;
         }
     }
+
+    #endif
 
     return score;
 }

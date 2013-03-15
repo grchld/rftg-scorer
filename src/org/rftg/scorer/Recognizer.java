@@ -16,11 +16,6 @@ class Recognizer {
     private static final int MAX_LINES = 1000;
     private static final int MAX_RECTANGLES = 100;
 
-    private static final int MIN_SLOPE = -15;
-    private static final int MAX_SLOPE = 15;
-    private static final int MAX_GAP = 4;
-    private static final int MIN_LENGTH = 70;
-
     private static final int MAX_BASE_GAP = 2;
     private static final int MAX_BASE_DISTANCE = 10;
     private static final int LEAST_BASE_DISTANCE = 20;
@@ -419,14 +414,22 @@ class Recognizer {
         @Override
         public void run() {
 
-            int segmentCount = recognizerResources.customNativeTools.houghVertical(transposed?sobelTransposed:sobel, mask, origin, MIN_SLOPE, MAX_SLOPE, MAX_GAP, MIN_LENGTH, segmentsStack);
+            long time = System.currentTimeMillis();
+            int segmentCount = recognizerResources.customNativeTools.houghVertical(transposed?sobelTransposed:sobel, mask, origin, segmentsStack);
+
+            Log.e("rftg", "Hough-native: " + (System.currentTimeMillis() - time));
+
+            time = System.currentTimeMillis();
 
             for (int i = 0 ; i < segmentCount ; i++) {
                 segmentsStack.get(0, i, segmentData);
                 segmentsBuffer[i] = new Segment(origin, segmentData[0], segmentData[1], segmentData[2], segmentData[3], 0);
             }
+            Log.e("rftg", "Hough-read-segments: " + (System.currentTimeMillis() - time));
 
+            time = System.currentTimeMillis();
             group(segmentCount);
+            Log.e("rftg", "Hough-group: " + (System.currentTimeMillis() - time));
         }
 
         private void group(int size) {

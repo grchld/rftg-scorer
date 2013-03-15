@@ -219,6 +219,11 @@ struct SegmentState {
 };
 
 #define DIVISOR 64
+#define MIN_SLOPE -15
+#define MAX_SLOPE 15
+#define MAX_GAP 4
+#define MIN_LENGTH 70
+
 
 int segmentCompare(void const *a1, void const* a2) {
     Segment& s1 = *(Segment*)a1;
@@ -230,10 +235,10 @@ int segmentCompare(void const *a1, void const* a2) {
     }
 }
 
-jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint minSlope, jint maxSlope, jint maxGap, jint minLength, jlong segmentsAddr);
+jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong segmentsAddr);
 
-JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jlong imageAddr, jint bordermask, jint origin, jint minSlope, jint maxSlope, jint maxGap, jint minLength, jlong segmentsAddr) {
-    jint segmentNumber = houghVerticalUnsorted(imageAddr, bordermask, origin, minSlope, maxSlope, maxGap, minLength, segmentsAddr);
+JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jlong imageAddr, jint bordermask, jint origin, jlong segmentsAddr) {
+    jint segmentNumber = houghVerticalUnsorted(imageAddr, bordermask, origin, segmentsAddr);
     if (segmentNumber > 0) {
         Mat& segmentsMat = *(Mat*)segmentsAddr;
         qsort(segmentsMat.ptr<Segment>(0), segmentNumber, sizeof(Segment), segmentCompare);
@@ -241,7 +246,7 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIE
     return segmentNumber;
 }
 
-jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint minSlope, jint maxSlope, jint maxGap, jint minLength, jlong segmentsAddr) {
+jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong segmentsAddr) {
 
     Mat& image = *(Mat*)imageAddr;
     Mat& segmentsMat = *(Mat*)segmentsAddr;
@@ -261,7 +266,7 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
     int cols = image.cols;
     int rows = image.rows;
     uchar mask = bordermask;
-    int slopeCount = maxSlope - minSlope + 1;
+    int slopeCount = MAX_SLOPE - MIN_SLOPE + 1;
 
     int totalStates = cols * slopeCount;
 
@@ -273,23 +278,23 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
         for (int x = 0 ; x < cols; x++) {
             uchar value = row[x];
             if (value & mask) {
-                for (int slope = minSlope ; slope <= maxSlope ; slope++) {
+                for (int slope = MIN_SLOPE ; slope <= MAX_SLOPE ; slope++) {
                     int xbase = x + slope * (origin - y) / DIVISOR;
 
                     if (xbase < 0 || xbase >= cols) {
                         continue;
                     }
 
-                    SegmentState& state = states[slopeCount * xbase + (slope - minSlope)];
+                    SegmentState& state = states[slopeCount * xbase + (slope - MIN_SLOPE)];
 
                     if (state.count) {
-                        if (y - state.last <= maxGap) {
+                        if (y - state.last <= MAX_GAP) {
                             // line continues
                             state.count += y-state.last;
                             state.last = y;
                         } else {
                             // previous line stops
-                            if (state.count > minLength) {
+                            if (state.count > MIN_LENGTH) {
                                 // save line
                                 Segment& segment = segments[segmentNumber];
 
@@ -321,8 +326,8 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
     // force line endings
     SegmentState* state = states;
     for (int xbase = 0 ; xbase < cols; xbase++) {
-        for (int slope = minSlope ; slope <= maxSlope ; slope++) {
-            if (state->count > minLength) {
+        for (int slope = MIN_SLOPE ; slope <= MAX_SLOPE ; slope++) {
+            if (state->count > MIN_LENGTH) {
                 // save line
                 Segment& segment = segments[segmentNumber];
 

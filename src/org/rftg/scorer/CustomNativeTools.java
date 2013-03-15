@@ -24,7 +24,7 @@ class CustomNativeTools {
     private native void sobel(long src, long dst, int bound);
 
     // segments: short miny, short maxy, short x, short angle
-    public int houghVertical(Mat image, int bordermask, int origin, int minSlope, int maxSlope, int maxGap, int minLength, Mat segments) {
+    public int houghVertical(Mat image, int bordermask, int origin, Mat segments) {
   /*
         int DIVISOR = 64;
 
@@ -87,10 +87,10 @@ class CustomNativeTools {
 
         return segmentNumber;
 */
-        return houghVertical(image.getNativeObjAddr(), bordermask, origin, minSlope, maxSlope, maxGap, minLength, segments.getNativeObjAddr());
+        return houghVertical(image.getNativeObjAddr(), bordermask, origin, segments.getNativeObjAddr());
     }
 
-    private native int houghVertical(long imageAddr, int bordermask, int origin, int minSlope, int maxSlope, int maxGap, int minLength, long segmentsAddr);
+    private native int houghVertical(long imageAddr, int bordermask, int origin, long segmentsAddr);
 
     public void transpose(Mat src, Mat dst) {
         transpose(src.getNativeObjAddr(), dst.getNativeObjAddr());

@@ -16,7 +16,6 @@ class Recognizer {
     private static final boolean DEBUG_SHOW_ALL_RECTS = true;
     private static final boolean DEBUG_SHOW_SEGMENTS = true;
 
-    private static final int MAX_LINES = 1000;
     private static final int MAX_RECTANGLES = 100;
 
     private static final int MAX_GAP_LEFT = 10;
@@ -24,10 +23,8 @@ class Recognizer {
     private static final int MIN_LENGTH_LEFT = 120;
     private static final int MIN_LENGTH = 80;
 
-    private static final int MAX_BASE_GAP = 2;
-
-    private static final double RECT_MIN_ASPECT = CardPatterns.RECT_ASPECT/1.2;
-    private static final double RECT_MAX_ASPECT = CardPatterns.RECT_ASPECT*1.2;
+    private static final double RECT_MIN_ASPECT = CardPatterns.RECT_ASPECT/1.8;
+    private static final double RECT_MAX_ASPECT = CardPatterns.RECT_ASPECT*1.8;
 
     private static final int RECT_SLOPE_BOUND = 5;
 
@@ -46,11 +43,6 @@ class Recognizer {
     private Mat canny;
     private Mat sobel;
     private Mat sobelTransposed;
-
-    private Mat segmentsStackLeft;
-    private Mat segmentsStackRight;
-    private Mat segmentsStackTop;
-    private Mat segmentsStackBottom;
 
     private List<Line> linesLeft = new ArrayList<Line>();
     private List<Line> linesRight = new ArrayList<Line>();
@@ -105,15 +97,10 @@ class Recognizer {
         sobel = new Mat(height, width, CvType.CV_8U);
         sobelTransposed = new Mat(width, height, CvType.CV_8U);
 
-        segmentsStackLeft = new Mat(1, MAX_LINES, CvType.CV_16SC4);
-        segmentsStackRight = new Mat(1, MAX_LINES, CvType.CV_16SC4);
-        segmentsStackTop = new Mat(1, MAX_LINES, CvType.CV_16SC4);
-        segmentsStackBottom = new Mat(1, MAX_LINES, CvType.CV_16SC4);
-
-        houghLeft = new Hough(false, MASK_LEFT, yOrigin, MAX_GAP_LEFT, MIN_LENGTH_LEFT, segmentsStackLeft, linesLeft);
-        houghRight = new Hough(false, MASK_RIGHT, yOrigin, MAX_GAP, MIN_LENGTH, segmentsStackRight, linesRight);
-        houghTop = new Hough(true, MASK_TOP, xOrigin, MAX_GAP, MIN_LENGTH, segmentsStackTop, linesTop);
-        houghBottom = new Hough(true, MASK_BOTTOM, xOrigin, MAX_GAP, MIN_LENGTH, segmentsStackBottom, linesBottom);
+        houghLeft = new Hough(recognizerResources, sobel, false, MASK_LEFT, yOrigin, MAX_GAP_LEFT, MIN_LENGTH_LEFT, linesLeft);
+        houghRight = new Hough(recognizerResources, sobel, false, MASK_RIGHT, yOrigin, MAX_GAP, MIN_LENGTH, linesRight);
+        houghTop = new Hough(recognizerResources, sobelTransposed, true, MASK_TOP, xOrigin, MAX_GAP, MIN_LENGTH, linesTop);
+        houghBottom = new Hough(recognizerResources, sobelTransposed, true, MASK_BOTTOM, xOrigin, MAX_GAP, MIN_LENGTH, linesBottom);
 
         for (int i = 0 ; i < MAX_RECTANGLES ; i++) {
             selection[i] = new Mat(CardPatterns.SAMPLE_HEIGHT, CardPatterns.SAMPLE_WIDTH, CvType.CV_8UC3);
@@ -133,10 +120,10 @@ class Recognizer {
         canny.release();
         sobel.release();
         sobelTransposed.release();
-        segmentsStackLeft.release();
-        segmentsStackRight.release();
-        segmentsStackTop.release();
-        segmentsStackBottom.release();
+        houghLeft.release();
+        houghRight.release();
+        houghTop.release();
+        houghBottom.release();
         for (Mat mat : selection) {
             mat.release();
         }
@@ -261,7 +248,7 @@ class Recognizer {
             for (Point[] rect : rectangles) {
                 allRectanglesToDraw.add(new MatOfPoint(rect));
             }
-            Core.polylines(frame, allRectanglesToDraw, true, new Scalar(255, 255, 92), 3);
+            Core.polylines(frame, allRectanglesToDraw, true, new Scalar(92, 92, 255), 3);
         }
 
 
@@ -365,118 +352,6 @@ class Recognizer {
         Imgproc.resize(image, d, new Size(128, 128));
         d.copyTo(frame.submat(x, d.rows() + x, y, d.cols()+ y));
         d.release();
-    }
-
-    class Hough implements Runnable {
-        private boolean transposed;
-        private int mask;
-        private int origin;
-        private int maxGap;
-        private int minLength;
-        private Mat segmentsStack;
-        private List<Line> lines;
-        private short[] segmentData = new short[4];
-        private Segment[] segmentsBuffer = new Segment[MAX_LINES];
-
-        Hough(boolean transposed, int mask, int origin, int maxGap, int minLength, Mat segmentsStack, List<Line> lines) {
-            this.transposed = transposed;
-            this.mask = mask;
-            this.origin = origin;
-            this.maxGap = maxGap;
-            this.minLength = minLength;
-            this.segmentsStack = segmentsStack;
-            this.lines = lines;
-        }
-
-        @Override
-        public void run() {
-
-            long time = System.currentTimeMillis();
-            int segmentCount = recognizerResources.customNativeTools.houghVertical(transposed?sobelTransposed:sobel, mask, origin, maxGap, minLength, segmentsStack);
-
-            Log.e("rftg", "Hough-native: " + (System.currentTimeMillis() - time));
-
-            for (int i = 0 ; i < segmentCount ; i++) {
-                segmentsStack.get(0, i, segmentData);
-                segmentsBuffer[i] = new Segment(origin, segmentData[0], segmentData[1], segmentData[2], segmentData[3], 0);
-            }
-
-            group(segmentCount);
-        }
-
-        private void group(int size) {
-
-            int groups = 0;
-
-            for (int i = 0 ; i < size ; i++) {
-                Segment base = segmentsBuffer[i];
-                if (base != null) {
-                    int y1 = base.y1;
-                    int y2 = base.y2;
-                    int slope = base.slope;
-                    int xbaseMin = base.xbase;
-                    int xbaseMax = base.xbase;
-                    int length = y2 - y1;
-
-                    for (int j = i+1 ; j < size ; j++) {
-                        Segment s = segmentsBuffer[j];
-                        if (s == null) {
-                            continue;
-                        }
-                        if (s.slope != slope || s.xbase > xbaseMax + MAX_BASE_GAP) {
-                            break;
-                        }
-
-                        if (s.y1 > y2 || s.y2 < y1) {
-                            continue;
-                        }
-                        segmentsBuffer[j] = null;
-                        xbaseMax = s.xbase;
-                        if (y1 > s.y1) {
-                            y1 = s.y1;
-                        }
-                        if (y2 < s.y2) {
-                            y2 = s.y2;
-                        }
-                        int l = s.y2 - s.y1;
-                        if (l > length) {
-                            length = l;
-                        }
-                    }
-                    segmentsBuffer[groups++] = new Segment(origin, y1, y2, (xbaseMin + xbaseMax)/2, slope, length);
-                }
-            }
-
-            lines.clear();
-
-            int selections = 0;
-            nextbase:
-            for (int i = 0 ; i < groups ; i++) {
-                Segment segment = segmentsBuffer[i];
-                for (int j = 0 ; j < selections ; j++) {
-                    Segment base = segmentsBuffer[j];
-                    if (base.closeEnough(segment)) {
-                        if (segment.length > base.length) {
-                            segmentsBuffer[j] = segment;
-                        }
-                        continue nextbase;
-                    }
-                }
-                segmentsBuffer[selections++] = segment;
-            }
-
-            for (int i = 0 ; i < selections ; i++) {
-                Segment segment = segmentsBuffer[i];
-                lines.add(transposed
-                        ? new Line(segment.y1, segment.x1, segment.y2, segment.x2, segment.slope)
-                        : new Line(segment.x1, segment.y1, segment.x2, segment.y2, segment.slope)
-                );
-            }
-
-            Collections.sort(lines, Line.MX_COMPARATOR);
-        }
-
-
     }
 
     private List<Point[]> extractRectangles() {

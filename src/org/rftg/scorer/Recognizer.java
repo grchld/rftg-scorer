@@ -13,10 +13,10 @@ import java.util.*;
  */
 class Recognizer {
 
-    private static final boolean DEBUG_SHOW_ALL_RECTANGLES = true;
+    private static final boolean DEBUG_SHOW_ALL_RECTANGLES = false;
     private static final boolean DEBUG_SHOW_SEGMENTS = false;
 
-    private static final int MAX_RECTANGLES = 100;
+    private static final int MAX_RECTANGLES = 200;
 
     private static final int MAX_GAP_LEFT = 10;
     private static final int MAX_GAP = 2;
@@ -146,7 +146,7 @@ class Recognizer {
         Imgproc.cvtColor(frame, rgb, Imgproc.COLOR_RGBA2RGB);
         frame = rgb;
 
-        /**/
+        /*
         Mat sub = frame.submat(0,real.rows(),0,real.cols());
         real.copyTo(sub);
         sub.release();

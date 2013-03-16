@@ -16,22 +16,24 @@ class Recognizer {
     private static final int MAX_LINES = 1000;
     private static final int MAX_RECTANGLES = 100;
 
-    private static final int MAX_GAP = 4;
-    private static final int MIN_LENGTH = 70;
+    private static final int MAX_GAP_LEFT = 10;
+    private static final int MAX_GAP = 2;
+    private static final int MIN_LENGTH_LEFT = 120;
+    private static final int MIN_LENGTH = 80;
 
     private static final int MAX_BASE_GAP = 2;
 
-    private static final double RECT_MIN_ASPECT = (7./5.)/1.2;
-    private static final double RECT_MAX_ASPECT = (7./5.)*1.2;
+    private static final double RECT_MIN_ASPECT = CardPatterns.RECT_ASPECT/1.2;
+    private static final double RECT_MAX_ASPECT = CardPatterns.RECT_ASPECT*1.2;
 
     private static final int RECT_SLOPE_BOUND = 5;
 
     private static final double RECT_MIN_LINE_LENGTH_PERCENT = 35;
 
-    private static final int MASK_LEFT = 0x10;
-    private static final int MASK_RIGHT = 0x20;
-    private static final int MASK_TOP = 0x40;
-    private static final int MASK_BOTTOM = 0x80;
+    private static final int MASK_LEFT = 0x20;
+    private static final int MASK_RIGHT = 0x10;
+    private static final int MASK_TOP = 0x80;
+    private static final int MASK_BOTTOM = 0x40;
 
     final RecognizerResources recognizerResources;
 
@@ -105,10 +107,10 @@ class Recognizer {
         segmentsStackTop = new Mat(1, MAX_LINES, CvType.CV_16SC4);
         segmentsStackBottom = new Mat(1, MAX_LINES, CvType.CV_16SC4);
 
-        houghLeft = new Hough(false, MASK_LEFT, yOrigin, segmentsStackLeft, linesLeft);
-        houghRight = new Hough(false, MASK_RIGHT, yOrigin, segmentsStackRight, linesRight);
-        houghTop = new Hough(true, MASK_TOP, xOrigin, segmentsStackTop, linesTop);
-        houghBottom = new Hough(true, MASK_BOTTOM, xOrigin, segmentsStackBottom, linesBottom);
+        houghLeft = new Hough(false, MASK_LEFT, yOrigin, MAX_GAP_LEFT, MIN_LENGTH_LEFT, segmentsStackLeft, linesLeft);
+        houghRight = new Hough(false, MASK_RIGHT, yOrigin, MAX_GAP, MIN_LENGTH, segmentsStackRight, linesRight);
+        houghTop = new Hough(true, MASK_TOP, xOrigin, MAX_GAP, MIN_LENGTH, segmentsStackTop, linesTop);
+        houghBottom = new Hough(true, MASK_BOTTOM, xOrigin, MAX_GAP, MIN_LENGTH, segmentsStackBottom, linesBottom);
 
         for (int i = 0 ; i < MAX_RECTANGLES ; i++) {
             selection[i] = new Mat(CardPatterns.SAMPLE_HEIGHT, CardPatterns.SAMPLE_WIDTH, CvType.CV_8UC3);
@@ -165,7 +167,7 @@ class Recognizer {
         Imgproc.cvtColor(frame, gray, Imgproc.COLOR_RGB2GRAY);
         Log.e("rftg", "Convert color: " + (System.currentTimeMillis() - time));
         time = System.currentTimeMillis();
-        recognizerResources.customNativeTools.sobel(gray, sobel, 100);
+        recognizerResources.customNativeTools.sobel(gray, sobel);
 
         Log.e("rftg", "Sobel: " + (System.currentTimeMillis() - time));
 
@@ -251,43 +253,49 @@ class Recognizer {
 
         Scalar rectColor = new Scalar(255, 255, 255);
 
-        List<MatOfPoint> rectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
+        List<MatOfPoint> allRectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
+        for (Point[] rect : rectangles) {
+            allRectanglesToDraw.add(new MatOfPoint(rect));
+        }
+        Core.polylines(frame, allRectanglesToDraw, true, new Scalar(255, 255, 92), 3);
+
+
+
+        List<MatOfPoint> rectanglesToDraw = new ArrayList<MatOfPoint>(matches.size());
 
         for (CardMatch match : matches) {
-            if (match != null) {
-                Point[] points = match.rect;
-                rectanglesToDraw.add(new MatOfPoint(points));
-                                 /*
-                Mat warpMatrix = Imgproc.getPerspectiveTransform(new MatOfPoint2f(points), CardPatterns.SAMPLE_RECT);
-                Imgproc.remap(recognizerResources.cardPatterns.samples[match.cardNumber], frame, Mat map1, Mat map2, Imgproc.INTER_LINEAR, Imgproc.BORDER_TRANSPARENT, new Scalar(0,0,0));
+            Point[] points = match.rect;
+            rectanglesToDraw.add(new MatOfPoint(points));
+                             /*
+            Mat warpMatrix = Imgproc.getPerspectiveTransform(new MatOfPoint2f(points), CardPatterns.SAMPLE_RECT);
+            Imgproc.remap(recognizerResources.cardPatterns.samples[match.cardNumber], frame, Mat map1, Mat map2, Imgproc.INTER_LINEAR, Imgproc.BORDER_TRANSPARENT, new Scalar(0,0,0));
 
-                scaleMatrix.release();
+            scaleMatrix.release();
 
-                */
-                String name = recognizerResources.cardInfo.cards.get(match.cardNumber).name;
-                int length = Math.max(100, name.length() * 10);
-                Core.fillConvexPoly(frame, new MatOfPoint(
-                        new Point(points[0].x + 20, points[0].y + 100),
-                        new Point(points[0].x + 20, points[0].y + 60),
-                        new Point(points[0].x + 20 + length, points[0].y + 60),
-                        new Point(points[0].x + 20 + length, points[0].y + 100)
-                ), new Scalar(0,0,0));
-                Core.putText(frame, "" + match.cardNumber + " - " + match.score, new Point(points[0].x + 23, points[0].y + 76), 1, 1, new Scalar(255,255,255));
-                Core.putText(frame, name, new Point(points[0].x + 23, points[0].y + 96), 1, 1, new Scalar(255,255,255));
+            */
+            String name = recognizerResources.cardInfo.cards.get(match.cardNumber).name;
+            int length = Math.max(100, name.length() * 10);
+            Core.fillConvexPoly(frame, new MatOfPoint(
+                    new Point(points[0].x + 20, points[0].y + 100),
+                    new Point(points[0].x + 20, points[0].y + 60),
+                    new Point(points[0].x + 20 + length, points[0].y + 60),
+                    new Point(points[0].x + 20 + length, points[0].y + 100)
+            ), new Scalar(0,0,0));
+            Core.putText(frame, "" + match.cardNumber + " - " + match.score, new Point(points[0].x + 23, points[0].y + 76), 1, 1, new Scalar(255,255,255));
+            Core.putText(frame, name, new Point(points[0].x + 23, points[0].y + 96), 1, 1, new Scalar(255,255,255));
 
 
-                /*
-                Mat bestSample = recognizerResources.cardPatterns.samples[match.cardNumber];
-                draw(frame, bestSample, 400, 500);
+            /*
+            Mat bestSample = recognizerResources.cardPatterns.samples[match.cardNumber];
+            draw(frame, bestSample, 400, 500);
 
-                draw(frame, selection[0], 250, 500);
+            draw(frame, selection[0], 250, 500);
 
-                Mat report = new Mat(bestSample.rows(), bestSample.cols(), CvType.CV_8UC3);
-                recognizerResources.customNativeTools.compare(selection[0], bestSample, report);
-                draw(frame, report, 400, 650);
-                report.release();
-                                 */
-            }
+            Mat report = new Mat(bestSample.rows(), bestSample.cols(), CvType.CV_8UC3);
+            recognizerResources.customNativeTools.compare(selection[0], bestSample, report);
+            draw(frame, report, 400, 650);
+            report.release();
+                             */
         }
 
         /*
@@ -336,6 +344,7 @@ class Recognizer {
                     blue);
             Core.putText(frame, line.toString(), new Point(line.mx, line.my + 20), 1, 1, blue);
         }
+
         Log.e("rftg", "Drawing: " + (System.currentTimeMillis() - time));
 
         Log.e("rftg", "Total calc time: " + (System.currentTimeMillis() - totalTimer));
@@ -356,15 +365,19 @@ class Recognizer {
         private boolean transposed;
         private int mask;
         private int origin;
+        private int maxGap;
+        private int minLength;
         private Mat segmentsStack;
         private List<Line> lines;
         private short[] segmentData = new short[4];
         private Segment[] segmentsBuffer = new Segment[MAX_LINES];
 
-        Hough(boolean transposed, int mask, int origin, Mat segmentsStack, List<Line> lines) {
+        Hough(boolean transposed, int mask, int origin, int maxGap, int minLength, Mat segmentsStack, List<Line> lines) {
             this.transposed = transposed;
             this.mask = mask;
             this.origin = origin;
+            this.maxGap = maxGap;
+            this.minLength = minLength;
             this.segmentsStack = segmentsStack;
             this.lines = lines;
         }
@@ -373,7 +386,7 @@ class Recognizer {
         public void run() {
 
             long time = System.currentTimeMillis();
-            int segmentCount = recognizerResources.customNativeTools.houghVertical(transposed?sobelTransposed:sobel, mask, origin, MAX_GAP, MIN_LENGTH, segmentsStack);
+            int segmentCount = recognizerResources.customNativeTools.houghVertical(transposed?sobelTransposed:sobel, mask, origin, maxGap, minLength, segmentsStack);
 
             Log.e("rftg", "Hough-native: " + (System.currentTimeMillis() - time));
 

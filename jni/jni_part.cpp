@@ -15,7 +15,12 @@ using namespace cv;
 
 extern "C" {
 
-JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr, jint bound)
+#define SOBEL_V_LIGHT_BOUND 50
+#define SOBEL_V_DARK_BOUND 100
+#define SOBEL_H_LIGHT_BOUND 100
+#define SOBEL_H_DARK_BOUND 100
+
+JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr)
 {
     Mat& src = *(Mat*)srcAddr;
     Mat& dst = *(Mat*)dstAddr;
@@ -61,8 +66,11 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
         uint8x8_t c1 = crow[1];
         uint8x8_t n1 = nrow[1];
 
-        int16x8_t lower = vdupq_n_s16(-bound);
-        int16x8_t upper = vdupq_n_s16(bound);
+        int16x8_t hlower = vdupq_n_s16(-SOBEL_H_DARK_BOUND);
+        int16x8_t hupper = vdupq_n_s16(SOBEL_H_LIGHT_BOUND);
+
+        int16x8_t vlower = vdupq_n_s16(-SOBEL_V_DARK_BOUND);
+        int16x8_t vupper = vdupq_n_s16(SOBEL_V_LIGHT_BOUND);
 
         uint8x8_t hlightmask = vdup_n_u8(0x80);
         uint8x8_t hdarkmask = vdup_n_u8(0x40);
@@ -96,11 +104,11 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
             // ny + 2*cy + py - (nx + 2*cx + px)
             int16x8_t vertical = vaddq_s16(vshlq_n_s16(vsubq_s16(cy, cx), 1), vsubq_s16(d1,d2));
 
-            uint8x8_t hdark = vqmovn_u16(vcleq_s16(horizontal, lower));
-            uint8x8_t hlight = vqmovn_u16(vcgeq_s16(horizontal, upper));
+            uint8x8_t hdark = vqmovn_u16(vcleq_s16(horizontal, hlower));
+            uint8x8_t hlight = vqmovn_u16(vcgeq_s16(horizontal, hupper));
 
-            uint8x8_t vdark = vqmovn_u16(vcleq_s16(vertical, lower));
-            uint8x8_t vlight = vqmovn_u16(vcgeq_s16(vertical, upper));
+            uint8x8_t vdark = vqmovn_u16(vcleq_s16(vertical, vlower));
+            uint8x8_t vlight = vqmovn_u16(vcgeq_s16(vertical, vupper));
 
             hdark = vand_u8(hdark, hdarkmask);
             hlight = vand_u8(hlight, hlightmask);
@@ -138,17 +146,17 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
             int vertical = (int)prow[j-1] + 2*(int)crow[j-1] + (int)nrow[j-1] - (int)prow[j+1] - 2*(int)crow[j+1] - (int)nrow[j+1];
 
             uchar result;
-            if (horizontal >= bound) {
+            if (horizontal >= SOBEL_H_DARK_BOUND) {
                 result = 0x40;
-            } else if (horizontal <= -bound) {
+            } else if (horizontal <= -SOBEL_H_LIGHT_BOUND) {
                 result = 0x80;
             } else {
                 result = 0;
             }
 
-            if (vertical >= bound) {
+            if (vertical >= SOBEL_V_DARK_BOUND) {
                 result |= 0x10;
-            } else if (vertical <= -bound) {
+            } else if (vertical <= -SOBEL_V_LIGHT_BOUND) {
                 result |= 0x20;
             }
             drow[j] = result;
@@ -259,13 +267,13 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
                         SegmentState& state = states[SLOPE_COUNT * xbase + (slope - MIN_SLOPE)];
 
                         if (state.count) {
-                            if (y - state.last <= MAX_GAP) {
+                            if (y - state.last <= maxGap) {
                                 // line continues
                                 state.count += y-state.last;
                                 state.last = y;
                             } else {
                                 // previous line stops
-                                if (state.count > MIN_LENGTH) {
+                                if (state.count > minLength) {
                                     // save line
                                     Segment& segment = segments[segmentNumber];
 
@@ -301,7 +309,7 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
     SegmentState* state = states;
     for (int xbase = 0 ; xbase < cols; xbase++) {
         for (int slope = MIN_SLOPE ; slope <= MAX_SLOPE ; slope++) {
-            if (state->count > MIN_LENGTH) {
+            if (state->count > minLength) {
                 // save line
                 Segment& segment = segments[segmentNumber];
 

@@ -14,6 +14,9 @@ class CardPatterns {
 
     public final static int ORIGINAL_SAMPLE_HEIGHT = 520;
     public final static int ORIGINAL_SAMPLE_WIDTH = 372;
+    public final static int ORIGINAL_SAMPLE_BORDER = 23;
+    public final static double RECT_ASPECT = ((double)ORIGINAL_SAMPLE_HEIGHT - 2*ORIGINAL_SAMPLE_BORDER)/(ORIGINAL_SAMPLE_WIDTH - 2*ORIGINAL_SAMPLE_BORDER);
+
     public final static int SAMPLE_HEIGHT = 64;
     public final static int SAMPLE_WIDTH = 64;
     public final static int MATCHER_MINIMAL_BOUND = 4500;
@@ -38,7 +41,10 @@ class CardPatterns {
         previews = new Mat[recognizerResources.maxCardNum + 1];
 
         final Mat sampleScaleDown = Imgproc.getAffineTransform(
-                new MatOfPoint2f(new Point(0, 0), new Point(ORIGINAL_SAMPLE_WIDTH, 0), new Point(0, ORIGINAL_SAMPLE_HEIGHT)),
+                new MatOfPoint2f(
+                        new Point(ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_BORDER),
+                        new Point(ORIGINAL_SAMPLE_WIDTH-ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_BORDER),
+                        new Point(ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_HEIGHT-ORIGINAL_SAMPLE_BORDER)),
                 new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(0, SAMPLE_HEIGHT)));
 
         final Mat previewScaleDown = Imgproc.getAffineTransform(

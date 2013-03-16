@@ -11,11 +11,11 @@ class CustomNativeTools {
         System.loadLibrary("rftg_scorer");
     }
 
-    public void sobel(Mat src, Mat dst, int bound) {
-        sobel(src.getNativeObjAddr(), dst.getNativeObjAddr(), bound);
+    public void sobel(Mat src, Mat dst) {
+        sobel(src.getNativeObjAddr(), dst.getNativeObjAddr());
     }
 
-    private native void sobel(long src, long dst, int bound);
+    private native void sobel(long src, long dst);
 
     // segments: short miny, short maxy, short x, short angle
     public int houghVertical(Mat image, int bordermask, int origin,  int maxGap, int minLength, Mat segments) {

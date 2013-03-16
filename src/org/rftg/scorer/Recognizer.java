@@ -13,6 +13,9 @@ import java.util.*;
  */
 class Recognizer {
 
+    private static final boolean DEBUG_SHOW_ALL_RECTS = true;
+    private static final boolean DEBUG_SHOW_SEGMENTS = true;
+
     private static final int MAX_LINES = 1000;
     private static final int MAX_RECTANGLES = 100;
 
@@ -253,12 +256,13 @@ class Recognizer {
 
         Scalar rectColor = new Scalar(255, 255, 255);
 
-        List<MatOfPoint> allRectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
-        for (Point[] rect : rectangles) {
-            allRectanglesToDraw.add(new MatOfPoint(rect));
+        if (DEBUG_SHOW_ALL_RECTS) {
+            List<MatOfPoint> allRectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
+            for (Point[] rect : rectangles) {
+                allRectanglesToDraw.add(new MatOfPoint(rect));
+            }
+            Core.polylines(frame, allRectanglesToDraw, true, new Scalar(255, 255, 92), 3);
         }
-        Core.polylines(frame, allRectanglesToDraw, true, new Scalar(255, 255, 92), 3);
-
 
 
         List<MatOfPoint> rectanglesToDraw = new ArrayList<MatOfPoint>(matches.size());
@@ -308,41 +312,43 @@ class Recognizer {
 
         Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1 ,1, rectColor);
 
-        Scalar green = new Scalar(0, 255, 0);
-        Scalar red = new Scalar(255, 0, 0);
-        Scalar blue = new Scalar(255, 0, 255);
-        Scalar yellow = new Scalar(255, 255, 0);
+        if (DEBUG_SHOW_SEGMENTS) {
+            Scalar green = new Scalar(0, 255, 0);
+            Scalar red = new Scalar(255, 0, 0);
+            Scalar blue = new Scalar(255, 0, 255);
+            Scalar yellow = new Scalar(255, 255, 0);
 
-        for (Line line : linesLeft) {
-            Core.line(frame,
-                    new Point(line.x1, line.y1),
-                    new Point(line.x2, line.y2),
-                    red);
-            Core.putText(frame, line.toString(), new Point(line.mx - 10, line.my), 1, 1, red);
-        }
+            for (Line line : linesLeft) {
+                Core.line(frame,
+                        new Point(line.x1, line.y1),
+                        new Point(line.x2, line.y2),
+                        red);
+                Core.putText(frame, line.toString(), new Point(line.mx - 10, line.my), 1, 1, red);
+            }
 
-        for (Line line : linesRight) {
-            Core.line(frame,
-                    new Point(line.x1, line.y1),
-                    new Point(line.x2, line.y2),
-                    green);
-            Core.putText(frame, line.toString(), new Point(line.mx + 10, line.my), 1, 1, green);
-        }
+            for (Line line : linesRight) {
+                Core.line(frame,
+                        new Point(line.x1, line.y1),
+                        new Point(line.x2, line.y2),
+                        green);
+                Core.putText(frame, line.toString(), new Point(line.mx + 10, line.my), 1, 1, green);
+            }
 
-        for (Line line : linesTop) {
-            Core.line(frame,
-                    new Point(line.x1, line.y1),
-                    new Point(line.x2, line.y2),
-                    yellow);
-            Core.putText(frame, line.toString(), new Point(line.mx, line.my - 20), 1, 1, yellow);
-        }
+            for (Line line : linesTop) {
+                Core.line(frame,
+                        new Point(line.x1, line.y1),
+                        new Point(line.x2, line.y2),
+                        yellow);
+                Core.putText(frame, line.toString(), new Point(line.mx, line.my - 20), 1, 1, yellow);
+            }
 
-        for (Line line : linesBottom) {
-            Core.line(frame,
-                    new Point(line.x1, line.y1),
-                    new Point(line.x2, line.y2),
-                    blue);
-            Core.putText(frame, line.toString(), new Point(line.mx, line.my + 20), 1, 1, blue);
+            for (Line line : linesBottom) {
+                Core.line(frame,
+                        new Point(line.x1, line.y1),
+                        new Point(line.x2, line.y2),
+                        blue);
+                Core.putText(frame, line.toString(), new Point(line.mx, line.my + 20), 1, 1, blue);
+            }
         }
 
         Log.e("rftg", "Drawing: " + (System.currentTimeMillis() - time));

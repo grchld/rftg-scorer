@@ -14,53 +14,7 @@ using namespace std;
 using namespace cv;
 
 extern "C" {
-/*
-JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*, jobject, jlong addrImage, jdouble lowerPercent, jdouble upperPercent)
-{
-    Mat& image = *(Mat*)addrImage;
-    const int channels = image.channels();
 
-    int hist[channels*256];
-    memset(hist, 0, channels*256*sizeof(int));
-
-    if (channels == 4) {
-
-        int* h1 = &(hist[0]);
-        int* h2 = &(hist[256]);
-        int* h3 = &(hist[256*2]);
-        int* h4 = &(hist[256*3]);
-
-        for (int i = 0; i < image.rows ; i++) {
-            unsigned int* row = image.ptr<unsigned int>(i);
-            for (int j = 0; j < image.cols ; j++ ) {
-                unsigned int v = row[j];
-                h1[v & 0xff]++;
-                h2[(v >> 8) & 0xff]++;
-                h3[(v >> 16) & 0xff]++;
-                h4[v >> 24]++;
-            }
-        }
-
-    } else {
-        int* s = &(hist[0]);
-        int* h = s;
-        int* e = s + channels*256;
-
-        for (int i = 0; i < image.rows ; i++) {
-            unsigned char* row = image.ptr<unsigned char>(i);
-            for (int j = 0; j < image.cols*channels ; j++ ) {
-                h[*(row++)]++;
-                h += 256;
-                if (h == e) {
-                    h = s;
-                }
-            }
-        }
-    }
-
-    return hist[channels*256-1];
-}
-*/
 JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr, jint bound)
 {
     Mat& src = *(Mat*)srcAddr;
@@ -227,8 +181,6 @@ struct SegmentState {
 #define DIVISOR 64
 #define MIN_SLOPE (-15)
 #define MAX_SLOPE 15
-#define MAX_GAP 4
-#define MIN_LENGTH 70
 #define SLOPE_COUNT (MAX_SLOPE - MIN_SLOPE + 1)
 
 
@@ -242,10 +194,10 @@ int segmentCompare(void const *a1, void const* a2) {
     }
 }
 
-jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong segmentsAddr);
+jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint maxGap, jint minLength, jlong segmentsAddr);
 
-JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jlong imageAddr, jint bordermask, jint origin, jlong segmentsAddr) {
-    jint segmentNumber = houghVerticalUnsorted(imageAddr, bordermask, origin, segmentsAddr);
+JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jlong imageAddr, jint bordermask, jint origin, jint maxGap, jint minLength, jlong segmentsAddr) {
+    jint segmentNumber = houghVerticalUnsorted(imageAddr, bordermask, origin, maxGap, minLength, segmentsAddr);
     if (segmentNumber > 0) {
         Mat& segmentsMat = *(Mat*)segmentsAddr;
         qsort(segmentsMat.ptr<Segment>(0), segmentNumber, sizeof(Segment), segmentCompare);
@@ -253,10 +205,10 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIE
     return segmentNumber;
 }
 
-jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong segmentsAddr) {
+jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint maxGap, jint minLength, jlong segmentsAddr) {
 
 //    __android_log_print(ANDROID_LOG_ERROR, "rftg", "UINT sizeof is: %d", sizeof(uint));
-    
+
     Mat& image = *(Mat*)imageAddr;
     Mat& segmentsMat = *(Mat*)segmentsAddr;
 
@@ -299,11 +251,11 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
                 if ((value & mask) != 0) {
                     for (int slope = MIN_SLOPE ; slope <= MAX_SLOPE ; slope++) {
                         int xbase = x + slope * (origin - y) / DIVISOR;
-    
+
                         if (xbase < 0 || xbase >= cols) {
                             continue;
                         }
-    
+
                         SegmentState& state = states[SLOPE_COUNT * xbase + (slope - MIN_SLOPE)];
 
                         if (state.count) {
@@ -316,12 +268,12 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
                                 if (state.count > MIN_LENGTH) {
                                     // save line
                                     Segment& segment = segments[segmentNumber];
-    
+
                                     segment.ymin = state.last - state.count + 1;
                                     segment.ymax = state.last;
                                     segment.x = xbase;
                                     segment.slope = slope;
-    
+
                                     if (++segmentNumber == maxSegments) {
                                         // segment stack is full
                                         return maxSegments;
@@ -336,7 +288,7 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
                             state.count = 1;
                             state.last = y;
                         }
-    
+
                     }
                 }
                 value >>= 8;
@@ -344,7 +296,7 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
             }
         }
     }
-/*
+
     // force line endings
     SegmentState* state = states;
     for (int xbase = 0 ; xbase < cols; xbase++) {
@@ -365,7 +317,7 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
             state++;
         }
     }
-*/
+
     return segmentNumber;
 }
 
@@ -721,10 +673,10 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
     CV_Assert(image.channels() == 3);
 
     CV_Assert(image.ptr<uchar>(1) - image.ptr<uchar>(0) == 3*cols);
-    
+
     int sum0 = 0, sum1 = 0, sum2 = 0;
     int sq0 = 0, sq1 = 0, sq2 = 0;
-    
+
     uchar* a = image.ptr<uchar>(0);
 
     for (int i = total ; i > 0 ; i--) {
@@ -740,7 +692,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
         sum2 += v2;
         sq2 += v2*v2;
     }
-  
+
     float sum0norm = sum0 / total;
     float sq0norm = sq0 / total;
     float disp0 = sq0norm - sum0norm*sum0norm;
@@ -752,7 +704,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
         alpha0 = sqrt(NORMAL_DISPERSION/disp0);
         beta0 = NORMAL_MEDIAN - alpha0 * sum0norm;
     }
- 
+
     float sum1norm = sum1 / total;
     float sq1norm = sq1 / total;
     float disp1 = sq1norm - sum1norm*sum1norm;
@@ -776,7 +728,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
         alpha2 = sqrt(NORMAL_DISPERSION/disp2);
         beta2 = NORMAL_MEDIAN - alpha2 * sum2norm;
     }
-    
+
     a = image.ptr<uchar>(0);
 
     for (int i = total ; i > 0 ; i--) {
@@ -790,7 +742,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
             *a = f0;
         }
         a++;
-        
+
         uchar v1 = *a;
         float f1 = alpha1 * v1 + beta1;
         if (f1 <= 0) {
@@ -812,9 +764,9 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
             *a = f2;
         }
         a++;
-        
+
     }
-    
+
 }
 
 }

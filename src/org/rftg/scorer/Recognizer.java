@@ -16,6 +16,9 @@ class Recognizer {
     private static final int MAX_LINES = 1000;
     private static final int MAX_RECTANGLES = 100;
 
+    private static final int MAX_GAP = 4;
+    private static final int MIN_LENGTH = 70;
+
     private static final int MAX_BASE_GAP = 2;
 
     private static final double RECT_MIN_ASPECT = (7./5.)/1.2;
@@ -370,7 +373,7 @@ class Recognizer {
         public void run() {
 
             long time = System.currentTimeMillis();
-            int segmentCount = recognizerResources.customNativeTools.houghVertical(transposed?sobelTransposed:sobel, mask, origin, segmentsStack);
+            int segmentCount = recognizerResources.customNativeTools.houghVertical(transposed?sobelTransposed:sobel, mask, origin, MAX_GAP, MIN_LENGTH, segmentsStack);
 
             Log.e("rftg", "Hough-native: " + (System.currentTimeMillis() - time));
 

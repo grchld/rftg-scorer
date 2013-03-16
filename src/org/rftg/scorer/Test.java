@@ -12,7 +12,7 @@ public class Test {
     public static void main(String[] args) throws Exception {
         InputStream is = new FileInputStream("assets/cards.txt");
         try {
-            List<Card> cards = CardsLoader.loadCards(is);
+            List<Card> cards = CardInfo.loadCards(is);
         } finally {
             is.close();
         }

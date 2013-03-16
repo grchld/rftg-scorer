@@ -20,19 +20,30 @@ class CardPatterns {
     public final static int MATCHER_MINIMAL_GAP = 500;
     public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
     public final static MatOfPoint2f SAMPLE_RECT = new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(SAMPLE_WIDTH, SAMPLE_HEIGHT), new Point(0, SAMPLE_HEIGHT));
-    /*private */final Mat[] samples;
+
+    public final static int PREVIEW_HEIGHT = 70;
+    public final static int PREVIEW_WIDTH = 50;
+    public final static Size PREVIEW_SIZE = new Size(PREVIEW_WIDTH, PREVIEW_HEIGHT);
+
+    /*private*/ final Mat[] samples;
     private final RecognizerResources recognizerResources;
+    public final Mat[] previews;
+
 
     public CardPatterns(final RecognizerResources recognizerResources) {
 
         this.recognizerResources = recognizerResources;
 
         samples = new Mat[recognizerResources.maxCardNum + 1];
-        final Size size = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
+        previews = new Mat[recognizerResources.maxCardNum + 1];
 
-        final Mat scaleDown = Imgproc.getAffineTransform(
+        final Mat sampleScaleDown = Imgproc.getAffineTransform(
                 new MatOfPoint2f(new Point(0, 0), new Point(ORIGINAL_SAMPLE_WIDTH, 0), new Point(0, ORIGINAL_SAMPLE_HEIGHT)),
                 new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(0, SAMPLE_HEIGHT)));
+
+        final Mat previewScaleDown = Imgproc.getAffineTransform(
+                new MatOfPoint2f(new Point(0, 0), new Point(ORIGINAL_SAMPLE_WIDTH, 0), new Point(0, ORIGINAL_SAMPLE_HEIGHT)),
+                new MatOfPoint2f(new Point(0, 0), new Point(PREVIEW_WIDTH, 0), new Point(0, PREVIEW_HEIGHT)));
 
         long time = System.currentTimeMillis();
 
@@ -56,12 +67,18 @@ class CardPatterns {
 
                 tempSampleBGR.release();
 
-                Mat scaled = new Mat(SAMPLE_WIDTH, SAMPLE_HEIGHT, CvType.CV_8UC3);
-                Imgproc.warpAffine(tempSample, scaled, scaleDown, size, Imgproc.INTER_LINEAR);
+                Mat scaledSample = new Mat(SAMPLE_WIDTH, SAMPLE_HEIGHT, CvType.CV_8UC3);
+                Imgproc.warpAffine(tempSample, scaledSample, sampleScaleDown, SAMPLE_SIZE, Imgproc.INTER_LINEAR);
 
-                recognizerResources.customNativeTools.normalize(scaled);
+                recognizerResources.customNativeTools.normalize(scaledSample);
 
-                samples[num] = scaled;
+                samples[num] = scaledSample;
+
+                Mat scaledPreview = new Mat(PREVIEW_WIDTH, PREVIEW_HEIGHT, CvType.CV_8UC3);
+                Imgproc.warpAffine(tempSample, scaledPreview, previewScaleDown, PREVIEW_SIZE, Imgproc.INTER_LINEAR);
+
+                previews[num] = scaledPreview;
+
                 tempSample.release();
 
                 return null;
@@ -76,13 +93,19 @@ class CardPatterns {
 
         Log.i("rftg", "Parallel loading time: " + (System.currentTimeMillis() - time));
 
-        scaleDown.release();
+        sampleScaleDown.release();
+        previewScaleDown.release();
     }
 
     public void release() {
         for (Mat sample : samples) {
             if (sample != null) {
                 sample.release();
+            }
+        }
+        for (Mat preview : previews) {
+            if (preview != null) {
+                preview.release();
             }
         }
     }

@@ -14,11 +14,11 @@ import java.util.List;
 /**
  * @author gc
  */
-class CardsLoader {
+class CardInfo {
 
     List<Card> cards;
 
-    CardsLoader(AssetManager assetManager) {
+    CardInfo(AssetManager assetManager) {
         try {
             InputStream inputStream = assetManager.open("cards.txt");
             try {
@@ -31,7 +31,7 @@ class CardsLoader {
         }
     }
 
-    CardsLoader(Activity activity) {
+    CardInfo(Activity activity) {
         this(activity.getAssets());
     }
 

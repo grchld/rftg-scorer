@@ -254,13 +254,24 @@ class Recognizer {
             if (match != null) {
                 Point[] points = match.rect;
                 rectanglesToDraw.add(new MatOfPoint(points));
+                                 /*
+                Mat warpMatrix = Imgproc.getPerspectiveTransform(new MatOfPoint2f(points), CardPatterns.SAMPLE_RECT);
+                Imgproc.remap(recognizerResources.cardPatterns.samples[match.cardNumber], frame, Mat map1, Mat map2, Imgproc.INTER_LINEAR, Imgproc.BORDER_TRANSPARENT, new Scalar(0,0,0));
+
+                scaleMatrix.release();
+
+                */
+                String name = recognizerResources.cardInfo.cards.get(match.cardNumber).name;
+                int length = Math.max(100, name.length() * 10);
                 Core.fillConvexPoly(frame, new MatOfPoint(
-                        new Point(points[0].x + 50, points[0].y + 100),
-                        new Point(points[0].x + 50, points[0].y + 80),
-                        new Point(points[0].x + 150, points[0].y + 80),
-                        new Point(points[0].x + 150, points[0].y + 100)
+                        new Point(points[0].x + 20, points[0].y + 100),
+                        new Point(points[0].x + 20, points[0].y + 60),
+                        new Point(points[0].x + 20 + length, points[0].y + 60),
+                        new Point(points[0].x + 20 + length, points[0].y + 100)
                 ), new Scalar(0,0,0));
-                Core.putText(frame, "" + match.cardNumber + " - " + match.score, new Point(points[0].x + 53, points[0].y + 96), 1, 1, new Scalar(255,255,255));
+                Core.putText(frame, "" + match.cardNumber + " - " + match.score, new Point(points[0].x + 23, points[0].y + 76), 1, 1, new Scalar(255,255,255));
+                Core.putText(frame, name, new Point(points[0].x + 23, points[0].y + 96), 1, 1, new Scalar(255,255,255));
+
 
                 /*
                 Mat bestSample = recognizerResources.cardPatterns.samples[match.cardNumber];
@@ -286,7 +297,6 @@ class Recognizer {
 
         Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1 ,1, rectColor);
 
-/*
         Scalar green = new Scalar(0, 255, 0);
         Scalar red = new Scalar(255, 0, 0);
         Scalar blue = new Scalar(255, 0, 255);
@@ -323,7 +333,6 @@ class Recognizer {
                     blue);
             Core.putText(frame, line.toString(), new Point(line.mx, line.my + 20), 1, 1, blue);
         }
-  */
         Log.e("rftg", "Drawing: " + (System.currentTimeMillis() - time));
 
         Log.e("rftg", "Total calc time: " + (System.currentTimeMillis() - totalTimer));

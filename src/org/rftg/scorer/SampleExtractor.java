@@ -12,8 +12,10 @@ class SampleExtractor implements Runnable {
     private Mat image;
     private Point[] rect;
     private Mat destination;
+    private RecognizerResources recognizerResources;
 
-    SampleExtractor(Mat image, Point[] rect, Mat destination) {
+    SampleExtractor(RecognizerResources recognizerResources, Mat image, Point[] rect, Mat destination) {
+        this.recognizerResources = recognizerResources;
         this.image = image;
         this.rect = rect;
         this.destination = destination;
@@ -23,8 +25,8 @@ class SampleExtractor implements Runnable {
     public void run() {
 
         final Mat scaleDown = Imgproc.getPerspectiveTransform(new MatOfPoint2f(rect), CardPatterns.SAMPLE_RECT);
-        Imgproc.warpPerspective(image, destination, scaleDown, CardPatterns.SAMPLE_SIZE, Imgproc.INTER_LINEAR);
-
+        Imgproc.warpPerspective(image, destination, scaleDown, CardPatterns.SAMPLE_SIZE, CardPatterns.SAMPLE_INTER);
+        recognizerResources.customNativeTools.normalize(destination);
     }
 
 }

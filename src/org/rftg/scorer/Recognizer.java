@@ -13,8 +13,8 @@ import java.util.*;
  */
 class Recognizer {
 
-    private static final boolean DEBUG_SHOW_ALL_RECTS = true;
-    private static final boolean DEBUG_SHOW_SEGMENTS = true;
+    private static final boolean DEBUG_SHOW_ALL_RECTANGLES = true;
+    private static final boolean DEBUG_SHOW_SEGMENTS = false;
 
     private static final int MAX_RECTANGLES = 100;
 
@@ -23,8 +23,9 @@ class Recognizer {
     private static final int MIN_LENGTH_LEFT = 120;
     private static final int MIN_LENGTH = 80;
 
-    private static final double RECT_MIN_ASPECT = CardPatterns.RECT_ASPECT/1.8;
-    private static final double RECT_MAX_ASPECT = CardPatterns.RECT_ASPECT*1.8;
+    private static final double RECT_ASPECT = 1.4;
+    private static final double RECT_MIN_ASPECT = RECT_ASPECT/1.25;
+    private static final double RECT_MAX_ASPECT = RECT_ASPECT*1.25;
 
     private static final int RECT_SLOPE_BOUND = 5;
 
@@ -106,11 +107,11 @@ class Recognizer {
             selection[i] = new Mat(CardPatterns.SAMPLE_HEIGHT, CardPatterns.SAMPLE_WIDTH, CvType.CV_8UC3);
         }
 
-        maxX = width / 2;
-        minX = maxX / 5;
+        minX = 50;
+        minY = minX * RECT_ASPECT;
 
-        maxY = height / 1.3;
-        minY = maxY / 5;
+        maxY = height / 1.1;
+        maxX = maxY / RECT_ASPECT;
     }
 
     void release() {
@@ -182,17 +183,23 @@ class Recognizer {
         List<Point[]> rectangles = extractRectangles();
         Log.e("rftg", "Extraction: " + (System.currentTimeMillis() - time));
 
+        /*
+        Point[] p = rectangles.get(4);
+        rectangles.clear();
+        rectangles.add(p);
+        /**/
+
         time = System.currentTimeMillis();
         int selectionCounter = 0;
         for (Point[] rect : rectangles) {
-            recognizerResources.executor.submit(new SampleExtractor(frame, rect, selection[selectionCounter++]));
+            recognizerResources.executor.submit(new SampleExtractor(recognizerResources, frame, rect, selection[selectionCounter++]));
         }
         recognizerResources.executor.sync();
-        Log.e("rftg", "Scaling " + (System.currentTimeMillis() - time));
-
+        Log.e("rftg", "Scaling&Normalizing " + (System.currentTimeMillis() - time));
+/*
         time = System.currentTimeMillis();
         for (int i = 0 ; i < rectangles.size() ; i++) {
-            final Mat image = selection[i++];
+            final Mat image = selection[i];
             recognizerResources.executor.submit(new Runnable() {
                 @Override
                 public void run() {
@@ -202,8 +209,7 @@ class Recognizer {
         }
         recognizerResources.executor.sync();
         Log.e("rftg", "Normalize " + (System.currentTimeMillis() - time));
-
-
+*/
         Arrays.fill(cardMatches, null);
 
         time = System.currentTimeMillis();
@@ -243,7 +249,7 @@ class Recognizer {
 
         Scalar rectColor = new Scalar(255, 255, 255);
 
-        if (DEBUG_SHOW_ALL_RECTS) {
+        if (DEBUG_SHOW_ALL_RECTANGLES) {
             List<MatOfPoint> allRectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
             for (Point[] rect : rectangles) {
                 allRectanglesToDraw.add(new MatOfPoint(rect));

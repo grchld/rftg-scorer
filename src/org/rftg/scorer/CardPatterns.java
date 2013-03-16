@@ -15,7 +15,6 @@ class CardPatterns {
     public final static int ORIGINAL_SAMPLE_HEIGHT = 520;
     public final static int ORIGINAL_SAMPLE_WIDTH = 372;
     public final static int ORIGINAL_SAMPLE_BORDER = 23;
-    public final static double RECT_ASPECT = ((double)ORIGINAL_SAMPLE_HEIGHT - 2*ORIGINAL_SAMPLE_BORDER)/(ORIGINAL_SAMPLE_WIDTH - 2*ORIGINAL_SAMPLE_BORDER);
 
     public final static int SAMPLE_HEIGHT = 64;
     public final static int SAMPLE_WIDTH = 64;
@@ -27,6 +26,8 @@ class CardPatterns {
     public final static int PREVIEW_HEIGHT = 70;
     public final static int PREVIEW_WIDTH = 50;
     public final static Size PREVIEW_SIZE = new Size(PREVIEW_WIDTH, PREVIEW_HEIGHT);
+
+    public final static int SAMPLE_INTER = Imgproc.INTER_LINEAR;
 
     private final Mat[] samples;
     private final RecognizerResources recognizerResources;
@@ -69,7 +70,7 @@ class CardPatterns {
                 tempSampleBGR.release();
 
                 Mat scaledSample = new Mat(SAMPLE_WIDTH, SAMPLE_HEIGHT, CvType.CV_8UC3);
-                Imgproc.warpAffine(tempSample, scaledSample, sampleScaleDown, SAMPLE_SIZE, Imgproc.INTER_LINEAR);
+                Imgproc.warpAffine(tempSample, scaledSample, sampleScaleDown, SAMPLE_SIZE, SAMPLE_INTER);
 
                 recognizerResources.customNativeTools.normalize(scaledSample);
 

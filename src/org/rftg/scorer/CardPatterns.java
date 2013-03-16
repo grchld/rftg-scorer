@@ -28,7 +28,7 @@ class CardPatterns {
     public final static int PREVIEW_WIDTH = 50;
     public final static Size PREVIEW_SIZE = new Size(PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
-    /*private*/ final Mat[] samples;
+    private final Mat[] samples;
     private final RecognizerResources recognizerResources;
     public final Mat[] previews;
 
@@ -46,11 +46,6 @@ class CardPatterns {
                         new Point(ORIGINAL_SAMPLE_WIDTH-ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_BORDER),
                         new Point(ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_HEIGHT-ORIGINAL_SAMPLE_BORDER)),
                 new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(0, SAMPLE_HEIGHT)));
-
-        final Mat previewScaleDown = Imgproc.getAffineTransform(
-                new MatOfPoint2f(new Point(0, 0), new Point(ORIGINAL_SAMPLE_WIDTH, 0), new Point(0, ORIGINAL_SAMPLE_HEIGHT)),
-                new MatOfPoint2f(new Point(0, 0), new Point(PREVIEW_WIDTH, 0), new Point(0, PREVIEW_HEIGHT)));
-
         long time = System.currentTimeMillis();
 
         class Task implements Callable<Void> {
@@ -81,7 +76,7 @@ class CardPatterns {
                 samples[num] = scaledSample;
 
                 Mat scaledPreview = new Mat(PREVIEW_WIDTH, PREVIEW_HEIGHT, CvType.CV_8UC3);
-                Imgproc.warpAffine(tempSample, scaledPreview, previewScaleDown, PREVIEW_SIZE, Imgproc.INTER_LINEAR);
+                Imgproc.resize(tempSample, scaledPreview, PREVIEW_SIZE);
 
                 previews[num] = scaledPreview;
 
@@ -100,7 +95,6 @@ class CardPatterns {
         Log.i("rftg", "Parallel loading time: " + (System.currentTimeMillis() - time));
 
         sampleScaleDown.release();
-        previewScaleDown.release();
     }
 
     public void release() {

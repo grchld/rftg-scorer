@@ -4,6 +4,7 @@
 #include <opencv2/features2d/features2d.hpp>
 #include <vector>
 #include <math.h>
+#include <android/log.h>
 
 #if HAVE_NEON == 1
 #include <arm_neon.h>
@@ -214,8 +215,13 @@ struct Segment {
 };
 
 struct SegmentState {
-    short count;
-    short last;
+    union {
+        uint state;
+        struct {
+            short last;
+            short count;
+        };
+    };
 };
 
 #define DIVISOR 64
@@ -249,6 +255,8 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIE
 
 jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong segmentsAddr) {
 
+//    __android_log_print(ANDROID_LOG_ERROR, "rftg", "UINT sizeof is: %d", sizeof(uint));
+    
     Mat& image = *(Mat*)imageAddr;
     Mat& segmentsMat = *(Mat*)segmentsAddr;
 
@@ -266,7 +274,9 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
 
     const int cols = image.cols;
     const int rows = image.rows;
-    const uint mask = bordermask;
+    const uchar mask = bordermask;
+    const uint longmask = bordermask | (bordermask << 8) | (bordermask << 16) | (bordermask << 24);
+//    __android_log_print(ANDROID_LOG_ERROR, "rftg", "Long mask is: %x", bordermask);
 
     int totalStates = cols * SLOPE_COUNT;
 
@@ -276,11 +286,17 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
     for (int y = 0; y < rows; y++) {
         uint* row = image.ptr<uint>(y);
         int x = 0;
+//        for (int x = 0 ; x < cols ; x++) {
         for (int i = cols/sizeof(uint); i > 0 ; i--) {
             uint value = *(row++);
-            for (int j = sizeof(uint) ; j > 0 ; j--)
-            {
-                if (value & mask) {
+
+            if ((value & longmask) == 0) {
+                x+=sizeof(uint);
+                continue;
+            }
+
+            for (int j = sizeof(uint) ; j > 0 ; j--) {
+                if ((value & mask) != 0) {
                     for (int slope = MIN_SLOPE ; slope <= MAX_SLOPE ; slope++) {
                         int xbase = x + slope * (origin - y) / DIVISOR;
     
@@ -289,7 +305,7 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
                         }
     
                         SegmentState& state = states[SLOPE_COUNT * xbase + (slope - MIN_SLOPE)];
-    
+
                         if (state.count) {
                             if (y - state.last <= MAX_GAP) {
                                 // line continues
@@ -328,7 +344,7 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
             }
         }
     }
-
+/*
     // force line endings
     SegmentState* state = states;
     for (int xbase = 0 ; xbase < cols; xbase++) {
@@ -349,7 +365,7 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jlong 
             state++;
         }
     }
-
+*/
     return segmentNumber;
 }
 

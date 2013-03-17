@@ -16,7 +16,7 @@ class Recognizer {
     private static final boolean DEBUG_SHOW_ALL_RECTANGLES = false;
     private static final boolean DEBUG_SHOW_SEGMENTS = false;
 
-    private static final int MAX_RECTANGLES = 200;
+    private static final int MAX_RECTANGLES = 500;
 
     private static final int MAX_GAP_LEFT = 10;
     private static final int MAX_GAP = 2;

@@ -284,13 +284,20 @@ class Recognizer {
                 rectanglesNew.add(rect);
                 state.player.cards.add(recognizerResources.cardInfo.cards[match.cardNumber]);
             }
-                             /*
-            Mat warpMatrix = Imgproc.getPerspectiveTransform(new MatOfPoint2f(points), CardPatterns.SAMPLE_RECT);
-            Imgproc.remap(recognizerResources.cardPatterns.samples[match.cardNumber], frame, Mat map1, Mat map2, Imgproc.INTER_LINEAR, Imgproc.BORDER_TRANSPARENT, new Scalar(0,0,0));
 
-            scaleMatrix.release();
+        }
 
-            */
+        if (!rectanglesOld.isEmpty()) {
+            Core.polylines(frame, rectanglesOld, true, COLOR_MATCH_OLD, 2);
+        }
+        if (!rectanglesNew.isEmpty()) {
+            Core.polylines(frame, rectanglesNew, true, COLOR_MATCH_NEW, 3);
+        }
+
+        for (CardMatch match : matches) {
+            Point[] points = match.rect;
+
+            /*
             String name = recognizerResources.cardInfo.cards[match.cardNumber].name;
             int length = name.length() * 9;
             Core.fillConvexPoly(frame, new MatOfPoint(
@@ -299,22 +306,11 @@ class Recognizer {
                     new Point(points[0].x + 10 + length, points[0].y + 80),
                     new Point(points[0].x + 10 + length, points[0].y + 100)
             ), new Scalar(0,0,0));
-//            Core.putText(frame, "" + match.cardNumber + " - " + match.score, new Point(points[0].x + 13, points[0].y + 76), 1, 1, new Scalar(255,255,255));
             Core.putText(frame, name, new Point(points[0].x + 13, points[0].y + 96), 1, 1, new Scalar(255,255,255));
-
-
-            /*
-            Mat bestSample = recognizerResources.cardPatterns.samples[match.cardNumber];
-            draw(frame, bestSample, 400, 500);
-
-            draw(frame, selection[0], 250, 500);
-
-            Mat report = new Mat(bestSample.rows(), bestSample.cols(), CvType.CV_8UC3);
-            recognizerResources.customNativeTools.compare(selection[0], bestSample, report);
-            draw(frame, report, 400, 650);
-            report.release();
-                             */
+            */
+            recognizerResources.userControls.cardNames[match.cardNumber].draw(frame, (int)points[0].x + 10, (int)points[0].y + 50);
         }
+
 
         if (!state.player.cards.isEmpty()) {
             int step = (frame.cols() - PREVIEW_GAP - PREVIEW_STEP) / state.player.cards.size();
@@ -327,21 +323,18 @@ class Recognizer {
 
             for (Card card : state.player.cards) {
 
+                /*
                 Mat sub = frame.submat(previewY, previewY + CardPatterns.PREVIEW_HEIGHT, previewX, previewX + CardPatterns.PREVIEW_WIDTH);
                 recognizerResources.cardPatterns.previews[card.id].copyTo(sub);
                 sub.release();
+                */
+                recognizerResources.cardPatterns.previews[card.id].draw(frame, previewX, previewY);
+
                 previewX += step;
             }
         }
 
         Core.putText(frame, ""+state.player.cards.size(), new Point(frame.cols() - 30, frame.rows() - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP), 1, 1, COLOR_MATCH_NEW);
-
-        if (!rectanglesOld.isEmpty()) {
-            Core.polylines(frame, rectanglesOld, true, COLOR_MATCH_OLD, 2);
-        }
-        if (!rectanglesNew.isEmpty()) {
-            Core.polylines(frame, rectanglesNew, true, COLOR_MATCH_NEW, 3);
-        }
 
         Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1, 1, new Scalar(255, 255, 255));
 

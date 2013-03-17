@@ -31,7 +31,7 @@ class CardPatterns {
 
     private final Mat[] samples;
     private final RecognizerResources recognizerResources;
-    public final Mat[] previews;
+    public final Sprite[] previews;
 
 
     public CardPatterns(final RecognizerResources recognizerResources) {
@@ -39,7 +39,7 @@ class CardPatterns {
         this.recognizerResources = recognizerResources;
 
         samples = new Mat[recognizerResources.maxCardNum + 1];
-        previews = new Mat[recognizerResources.maxCardNum + 1];
+        previews = new Sprite[recognizerResources.maxCardNum + 1];
 
         final Mat sampleScaleDown = Imgproc.getAffineTransform(
                 new MatOfPoint2f(
@@ -79,7 +79,7 @@ class CardPatterns {
                 Mat scaledPreview = new Mat(PREVIEW_WIDTH, PREVIEW_HEIGHT, CvType.CV_8UC3);
                 Imgproc.resize(tempSample, scaledPreview, PREVIEW_SIZE);
 
-                previews[num] = scaledPreview;
+                previews[num] = new Sprite(scaledPreview);
 
                 tempSample.release();
 
@@ -104,7 +104,7 @@ class CardPatterns {
                 sample.release();
             }
         }
-        for (Mat preview : previews) {
+        for (Sprite preview : previews) {
             if (preview != null) {
                 preview.release();
             }

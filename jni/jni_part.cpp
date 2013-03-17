@@ -509,6 +509,12 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
 
 }
 
+#define COMPARE_BOUND_1 40
+#define COMPARE_BOUND_2 80
+
+#define COMPARE_SCORE_1 3
+#define COMPARE_SCORE_2 2
+
 JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, jobject, jlong selectionAddr, jlong patternAddr)
 {
     Mat& selection = *(Mat*)selectionAddr;
@@ -534,14 +540,14 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
     #if HAVE_NEON == 1
 
     asm (
-        "mov r0, #80\n\t"
-        "vdup.8 q14, r0\n\t" /* q14: 80 */
-        "mov r0, #40\n\t"
-        "vdup.8 q15, r0\n\t" /* q15: 40 */
-        "mov r0, 2\n\t"
-        "vdup.8 q12, r0\n\t" /* q12: 2 */
-        "mov r0, 1\n\t"
-        "vdup.8 q13, r0\n\t" /* q13: 1 */
+        "mov r0, %[COMPARE_BOUND_B]\n\t"
+        "vdup.8 q14, r0\n\t" /* q14: COMPARE_BOUND_2 */
+        "mov r0, %[COMPARE_BOUND_A]\n\t"
+        "vdup.8 q15, r0\n\t" /* q15: COMPARE_BOUND_1 */
+        "mov r0, %[COMPARE_SCORE_B]\n\t"
+        "vdup.8 q12, r0\n\t" /* q12: COMPARE_SCORE_2 */
+        "mov r0, %[COMPARE_SCORE_DIFF_A]\n\t"
+        "vdup.8 q13, r0\n\t" /* q13: COMPARE_SCORE_DIFF_1 */
         "mov r0, 0\n\t"
         "vdup.8 q10, r0\n\t" /* q10: scorer */
 
@@ -559,8 +565,8 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
         "vabd.u8 q8, q2, q5\n\t"
         "vqadd.u8 q6, q6, q7\n\t"
         "vqadd.u8 q6, q6, q8\n\t"
-        "vcle.u8 q7, q6, q14\n\t" /* q7: < 80 */
-        "vcle.u8 q6, q6, q15\n\t" /* q6: < 40 */
+        "vcle.u8 q7, q6, q14\n\t" /* q7: < COMPARE_BOUND_2 */
+        "vcle.u8 q6, q6, q15\n\t" /* q6: < COMPARE_BOUND_1 */
         "vand q7, q7, q12\n\t"
         "vand q6, q6, q13\n\t"
         "vadd.i8 q7, q7, q6\n\t"
@@ -573,7 +579,9 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
         "vmov.u32 r0, d20[0]\n\t"
         "mov %[SCORE], r0\n\t"
         : [SCORE]"=r" (score)
-        : [S]"r" (s), [P]"r" (p), [SIZE]"r" (cols*rows/16)
+        : [S]"r" (s), [P]"r" (p), [SIZE]"r" (cols*rows/16),
+          [COMPARE_BOUND_A]"i" (COMPARE_BOUND_1), [COMPARE_BOUND_B]"i" (COMPARE_BOUND_2),
+          [COMPARE_SCORE_DIFF_A]"i" (COMPARE_SCORE_1 - COMPARE_SCORE_2), [COMPARE_SCORE_B]"i" (COMPARE_SCORE_2)
         : "memory", "r0", "r1", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
     );
 
@@ -596,10 +604,10 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
         }
 
         int a = a1 + a2 + a3;
-        if (a <= 40) {
-            score += 3;
-        } else if (a <= 80) {
-            score += 2;
+        if (a <= COMPARE_BOUND_1) {
+            score += COMPARE_SCORE_1;
+        } else if (a <= COMPARE_BOUND_2) {
+            score += COMPARE_SCORE_2;
         }
     }
 
@@ -607,65 +615,7 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
 
     return score;
 }
-/*
-JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_compareWithReport(JNIEnv*, jobject, jlong selectionAddr, jlong patternAddr, jlong reportAddr)
-{
-    Mat& selection = *(Mat*)selectionAddr;
-    Mat& pattern = *(Mat*)patternAddr;
-    Mat& report = *(Mat*)reportAddr;
 
-    int cols = selection.cols;
-    int rows = selection.rows;
-
-    CV_Assert(selection.depth() == CV_8U);
-    CV_Assert(pattern.depth() == CV_8U);
-    CV_Assert(pattern.rows == rows);
-    CV_Assert(pattern.cols == cols);
-    CV_Assert(selection.channels() == 3);
-    CV_Assert(pattern.channels() == 3);
-
-    CV_Assert(selection.ptr<uchar>(1) - selection.ptr<uchar>(0) == 3*cols);
-
-    uchar* s = selection.ptr<uchar>(0);
-    uchar* p = pattern.ptr<uchar>(0);
-    uchar* r = report.ptr<uchar>(0);
-
-    for (int i = cols*rows ; i > 0 ; i--) {
-        int a1 = (int)((*(s++))>>1) - (int)((*(p++))>>1);
-        if (a1 < 0) {
-            a1 = -a1;
-        }
-        int a2 = (int)((*(s++))>>1) - (int)((*(p++))>>1);
-        if (a2 < 0) {
-            a2 = -a2;
-        }
-        int a3 = (int)((*(s++))>>1) - (int)((*(p++))>>1);
-        if (a3 < 0) {
-            a3 = -a3;
-        }
-        int a = a1 + a2 + a3;
-
-        if (a <= 20) {
-            *(r++) = 0;
-            *(r++) = 255;
-            *(r++) = 0;
-        } else if (a <= 40) {
-            *(r++) = 255;
-            *(r++) = 255;
-            *(r++) = 0;
-        } else if (a <= 60) {
-            *(r++) = 255;
-            *(r++) = 0;
-            *(r++) = 0;
-        } else {
-            *(r++) = 0;
-            *(r++) = 0;
-            *(r++) = 0;
-        }
-
-    }
-}
-*/
 #define NORMAL_DISPERSION 70.*70.
 #define NORMAL_MEDIAN 127.5
 

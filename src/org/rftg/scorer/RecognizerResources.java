@@ -13,6 +13,7 @@ class RecognizerResources {
     final CustomNativeTools customNativeTools;
     final int maxCardNum;
     final CardInfo cardInfo;
+    final UserControls userControls;
 
     RecognizerResources(Context resourceContext, CardInfo cardInfo, Settings settings) {
         this.cardInfo = cardInfo;
@@ -20,12 +21,14 @@ class RecognizerResources {
         this.resourceContext = resourceContext;
         this.executor = new Executor();
         this.customNativeTools = new CustomNativeTools();
-        cardPatterns = new CardPatterns(this);
+        this.cardPatterns = new CardPatterns(this);
+        this.userControls = new UserControls(this);
     }
 
     public void release() {
         this.executor.shutdown();
         this.cardPatterns.release();
+        this.userControls.release();
     }
 
 }

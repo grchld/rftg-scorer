@@ -344,7 +344,6 @@ class Recognizer {
         Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1 ,1, new Scalar(255, 255, 255));
 
 
-
         if (DEBUG_SHOW_SEGMENTS) {
             Scalar green = new Scalar(0, 255, 0);
             Scalar red = new Scalar(255, 0, 0);
@@ -391,13 +390,6 @@ class Recognizer {
         frameTimer = System.currentTimeMillis();
 
         return frame;
-    }
-
-    private void draw(Mat frame, Mat image, int x, int y) {
-        Mat d = new Mat();
-        Imgproc.resize(image, d, new Size(128, 128));
-        d.copyTo(frame.submat(x, d.rows() + x, y, d.cols()+ y));
-        d.release();
     }
 
     private List<Point[]> extractRectangles() {

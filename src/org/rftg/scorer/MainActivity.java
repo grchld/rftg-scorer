@@ -2,6 +2,8 @@ package org.rftg.scorer;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.view.MotionEvent;
+import android.view.View;
 import android.view.WindowManager;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
@@ -53,7 +55,16 @@ public class MainActivity extends Activity implements CvCameraViewListener {
 
         openCvCameraView = (CameraBridgeViewBase) findViewById(R.id.main);
         openCvCameraView.setCvCameraViewListener(this);
-
+        openCvCameraView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (recognizerResources != null && state != null) {
+                    return recognizerResources.userControls.onTouch(view, motionEvent, state);
+                } else {
+                    return false;
+                }
+            }
+        });
     }
 
     @Override

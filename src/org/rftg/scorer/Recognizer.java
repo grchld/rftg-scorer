@@ -15,6 +15,7 @@ class Recognizer {
 
     private static final boolean DEBUG_SHOW_ALL_RECTANGLES = false;
     private static final boolean DEBUG_SHOW_SEGMENTS = false;
+    private static final boolean DEBUG_SHOW_RECTANGLE_COUNTER = false;
 
     private static final int MAX_RECTANGLES = 500;
 
@@ -334,9 +335,18 @@ class Recognizer {
             }
         }
 
-        Core.putText(frame, ""+state.player.cards.size(), new Point(frame.cols() - 30, frame.rows() - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP), 1, 1, COLOR_MATCH_NEW);
+        Sprite cardCountBackground = recognizerResources.userControls.cardCountBackground;
+        int cardCountBackgroundX = frame.cols() - cardCountBackground.width - PREVIEW_GAP;
+        int cardCountBackgroundY = frame.rows() - cardCountBackground.height - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP;
+        cardCountBackground.draw(frame, cardCountBackgroundX, cardCountBackgroundY);
 
-        Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1, 1, new Scalar(255, 255, 255));
+        Core.putText(frame, ""+state.player.cards.size(), new Point(
+                cardCountBackgroundX + cardCountBackground.width / 2 - 5,
+                cardCountBackgroundY + cardCountBackground.height / 2 + 10), 1, 2.5, COLOR_MATCH_NEW, 2);
+
+        if (DEBUG_SHOW_RECTANGLE_COUNTER) {
+            Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1, 1, new Scalar(255, 255, 255));
+        }
 
 
         if (DEBUG_SHOW_SEGMENTS) {

@@ -10,8 +10,8 @@ class Sprite {
 
     private Mat image;
     private Mat mask;
-    private int width;
-    private int height;
+    public final int width;
+    public final int height;
 
     public Sprite(Mat image) {
         this(image, null);

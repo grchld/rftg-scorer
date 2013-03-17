@@ -254,6 +254,8 @@ class Recognizer {
         Log.e("rftg", "Match filtering: " + (System.currentTimeMillis() - time));
 
 
+        // Drawing results
+
         time = System.currentTimeMillis();
 
         if (DEBUG_SHOW_ALL_RECTANGLES) {
@@ -298,17 +300,6 @@ class Recognizer {
         for (CardMatch match : matches) {
             Point[] points = match.rect;
 
-            /*
-            String name = recognizerResources.cardInfo.cards[match.cardNumber].name;
-            int length = name.length() * 9;
-            Core.fillConvexPoly(frame, new MatOfPoint(
-                    new Point(points[0].x + 10, points[0].y + 100),
-                    new Point(points[0].x + 10, points[0].y + 80),
-                    new Point(points[0].x + 10 + length, points[0].y + 80),
-                    new Point(points[0].x + 10 + length, points[0].y + 100)
-            ), new Scalar(0,0,0));
-            Core.putText(frame, name, new Point(points[0].x + 13, points[0].y + 96), 1, 1, new Scalar(255,255,255));
-            */
             recognizerResources.userControls.cardNames[match.cardNumber].draw(frame, (int)points[0].x + 10, (int)points[0].y + 50);
         }
 
@@ -323,12 +314,6 @@ class Recognizer {
             int previewY = frame.rows() - CardPatterns.PREVIEW_HEIGHT - PREVIEW_GAP;
 
             for (Card card : state.player.cards) {
-
-                /*
-                Mat sub = frame.submat(previewY, previewY + CardPatterns.PREVIEW_HEIGHT, previewX, previewX + CardPatterns.PREVIEW_WIDTH);
-                recognizerResources.cardPatterns.previews[card.id].copyTo(sub);
-                sub.release();
-                */
                 recognizerResources.cardPatterns.previews[card.id].draw(frame, previewX, previewY);
 
                 previewX += step;
@@ -342,7 +327,9 @@ class Recognizer {
 
         Core.putText(frame, ""+state.player.cards.size(), new Point(
                 cardCountBackgroundX + cardCountBackground.width / 2 - 5,
-                cardCountBackgroundY + cardCountBackground.height / 2 + 10), 1, 2.5, COLOR_MATCH_NEW, 2);
+                cardCountBackgroundY + cardCountBackground.height / 2 + 15), 1, 3, COLOR_MATCH_NEW, 2);
+
+        recognizerResources.userControls.resetBackground.draw(frame, 0, 0);
 
         if (DEBUG_SHOW_RECTANGLE_COUNTER) {
             Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1, 1, new Scalar(255, 255, 255));

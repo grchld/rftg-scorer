@@ -1,5 +1,7 @@
 package org.rftg.scorer;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.view.MotionEvent;
 import android.view.View;
 import org.opencv.android.Utils;
@@ -26,6 +28,10 @@ class UserControls {
 
     public final Sprite[] cardNames;
     public final Sprite cardCountBackground;
+    public final Sprite chipsBackground;
+    public final Sprite militaryBackground;
+    public final Sprite resetBackground;
+
 
     UserControls(RecognizerResources recognizerResources) {
         this.recognizerResources = recognizerResources;
@@ -35,7 +41,9 @@ class UserControls {
                     CARD_TEXT_COLOR, CARD_TEXT_SHADOW, CARD_TEXT_FONT_FACE, CARD_TEXT_FONT_SCALE, CARD_TEXT_THICKNESS, CARD_TEXT_BORDER);
         }
         cardCountBackground = load("icon_11", 120, 120);
-
+        chipsBackground = load("icon_12", 120, 120);
+        militaryBackground = load("icon_13", 120, 120);
+        resetBackground = load("icon_15", 120, 120);
     }
 
     void release() {
@@ -43,6 +51,9 @@ class UserControls {
             sprite.release();
         }
         cardCountBackground.release();
+        chipsBackground.release();
+        militaryBackground.release();
+        resetBackground.release();
     }
 
     boolean onTouch(View view, MotionEvent motionEvent, State state) {
@@ -50,7 +61,7 @@ class UserControls {
 
             float x = motionEvent.getX();
             float y = motionEvent.getY();
-            if (x < 200 && y < 200) {
+            if (x < 120 && y < 120) {
                 state.player.chips = 0;
                 state.player.cards.clear();
             }
@@ -64,25 +75,23 @@ class UserControls {
     private Sprite load(String imageName, int width, int height) {
         int id = recognizerResources.resourceContext.getResources().getIdentifier(imageName, "drawable", "org.rftg.scorer");
 
-        Mat tempBGRA;
-        try {
-            tempBGRA = Utils.loadResource(recognizerResources.resourceContext, id);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        Bitmap bitmap = BitmapFactory.decodeResource(recognizerResources.resourceContext.getResources(), id, new BitmapFactory.Options());
 
-        Mat scaledBGRA = new Mat(width, height, CvType.CV_8UC4);
-        Imgproc.resize(tempBGRA, scaledBGRA, new Size(width, height));
+        Mat tempRGBA = new Mat();
+        Utils.bitmapToMat(bitmap, tempRGBA);
+        bitmap.recycle();
 
-        tempBGRA.release();
+        Mat scaledRGBA = new Mat();
+        Imgproc.resize(tempRGBA, scaledRGBA, new Size(width, height));
+        tempRGBA.release();
 
         Mat image = new Mat();
-        Imgproc.cvtColor(scaledBGRA, image, Imgproc.COLOR_BGRA2RGB);
+        Imgproc.cvtColor(scaledRGBA, image, Imgproc.COLOR_RGBA2RGB);
 
         Mat mask = new Mat();
-        Core.extractChannel(scaledBGRA, mask, 3);
+        Core.extractChannel(scaledRGBA, mask, 3);
 
-        scaledBGRA.release();
+        scaledRGBA.release();
 
         return new Sprite(image, mask);
     }

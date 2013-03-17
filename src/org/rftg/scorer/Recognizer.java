@@ -36,7 +36,14 @@ class Recognizer {
     private static final int MASK_TOP = 0x80;
     private static final int MASK_BOTTOM = 0x40;
 
-    final RecognizerResources recognizerResources;
+    private static final Scalar COLOR_MATCH_OLD = new Scalar(255, 0, 0);
+    private static final Scalar COLOR_MATCH_NEW = new Scalar(0, 255, 0);
+
+    private static final int PREVIEW_GAP = 10;
+    private static final int PREVIEW_STEP = CardPatterns.PREVIEW_WIDTH + PREVIEW_GAP;
+
+    private final RecognizerResources recognizerResources;
+    private final State state;
 
     private Mat real;
     private Mat rgb;
@@ -67,7 +74,8 @@ class Recognizer {
     private long frameTimer;
 
 
-    Recognizer(RecognizerResources recognizerResources, int width, int height) {
+    Recognizer(RecognizerResources recognizerResources, State state, int width, int height) {
+        this.state = state;
         this.recognizerResources = recognizerResources;
 
         cardMatches = new CardMatch[recognizerResources.maxCardNum + 1];
@@ -247,8 +255,6 @@ class Recognizer {
 
         time = System.currentTimeMillis();
 
-        Scalar rectColor = new Scalar(255, 255, 255);
-
         if (DEBUG_SHOW_ALL_RECTANGLES) {
             List<MatOfPoint> allRectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
             for (Point[] rect : rectangles) {
@@ -257,12 +263,27 @@ class Recognizer {
             Core.polylines(frame, allRectanglesToDraw, true, new Scalar(92, 92, 255), 3);
         }
 
-
-        List<MatOfPoint> rectanglesToDraw = new ArrayList<MatOfPoint>(matches.size());
+        List<MatOfPoint> rectanglesOld = new ArrayList<MatOfPoint>(matches.size());
+        List<MatOfPoint> rectanglesNew = new ArrayList<MatOfPoint>(matches.size());
 
         for (CardMatch match : matches) {
             Point[] points = match.rect;
-            rectanglesToDraw.add(new MatOfPoint(points));
+            MatOfPoint rect = new MatOfPoint(points);
+
+            boolean old = false;
+            for (Card card : state.player.cards) {
+                if (card.id == match.cardNumber) {
+                    old = true;
+                    break;
+                }
+            }
+
+            if (old) {
+                rectanglesOld.add(rect);
+            } else {
+                rectanglesNew.add(rect);
+                state.player.cards.add(recognizerResources.cardInfo.cards[match.cardNumber]);
+            }
                              /*
             Mat warpMatrix = Imgproc.getPerspectiveTransform(new MatOfPoint2f(points), CardPatterns.SAMPLE_RECT);
             Imgproc.remap(recognizerResources.cardPatterns.samples[match.cardNumber], frame, Mat map1, Mat map2, Imgproc.INTER_LINEAR, Imgproc.BORDER_TRANSPARENT, new Scalar(0,0,0));
@@ -295,15 +316,34 @@ class Recognizer {
                              */
         }
 
-        /*
-        for (MatOfPoint2f rect : rectangles) {
-            rectanglesToDraw.add(new MatOfPoint(rect.toArray()));
+        if (!state.player.cards.isEmpty()) {
+            int step = (frame.cols() - PREVIEW_GAP - PREVIEW_STEP) / state.player.cards.size();
+            if (step > PREVIEW_STEP) {
+                step = PREVIEW_STEP;
+            }
+
+            int previewX = PREVIEW_GAP;
+            int previewY = frame.rows() - CardPatterns.PREVIEW_HEIGHT - PREVIEW_GAP;
+
+            for (Card card : state.player.cards) {
+
+                Mat sub = frame.submat(previewY, previewY + CardPatterns.PREVIEW_HEIGHT, previewX, previewX + CardPatterns.PREVIEW_WIDTH);
+                recognizerResources.cardPatterns.previews[card.id].copyTo(sub);
+                sub.release();
+                previewX += step;
+            }
         }
-        */
 
-        Core.polylines(frame, rectanglesToDraw, true, rectColor, 3);
+        if (!rectanglesOld.isEmpty()) {
+            Core.polylines(frame, rectanglesOld, true, COLOR_MATCH_OLD, 2);
+        }
+        if (!rectanglesNew.isEmpty()) {
+            Core.polylines(frame, rectanglesNew, true, COLOR_MATCH_NEW, 3);
+        }
 
-        Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1 ,1, rectColor);
+        Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1 ,1, new Scalar(255, 255, 255));
+
+
 
         if (DEBUG_SHOW_SEGMENTS) {
             Scalar green = new Scalar(0, 255, 0);

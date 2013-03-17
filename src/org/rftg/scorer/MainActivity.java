@@ -27,7 +27,12 @@ public class MainActivity extends Activity implements CvCameraViewListener {
                 case LoaderCallbackInterface.SUCCESS:
 
                     if (recognizerResources == null) {
-                        recognizerResources = new RecognizerResources(MainActivity.this, state.settings.gameType.maxCardNum);
+                        CardInfo cardInfo = new CardInfo(getAssets());
+                        state = State.loadState(MainActivity.this, cardInfo);
+                        if (state == null) {
+                            state = new State();
+                        }
+                        recognizerResources = new RecognizerResources(MainActivity.this, cardInfo, state.settings);
                     }
 
                     openCvCameraView.enableView();
@@ -64,12 +69,6 @@ public class MainActivity extends Activity implements CvCameraViewListener {
 
     @Override
     public void onResume() {
-        if (recognizerResources != null) {
-            state = State.loadState(this, recognizerResources.cardInfo);
-            if (state == null) {
-                state = new State();
-            }
-        }
         super.onResume();
         OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_3, this, loaderCallback);
     }
@@ -87,7 +86,7 @@ public class MainActivity extends Activity implements CvCameraViewListener {
 
     @Override
     public synchronized void onCameraViewStarted(int width, int height) {
-        recognizer = new Recognizer(recognizerResources, width, height);
+        recognizer = new Recognizer(recognizerResources, state, width, height);
     }
 
     @Override

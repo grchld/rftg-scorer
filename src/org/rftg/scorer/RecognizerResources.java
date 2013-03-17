@@ -14,13 +14,13 @@ class RecognizerResources {
     final int maxCardNum;
     final CardInfo cardInfo;
 
-    RecognizerResources(Context resourceContext, int maxCardNum) {
-        this.maxCardNum = maxCardNum;
+    RecognizerResources(Context resourceContext, CardInfo cardInfo, Settings settings) {
+        this.cardInfo = cardInfo;
+        this.maxCardNum = settings.gameType.maxCardNum;
         this.resourceContext = resourceContext;
         this.executor = new Executor();
         this.customNativeTools = new CustomNativeTools();
         cardPatterns = new CardPatterns(this);
-        cardInfo = new CardInfo(resourceContext.getAssets());
     }
 
     public void release() {

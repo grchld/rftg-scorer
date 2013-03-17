@@ -1,6 +1,7 @@
 package org.rftg.scorer;
 
-import org.opencv.core.Mat;
+import org.opencv.core.*;
+import org.opencv.imgproc.Imgproc;
 
 /**
  * @author gc
@@ -96,5 +97,29 @@ class Sprite {
         if (mask != null) {
             mask.release();
         }
+    }
+
+    private final static Scalar MASK_TRANSPARENT = new Scalar(0);
+    private final static Scalar MASK_OPAQUE = new Scalar(255);
+
+    private final static Mat DILATE_KERNEL = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
+    private final static Point DILATE_ANCHOR = new Point(-1,-1);
+
+    public static Sprite textSpriteWithDilate(String text, Scalar textColor, Scalar textShadow, int fontFace, double fontScale, int thickness, int dilateSize) {
+        int[] baseLine = new int[1];
+
+        Size textSize = Core.getTextSize(text, fontFace, fontScale, thickness, baseLine);
+
+        Mat image = new Mat((int)textSize.height + baseLine[0] + 2 * dilateSize, (int)textSize.width + 2 * dilateSize, CvType.CV_8UC3, textShadow);
+        Point textOrigin = new Point(dilateSize, image.height() - baseLine[0] - dilateSize);
+
+        Core.putText(image, text, textOrigin, fontFace, fontScale, textColor, thickness);
+
+        Mat mask = new Mat(image.rows(), image.cols(), CvType.CV_8U, MASK_TRANSPARENT);
+        Core.putText(mask, text, textOrigin, fontFace, fontScale, MASK_OPAQUE, thickness);
+
+        Imgproc.dilate(mask, mask, DILATE_KERNEL, DILATE_ANCHOR, dilateSize);
+
+        return new Sprite(image, mask);
     }
 }

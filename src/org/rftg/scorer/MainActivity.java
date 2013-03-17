@@ -27,7 +27,7 @@ public class MainActivity extends Activity implements CvCameraViewListener {
                 case LoaderCallbackInterface.SUCCESS:
 
                     if (recognizerResources == null) {
-                        recognizerResources = new RecognizerResources(MainActivity.this);
+                        recognizerResources = new RecognizerResources(MainActivity.this, state.settings.gameType.maxCardNum);
                     }
 
                     openCvCameraView.enableView();

@@ -16,7 +16,7 @@ import java.util.List;
  */
 class CardInfo {
 
-    List<Card> cards;
+    Card cards[];
 
     CardInfo(AssetManager assetManager) {
         try {
@@ -35,7 +35,7 @@ class CardInfo {
         this(activity.getAssets());
     }
 
-    static List<Card> loadCards(InputStream inputStream) throws Exception {
+    static Card[] loadCards(InputStream inputStream) throws Exception {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
             List<Card> cards = new ArrayList<Card>();
@@ -96,7 +96,7 @@ class CardInfo {
             }
             cards.add(card);
 
-            return cards;
+            return cards.toArray(new Card[cards.size()]);
         } finally {
             inputStream.close();
         }

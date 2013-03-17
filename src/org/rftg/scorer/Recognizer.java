@@ -270,7 +270,7 @@ class Recognizer {
             scaleMatrix.release();
 
             */
-            String name = recognizerResources.cardInfo.cards.get(match.cardNumber).name;
+            String name = recognizerResources.cardInfo.cards[match.cardNumber].name;
             int length = Math.max(100, name.length() * 10);
             Core.fillConvexPoly(frame, new MatOfPoint(
                     new Point(points[0].x + 20, points[0].y + 100),

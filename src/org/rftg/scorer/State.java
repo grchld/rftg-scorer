@@ -7,31 +7,25 @@ import android.util.Base64;
 import android.util.Log;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * @author gc
  */
-class State implements Serializable {
+class State {
 
     private final static String STATE = "state";
     Settings settings = new Settings();
-    List<Player> players = new ArrayList<Player>();
+    Player player = new Player();
 
-    State() {
-        Player player = new Player();
-        player.name = "Player";
-        players.add(player);
-    }
-
-    static State loadState(SharedPreferences preferences, String key) {
+    static State loadState(SharedPreferences preferences, String key, CardInfo cardInfo) {
         String stateString = preferences.getString(key, null);
         if (stateString != null) {
             try {
                 ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(Base64.decode(stateString, Base64.NO_CLOSE | Base64.NO_WRAP | Base64.NO_PADDING)));
                 try {
-                    return (State) ois.readObject();
+                    State state = new State();
+                    state.load(ois, cardInfo);
+                    return state;
                 } finally {
                     ois.close();
                 }
@@ -42,15 +36,25 @@ class State implements Serializable {
         return null;
     }
 
-    static State loadState(Activity activity) {
-        return State.loadState(activity.getPreferences(Context.MODE_PRIVATE), STATE);
+    static State loadState(Activity activity, CardInfo cardInfo) {
+        return State.loadState(activity.getPreferences(Context.MODE_PRIVATE), STATE, cardInfo);
+    }
+
+    void load(ObjectInputStream ois, CardInfo cardInfo) throws IOException, ClassNotFoundException {
+        settings.load(ois, cardInfo);
+        player.load(ois, cardInfo);
+    }
+
+    void save(ObjectOutputStream oos) throws IOException {
+        settings.save(oos);
+        player.save(oos);
     }
 
     void saveState(SharedPreferences preferences, String key) {
         try {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(bytes);
-            oos.writeObject(this);
+            this.save(oos);
             oos.close();
             SharedPreferences.Editor editor = preferences.edit();
             editor.putString(key, Base64.encodeToString(bytes.toByteArray(), Base64.NO_CLOSE | Base64.NO_WRAP | Base64.NO_PADDING));

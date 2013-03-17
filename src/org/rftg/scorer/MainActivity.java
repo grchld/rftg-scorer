@@ -18,6 +18,8 @@ public class MainActivity extends Activity implements CvCameraViewListener {
 
     private volatile Recognizer recognizer;
 
+    private State state;
+
     private BaseLoaderCallback loaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -51,20 +53,31 @@ public class MainActivity extends Activity implements CvCameraViewListener {
 
     @Override
     public void onPause() {
-        if (openCvCameraView != null)
+        if (openCvCameraView != null) {
             openCvCameraView.disableView();
+        }
+        if (state != null) {
+            state.saveState(this);
+        }
         super.onPause();
     }
 
     @Override
     public void onResume() {
+        if (recognizerResources != null) {
+            state = State.loadState(this, recognizerResources.cardInfo);
+            if (state == null) {
+                state = new State();
+            }
+        }
         super.onResume();
         OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_3, this, loaderCallback);
     }
 
     public void onDestroy() {
-        if (openCvCameraView != null)
+        if (openCvCameraView != null) {
             openCvCameraView.disableView();
+        }
         if (recognizerResources != null) {
             recognizerResources.release();
             recognizerResources = null;

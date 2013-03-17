@@ -42,7 +42,7 @@ class UserControls {
         }
         cardCountBackground = load("icon_11", 120, 120);
         chipsBackground = load("icon_12", 110, 110);
-        militaryBackground = load("icon_13", 120, 120);
+        militaryBackground = load("icon_13", 110, 110);
         resetBackground = load("icon_15", 120, 120);
     }
 

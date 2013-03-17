@@ -19,12 +19,12 @@ class CardPatterns {
     public final static int SAMPLE_HEIGHT = 64;
     public final static int SAMPLE_WIDTH = 64;
     public final static int MATCHER_MINIMAL_BOUND = 5000;
-    public final static int MATCHER_MINIMAL_GAP = 500;
+    public final static int MATCHER_MINIMAL_GAP = 700;
     public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
     public final static MatOfPoint2f SAMPLE_RECT = new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(SAMPLE_WIDTH, SAMPLE_HEIGHT), new Point(0, SAMPLE_HEIGHT));
 
-    public final static int PREVIEW_HEIGHT = 70;
-    public final static int PREVIEW_WIDTH = 50;
+    public final static int PREVIEW_HEIGHT = 119;
+    public final static int PREVIEW_WIDTH = 85;
     public final static Size PREVIEW_SIZE = new Size(PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
     public final static int SAMPLE_INTER = Imgproc.INTER_LINEAR;

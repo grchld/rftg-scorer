@@ -155,9 +155,9 @@ class Recognizer {
         frame = rgb;
 
         /*
-        Mat sub = frame.submat(0,real.rows(),0,real.cols());
-        real.copyTo(sub);
-        sub.release();
+        Mat realsub = frame.submat(0,real.rows(),0,real.cols());
+        real.copyTo(realsub);
+        realsub.release();
         /**/
 
         Log.e("rftg", "Prepare image: " + (System.currentTimeMillis() - time));
@@ -292,15 +292,15 @@ class Recognizer {
 
             */
             String name = recognizerResources.cardInfo.cards[match.cardNumber].name;
-            int length = Math.max(100, name.length() * 10);
+            int length = name.length() * 9;
             Core.fillConvexPoly(frame, new MatOfPoint(
-                    new Point(points[0].x + 20, points[0].y + 100),
-                    new Point(points[0].x + 20, points[0].y + 60),
-                    new Point(points[0].x + 20 + length, points[0].y + 60),
-                    new Point(points[0].x + 20 + length, points[0].y + 100)
+                    new Point(points[0].x + 10, points[0].y + 100),
+                    new Point(points[0].x + 10, points[0].y + 80),
+                    new Point(points[0].x + 10 + length, points[0].y + 80),
+                    new Point(points[0].x + 10 + length, points[0].y + 100)
             ), new Scalar(0,0,0));
-            Core.putText(frame, "" + match.cardNumber + " - " + match.score, new Point(points[0].x + 23, points[0].y + 76), 1, 1, new Scalar(255,255,255));
-            Core.putText(frame, name, new Point(points[0].x + 23, points[0].y + 96), 1, 1, new Scalar(255,255,255));
+//            Core.putText(frame, "" + match.cardNumber + " - " + match.score, new Point(points[0].x + 13, points[0].y + 76), 1, 1, new Scalar(255,255,255));
+            Core.putText(frame, name, new Point(points[0].x + 13, points[0].y + 96), 1, 1, new Scalar(255,255,255));
 
 
             /*
@@ -334,6 +334,8 @@ class Recognizer {
             }
         }
 
+        Core.putText(frame, ""+state.player.cards.size(), new Point(frame.cols() - 30, frame.rows() - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP), 1, 1, COLOR_MATCH_NEW);
+
         if (!rectanglesOld.isEmpty()) {
             Core.polylines(frame, rectanglesOld, true, COLOR_MATCH_OLD, 2);
         }
@@ -341,7 +343,7 @@ class Recognizer {
             Core.polylines(frame, rectanglesNew, true, COLOR_MATCH_NEW, 3);
         }
 
-        Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1 ,1, new Scalar(255, 255, 255));
+        Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1, 1, new Scalar(255, 255, 255));
 
 
         if (DEBUG_SHOW_SEGMENTS) {

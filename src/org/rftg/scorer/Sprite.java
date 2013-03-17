@@ -110,7 +110,7 @@ class Sprite {
 
         Size textSize = Core.getTextSize(text, fontFace, fontScale, thickness, baseLine);
 
-        Mat image = new Mat((int)textSize.height + baseLine[0] + 2 * dilateSize, (int)textSize.width + 2 * dilateSize, CvType.CV_8UC3, textShadow);
+        Mat image = new Mat((int)textSize.height + 2 * baseLine[0] + 2 * dilateSize, (int)textSize.width + 2 * dilateSize, CvType.CV_8UC3, textShadow);
         Point textOrigin = new Point(dilateSize, image.height() - baseLine[0] - dilateSize);
 
         Core.putText(image, text, textOrigin, fontFace, fontScale, textColor, thickness);

@@ -37,8 +37,10 @@ class Recognizer {
     private static final int MASK_TOP = 0x80;
     private static final int MASK_BOTTOM = 0x40;
 
+    private static final Scalar COLOR_SHADOW = new Scalar(0, 0, 0);
     private static final Scalar COLOR_MATCH_OLD = new Scalar(255, 0, 0);
     private static final Scalar COLOR_MATCH_NEW = new Scalar(0, 255, 0);
+    private static final Scalar COLOR_CHIPS = new Scalar(64, 64, 255);
 
     private static final int PREVIEW_GAP = 10;
     private static final int PREVIEW_STEP = CardPatterns.PREVIEW_WIDTH + PREVIEW_GAP;
@@ -72,10 +74,15 @@ class Recognizer {
     private double maxX;
     private double maxY;
 
+    final int width;
+    final int height;
+
     private long frameTimer;
 
 
     Recognizer(RecognizerResources recognizerResources, State state, int width, int height) {
+        this.width = width;
+        this.height = height;
         this.state = state;
         this.recognizerResources = recognizerResources;
 
@@ -320,21 +327,35 @@ class Recognizer {
             }
         }
 
+        recognizerResources.userControls.resetBackground.draw(frame, 0, 0);
+
         Sprite cardCountBackground = recognizerResources.userControls.cardCountBackground;
         int cardCountBackgroundX = frame.cols() - cardCountBackground.width - PREVIEW_GAP;
         int cardCountBackgroundY = frame.rows() - cardCountBackground.height - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP;
         cardCountBackground.draw(frame, cardCountBackgroundX, cardCountBackgroundY);
 
-        Core.putText(frame, ""+state.player.cards.size(), new Point(
-                cardCountBackgroundX + cardCountBackground.width / 2 - 5,
-                cardCountBackgroundY + cardCountBackground.height / 2 + 15), 1, 3, COLOR_MATCH_NEW, 2);
+        Sprite cardCountText = Sprite.textSpriteWithDilate(""+state.player.cards.size(), COLOR_MATCH_NEW, COLOR_SHADOW, 1, 3, 2, 1);
+        cardCountText.draw(frame,
+                cardCountBackgroundX + cardCountBackground.width / 2 - cardCountText.width / 2,
+                cardCountBackgroundY + cardCountBackground.height / 2 - cardCountText.height / 2);
+        cardCountText.release();
 
-        recognizerResources.userControls.resetBackground.draw(frame, 0, 0);
+
+        Sprite chipsBackground = recognizerResources.userControls.chipsBackground;
+        int chipsBackgroundX = frame.cols() - chipsBackground.width - PREVIEW_GAP;
+        int chipsBackgroundY = PREVIEW_GAP;
+        chipsBackground.draw(frame, chipsBackgroundX, chipsBackgroundY);
+
+        Sprite chipsText = Sprite.textSpriteWithDilate(""+state.player.chips, COLOR_CHIPS, COLOR_SHADOW, 1, 3, 2, 1);
+        chipsText.draw(frame,
+                chipsBackgroundX + chipsBackground.width / 2 - chipsText.width / 2,
+                chipsBackgroundY + chipsBackground.height / 2 - chipsText.height / 2);
+        chipsText.release();
+
 
         if (DEBUG_SHOW_RECTANGLE_COUNTER) {
             Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1, 1, new Scalar(255, 255, 255));
         }
-
 
         if (DEBUG_SHOW_SEGMENTS) {
             Scalar green = new Scalar(0, 255, 0);

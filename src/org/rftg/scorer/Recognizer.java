@@ -41,6 +41,7 @@ class Recognizer {
     private static final Scalar COLOR_MATCH_OLD = new Scalar(255, 0, 0);
     private static final Scalar COLOR_MATCH_NEW = new Scalar(0, 255, 0);
     private static final Scalar COLOR_CHIPS = new Scalar(64, 64, 255);
+    private static final Scalar COLOR_MILITARY = new Scalar(255, 0, 0);
 
     private static final int PREVIEW_GAP = 10;
     private static final int PREVIEW_STEP = CardPatterns.PREVIEW_WIDTH + PREVIEW_GAP;
@@ -327,10 +328,21 @@ class Recognizer {
             }
         }
 
+        Sprite militaryBackground = recognizerResources.userControls.militaryBackground;
+        int militaryBackgroundX = frame.cols() - militaryBackground.width - PREVIEW_GAP;
+        int militaryBackgroundY = frame.rows() - militaryBackground.height - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP;
+        militaryBackground.draw(frame, militaryBackgroundX, militaryBackgroundY);
+
+        Sprite militaryText = Sprite.textSpriteWithDilate("+6", COLOR_MILITARY, COLOR_SHADOW, 1, 3, 2, 1);
+        militaryText.draw(frame,
+                militaryBackgroundX + militaryBackground.width / 2 - militaryText.width / 2,
+                militaryBackgroundY + militaryBackground.height / 2 - militaryText.height / 2);
+        militaryText.release();
+
         recognizerResources.userControls.resetBackground.draw(frame, 0, 0);
 
         Sprite cardCountBackground = recognizerResources.userControls.cardCountBackground;
-        int cardCountBackgroundX = frame.cols() - cardCountBackground.width - PREVIEW_GAP;
+        int cardCountBackgroundX = PREVIEW_GAP;
         int cardCountBackgroundY = frame.rows() - cardCountBackground.height - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP;
         cardCountBackground.draw(frame, cardCountBackgroundX, cardCountBackgroundY);
 

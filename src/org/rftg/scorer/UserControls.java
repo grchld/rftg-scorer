@@ -31,7 +31,7 @@ class UserControls {
     public final Sprite chipsBackground;
     public final Sprite militaryBackground;
     public final Sprite resetBackground;
-
+    public final Sprite totalBackground;
 
     UserControls(RecognizerResources recognizerResources) {
         this.recognizerResources = recognizerResources;
@@ -44,6 +44,7 @@ class UserControls {
         chipsBackground = load("icon_12", 110, 110);
         militaryBackground = load("icon_13", 110, 110);
         resetBackground = load("icon_15", 120, 120);
+        totalBackground = load("icon_12", 120, 120);
     }
 
     void release() {
@@ -54,6 +55,7 @@ class UserControls {
         chipsBackground.release();
         militaryBackground.release();
         resetBackground.release();
+        totalBackground.release();
     }
 
     boolean onTouch(View view, MotionEvent motionEvent, Recognizer recognizer, State state) {

@@ -40,6 +40,8 @@ class Recognizer {
     private static final int MASK_BOTTOM = 0x40;
 
     private static final Scalar COLOR_SHADOW = new Scalar(0, 0, 0);
+    private static final Scalar COLOR_SCORE = new Scalar(255, 255, 255);
+    private static final Scalar COLOR_TOTAL = new Scalar(255, 255, 255);
     private static final Scalar COLOR_MATCH_OLD = new Scalar(255, 0, 0);
     private static final Scalar COLOR_MATCH_NEW = new Scalar(0, 255, 0);
     private static final Scalar COLOR_CHIPS = new Scalar(64, 64, 255);
@@ -328,7 +330,9 @@ class Recognizer {
             int previewY = frame.rows() - CardPatterns.PREVIEW_HEIGHT - PREVIEW_GAP;
 
             for (CardScore cardScore : scoring.cardScores) {
-                recognizerResources.cardPatterns.previews[cardScore.card.id].draw(frame, previewX, previewY);
+                draw(frame, recognizerResources.cardPatterns.previews[cardScore.card.id],
+                        Sprite.textSpriteWithDilate(""+cardScore.score, COLOR_SCORE, COLOR_SHADOW, 1, 3, 2, 2),
+                        previewX, previewY);
 
                 previewX += step;
             }
@@ -339,22 +343,11 @@ class Recognizer {
 
         // Draw chips buttons
         Sprite chipsBackground = recognizerResources.userControls.chipsBackground;
-        int chipsBackgroundX = frame.cols() - chipsBackground.width - PREVIEW_GAP;
-        int chipsBackgroundY = PREVIEW_GAP;
-        chipsBackground.draw(frame, chipsBackgroundX, chipsBackgroundY);
-
-        Sprite chipsText = Sprite.textSpriteWithDilate(""+state.player.chips, COLOR_CHIPS, COLOR_SHADOW, 1, 3, 2, 1);
-        chipsText.draw(frame,
-                chipsBackgroundX + chipsBackground.width / 2 - chipsText.width / 2,
-                chipsBackgroundY + chipsBackground.height / 2 - chipsText.height / 2);
-        chipsText.release();
+        int y = PREVIEW_GAP;
+        draw(frame, chipsBackground, Sprite.textSpriteWithDilate(""+state.player.chips, COLOR_CHIPS, COLOR_SHADOW, 1, 3, 2, 1),
+                frame.cols() - chipsBackground.width - PREVIEW_GAP, y);
 
         // Draw military scores
-        Sprite militaryBackground = recognizerResources.userControls.militaryBackground;
-        int militaryBackgroundX = frame.cols() - militaryBackground.width - PREVIEW_GAP;
-        int militaryBackgroundY = chipsBackgroundY + chipsBackground.height + PREVIEW_GAP;
-        militaryBackground.draw(frame, militaryBackgroundX, militaryBackgroundY);
-
         String militaryValue;
         if (scoring.military > 0) {
             militaryValue = "+" + scoring.military;
@@ -362,23 +355,21 @@ class Recognizer {
             militaryValue = "" + scoring.military;
         }
 
-        Sprite militaryText = Sprite.textSpriteWithDilate(militaryValue, COLOR_MILITARY, COLOR_SHADOW, 1, 3, 2, 1);
-        militaryText.draw(frame,
-                militaryBackgroundX + militaryBackground.width / 2 - militaryText.width / 2,
-                militaryBackgroundY + militaryBackground.height / 2 - militaryText.height / 2);
-        militaryText.release();
+        y += chipsBackground.height + PREVIEW_GAP;
+        Sprite militaryBackground = recognizerResources.userControls.militaryBackground;
+        draw(frame, militaryBackground, Sprite.textSpriteWithDilate(militaryValue, COLOR_MILITARY, COLOR_SHADOW, 1, 3, 2, 1),
+                frame.cols() - militaryBackground.width - PREVIEW_GAP, y);
 
         // Draw card counter
         Sprite cardCountBackground = recognizerResources.userControls.cardCountBackground;
-        int cardCountBackgroundX = PREVIEW_GAP;
-        int cardCountBackgroundY = frame.rows() - cardCountBackground.height - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP;
-        cardCountBackground.draw(frame, cardCountBackgroundX, cardCountBackgroundY);
+        draw(frame, cardCountBackground, Sprite.textSpriteWithDilate(""+state.player.cards.size(), COLOR_MATCH_NEW, COLOR_SHADOW, 1, 3, 2, 1),
+                PREVIEW_GAP, frame.rows() - cardCountBackground.height - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP);
 
-        Sprite cardCountText = Sprite.textSpriteWithDilate(""+state.player.cards.size(), COLOR_MATCH_NEW, COLOR_SHADOW, 1, 3, 2, 1);
-        cardCountText.draw(frame,
-                cardCountBackgroundX + cardCountBackground.width / 2 - cardCountText.width / 2,
-                cardCountBackgroundY + cardCountBackground.height / 2 - cardCountText.height / 2);
-        cardCountText.release();
+        // Draw total
+        Sprite totalBackground = recognizerResources.userControls.totalBackground;
+        draw(frame, totalBackground, Sprite.textSpriteWithDilate(""+scoring.score, COLOR_TOTAL, COLOR_SHADOW, 1, 4, 3, 1),
+                frame.cols() - totalBackground.width - PREVIEW_GAP,
+                frame.rows() - totalBackground.height - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP);
 
         //
         if (DEBUG_SHOW_RECTANGLE_COUNTER) {
@@ -522,4 +513,12 @@ class Recognizer {
         return rectangles;
     }
 
+    private void draw(Mat frame, Sprite background, Sprite text, int x, int y) {
+        background.draw(frame, x, y);
+
+        text.draw(frame,
+                x + background.width / 2 - text.width / 2,
+                y + background.height / 2 - text.height / 2);
+        text.release();
+    }
 }

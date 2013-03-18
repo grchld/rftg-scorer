@@ -11,10 +11,9 @@ import org.rftg.scorer.Card.PowerType;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
+import static org.rftg.scorer.Card.Phase.*;
 
 /**
  * @author gc
@@ -93,13 +92,37 @@ class CardInfo {
                         break;
                     case 'P':
                         Power power = new Power();
-                        power.phase = Integer.parseInt(s[1]);
                         for (String powerType : s[2].split("(\\s|\\|)+")) {
                             power.powers.add(PowerType.valueOf(powerType));
+                        }
+                        int phaseNum = Integer.parseInt(s[1]);
+                        switch (phaseNum) {
+                            case 1:
+                                power.phase = EXPLORE;
+                                break;
+                            case 2:
+                                power.phase = DEVELOP;
+                                break;
+                            case 3:
+                                power.phase = EXPLORE;
+                                break;
+                            case 4:
+                                if (Collections.disjoint(Card.TRADE_POWERS, power.powers)) {
+                                    power.phase = CONSUME;
+                                } else {
+                                    power.phase = TRADE;
+                                }
+                                break;
+                            case 5:
+                                power.phase = PRODUCE;
+                                break;
+                            default:
+                                throw new IllegalStateException("Unknown phase: " + phaseNum);
                         }
                         power.value = Integer.parseInt(s[3]);
                         power.times = Integer.parseInt(s[4]);
                         card.powers.add(power);
+                        card.phasePowers.add(power.phase);
                         break;
                     case 'V':
                         Extra extra = new Extra();

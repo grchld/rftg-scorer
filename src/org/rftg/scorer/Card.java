@@ -1,10 +1,6 @@
 package org.rftg.scorer;
 
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author gc
@@ -17,10 +13,11 @@ class Card {
     int cost;
     int vp;
     GoodType goodType;
-    Set<Flag> flags = new HashSet<Flag>();
+    Set<Flag> flags =  EnumSet.noneOf(Flag.class);
     Map<GameType, Integer> count = new EnumMap<GameType, Integer>(GameType.class);
-    Set<Power> powers = new HashSet<Power>();
-    Set<Extra> extras = new HashSet<Extra>();
+    List<Power> powers = new ArrayList<Power>(4);
+    List<Extra> extras = new ArrayList<Extra>(4);
+    Set<Phase> phasePowers = EnumSet.noneOf(Phase.class);
 
     enum GameType {
         BASE("The base game", 94),
@@ -34,6 +31,15 @@ class Card {
             this.name = name;
             this.maxCardNum = maxCardNum;
         }
+    }
+
+    enum Phase {
+        EXPLORE,
+        DEVELOP,
+        SETTLE,
+        TRADE,
+        CONSUME,
+        PRODUCE
     }
 
     enum CardType {
@@ -164,43 +170,184 @@ class Card {
         WINDFALL_RARE
     }
 
+    public static final Set<PowerType> TRADE_POWERS = EnumSet.of(
+            PowerType.TRADE_ACTION,
+            PowerType.TRADE_ANY,
+            PowerType.TRADE_BONUS_CHROMO,
+            PowerType.TRADE_GENE,
+            PowerType.TRADE_NO_BONUS,
+            PowerType.TRADE_NOVELTY,
+            PowerType.TRADE_RARE,
+            PowerType.TRADE_THIS
+    );
+
     enum ExtraType {
-        ALIEN_FLAG,
-        ALIEN_PRODUCTION,
-        ALIEN_WINDFALL,
-        CHROMO_FLAG,
-        DEVEL,
-        DEVEL_CONSUME,
-        DEVEL_EXPLORE,
-        DEVEL_TRADE,
-        GENE_PRODUCTION,
-        GENE_WINDFALL,
-        IMPERIUM_FLAG,
-        KIND_GOOD,
-        MILITARY,
-        NAME,
-        NEGATIVE_MILITARY,
-        NOVELTY_PRODUCTION,
-        NOVELTY_WINDFALL,
+        ALIEN_FLAG {
+            @Override
+            public boolean match(Card card) {
+                return card.flags.contains(Flag.ALIEN);
+            }
+        },
+        ALIEN_PRODUCTION {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD && card.goodType == GoodType.ALIEN && !card.flags.contains(Flag.WINDFALL);
+            }
+        },
+        ALIEN_WINDFALL {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD && card.goodType == GoodType.ALIEN && card.flags.contains(Flag.WINDFALL);
+            }
+        },
+        CHROMO_FLAG {
+            @Override
+            public boolean match(Card card) {
+                return card.flags.contains(Flag.CHROMO);
+            }
+        },
+        DEVEL {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.DEVELOPMENT;
+            }
+        },
+        DEVEL_CONSUME {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.DEVELOPMENT && card.phasePowers.contains(Phase.CONSUME);
+            }
+        },
+        DEVEL_EXPLORE {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.DEVELOPMENT && card.phasePowers.contains(Phase.EXPLORE);
+            }
+        },
+        DEVEL_TRADE {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.DEVELOPMENT && card.phasePowers.contains(Phase.TRADE);
+            }
+        },
+        GENE_PRODUCTION {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD && card.goodType == GoodType.GENE && !card.flags.contains(Flag.WINDFALL);
+            }
+        },
+        GENE_WINDFALL {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD && card.goodType == GoodType.GENE && card.flags.contains(Flag.WINDFALL);
+            }
+        },
+        IMPERIUM_FLAG {
+            @Override
+            public boolean match(Card card) {
+                return card.flags.contains(Flag.IMPERIUM);
+            }
+        },
+        KIND_GOOD, // 1,3,6,10 for different kinds
+        MILITARY {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD && card.flags.contains(Flag.MILITARY);
+            }
+        },
+        NAME, // find by name
+        NEGATIVE_MILITARY, // -military
+        NOVELTY_PRODUCTION {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD && card.goodType == GoodType.NOVELTY && !card.flags.contains(Flag.WINDFALL);
+            }
+        },
+        NOVELTY_WINDFALL {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD && card.goodType == GoodType.NOVELTY && card.flags.contains(Flag.WINDFALL);
+            }
+        },
         PRESTIGE,
-        RARE_PRODUCTION,
-        RARE_WINDFALL,
-        REBEL_FLAG,
-        REBEL_MILITARY,
-        SIX_DEVEL,
-        TERRAFORMING_FLAG,
-        THREE_VP,
-        TOTAL_MILITARY,
-        UPLIFT_FLAG,
-        WORLD,
-        WORLD_CONSUME,
-        WORLD_EXPLORE,
-        WORLD_TRADE
+        RARE_PRODUCTION {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD && card.goodType == GoodType.RARE && !card.flags.contains(Flag.WINDFALL);
+            }
+        },
+        RARE_WINDFALL {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD && card.goodType == GoodType.RARE && card.flags.contains(Flag.WINDFALL);
+            }
+        },
+        REBEL_FLAG {
+            @Override
+            public boolean match(Card card) {
+                return card.flags.contains(Flag.REBEL);
+            }
+        },
+        REBEL_MILITARY {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD && card.flags.contains(Flag.MILITARY) && card.flags.contains(Flag.REBEL);
+            }
+        },
+        SIX_DEVEL {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.DEVELOPMENT && card.cost == 6;
+            }
+        },
+        TERRAFORMING_FLAG {
+            @Override
+            public boolean match(Card card) {
+                return card.flags.contains(Flag.TERRAFORMING);
+            }
+        },
+        THREE_VP, // extra vp for every three chips
+        TOTAL_MILITARY, // +military
+        UPLIFT_FLAG {
+            @Override
+            public boolean match(Card card) {
+                return card.flags.contains(Flag.UPLIFT);
+            }
+        },
+        WORLD {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD;
+            }
+        },
+        WORLD_CONSUME {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD || card.phasePowers.contains(Phase.CONSUME);
+            }
+        },
+        WORLD_EXPLORE {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD || card.phasePowers.contains(Phase.EXPLORE);
+            }
+        },
+        WORLD_TRADE {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD || card.phasePowers.contains(Phase.TRADE);
+            }
+        };
+
+        public boolean match(Card card) {
+            throw new IllegalStateException("This extra can't be calculated with this method");
+        }
+
     }
 
     public static class Power {
-        int phase;
-        Set<PowerType> powers = new HashSet<PowerType>();
+        Phase phase;
+        Set<PowerType> powers = EnumSet.noneOf(PowerType.class);
         int value;
         int times;
     }

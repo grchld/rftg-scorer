@@ -27,6 +27,7 @@ class SampleExtractor implements Runnable {
         final Mat scaleDown = Imgproc.getPerspectiveTransform(new MatOfPoint2f(rect), CardPatterns.SAMPLE_RECT);
         Imgproc.warpPerspective(image, destination, scaleDown, CardPatterns.SAMPLE_SIZE, CardPatterns.SAMPLE_INTER);
         recognizerResources.customNativeTools.normalize(destination);
+        scaleDown.release();
     }
 
 }

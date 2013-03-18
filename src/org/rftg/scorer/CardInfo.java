@@ -2,14 +2,19 @@ package org.rftg.scorer;
 
 import android.app.Activity;
 import android.content.res.AssetManager;
+import org.rftg.scorer.Card.Extra;
+import org.rftg.scorer.Card.ExtraType;
+import org.rftg.scorer.Card.Flag;
+import org.rftg.scorer.Card.Power;
+import org.rftg.scorer.Card.PowerType;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author gc
@@ -39,6 +44,7 @@ class CardInfo {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
             List<Card> cards = new ArrayList<Card>();
+            Map<String, Card> cardByNames = new HashMap<String, Card>();
             Card card = null;
             int id = 0;
             String line;
@@ -51,6 +57,7 @@ class CardInfo {
                     case 'N':
                         if (card != null) {
                             cards.add(card);
+                            cardByNames.put(card.name, card);
                         }
                         card = new Card();
                         card.id = id++;
@@ -71,7 +78,6 @@ class CardInfo {
                         card.vp = Integer.parseInt(s[3]);
                         break;
                     case 'E':
-                        card.count = new EnumMap<Card.GameType, Integer>(Card.GameType.class);
                         card.count.put(Card.GameType.BASE, Integer.parseInt(s[1]));
                         card.count.put(Card.GameType.EXP1, Integer.parseInt(s[2]));
                         card.count.put(Card.GameType.EXP2, Integer.parseInt(s[3]));
@@ -81,20 +87,44 @@ class CardInfo {
                         card.goodType = Card.GoodType.valueOf(s[1]);
                         break;
                     case 'F':
-                        card.flags = new HashSet<Card.Flags>();
                         for (String flag : s[1].split("(\\s|\\|)+")) {
-                            card.flags.add(Card.Flags.valueOf(flag));
+                            card.flags.add(Flag.valueOf(flag));
                         }
                         break;
                     case 'P':
+                        Power power = new Power();
+                        power.phase = Integer.parseInt(s[1]);
+                        for (String powerType : s[2].split("(\\s|\\|)+")) {
+                            power.powers.add(PowerType.valueOf(powerType));
+                        }
+                        power.value = Integer.parseInt(s[3]);
+                        power.times = Integer.parseInt(s[4]);
+                        card.powers.add(power);
                         break;
                     case 'V':
+                        Extra extra = new Extra();
+                        extra.vp = Integer.parseInt(s[1]);
+                        extra.extraType = ExtraType.valueOf(s[2]);
+                        extra.name = s[3];
+                        card.extras.add(extra);
                         break;
                     default:
                         throw new IllegalStateException();
                 }
             }
             cards.add(card);
+            cardByNames.put(card.name, card);
+
+            for (Card c : cards) {
+                for (Extra extra : c.extras) {
+                    if (!"N/A".equals(extra.name)) {
+                        extra.namedCard = cardByNames.get(extra.name);
+                        if (extra.namedCard == null) {
+                            throw new IllegalStateException("Card not found: " + extra.name);
+                        }
+                    }
+                }
+            }
 
             return cards.toArray(new Card[cards.size()]);
         } finally {

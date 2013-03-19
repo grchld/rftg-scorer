@@ -1,14 +1,14 @@
 RftG-Scorer
 ===========
 
-Race For The Galaxy board game scorer for android with recognition ability
+Race For The Galaxy board game scorer for Android with recognition ability.
 
-[Download for android](https://github.com/grchld/rftg-scorer/blob/release/RftG-Scorer.apk?raw=true)
+[Download for Android](https://github.com/grchld/rftg-scorer/blob/release/RftG-Scorer.apk?raw=true)
 
 About
 -----
 
-This is a little homebrew application for android based phones which goal is to help Race For The Galaxy game players to calculate their total victory points fast. The main idea is to make your phone to recognize card you have played and show you total score and other statistics.
+This is a little homebrew application for Android based phones which goal is to help Race For The Galaxy game players to calculate their total victory points fast. The main idea is to make your phone to recognize cards you have played and show you the total score and other statistics.
 
 This project is open-source and non-profitable, however it contains art which belongs to [Rio Grande Games](http://www.riograndegames.com) and Race For The Galaxy designer Tom Lehmann. Also, it contains parts of another really cool open project http://keldon.net/rftg/
 
@@ -54,5 +54,5 @@ Known issues
 
 * Add support for the second and third expansion packs, goal statuses, prestige.
 
-* Redraw/redesign this ugly interface
+* Redraw/redesign this ugly interface.
 

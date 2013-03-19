@@ -45,6 +45,7 @@ class Recognizer {
     private static final Scalar COLOR_MATCH_OLD = new Scalar(255, 0, 0);
     private static final Scalar COLOR_MATCH_NEW = new Scalar(0, 255, 0);
     private static final Scalar COLOR_CHIPS = new Scalar(255, 255, 0);
+    private static final Scalar COLOR_CARDS = new Scalar(128, 255, 128);
     private static final Scalar COLOR_MILITARY = new Scalar(255, 0, 0);
 
     private static final int PREVIEW_GAP = 10;
@@ -362,7 +363,7 @@ class Recognizer {
 
         // Draw card counter
         Sprite cardCountBackground = recognizerResources.userControls.cardCountBackground;
-        draw(frame, cardCountBackground, Sprite.textSpriteWithDilate(""+state.player.cards.size(), COLOR_MATCH_NEW, COLOR_SHADOW, 1, 3, 2, 1),
+        draw(frame, cardCountBackground, Sprite.textSpriteWithDilate(""+state.player.cards.size(), COLOR_CARDS, COLOR_SHADOW, 1, 4, 3, 1),
                 PREVIEW_GAP, frame.rows() - cardCountBackground.height - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP);
 
         // Draw total

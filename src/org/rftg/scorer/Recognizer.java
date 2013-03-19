@@ -44,7 +44,7 @@ class Recognizer {
     private static final Scalar COLOR_TOTAL = new Scalar(255, 255, 255);
     private static final Scalar COLOR_MATCH_OLD = new Scalar(255, 0, 0);
     private static final Scalar COLOR_MATCH_NEW = new Scalar(0, 255, 0);
-    private static final Scalar COLOR_CHIPS = new Scalar(64, 64, 255);
+    private static final Scalar COLOR_CHIPS = new Scalar(255, 255, 0);
     private static final Scalar COLOR_MILITARY = new Scalar(255, 0, 0);
 
     private static final int PREVIEW_GAP = 10;
@@ -344,7 +344,7 @@ class Recognizer {
         // Draw chips buttons
         Sprite chipsBackground = recognizerResources.userControls.chipsBackground;
         int y = PREVIEW_GAP;
-        draw(frame, chipsBackground, Sprite.textSpriteWithDilate(""+state.player.chips, COLOR_CHIPS, COLOR_SHADOW, 1, 3, 2, 1),
+        draw(frame, chipsBackground, Sprite.textSpriteWithDilate(""+state.player.chips, COLOR_CHIPS, COLOR_SHADOW, 1, 4, 3, 1),
                 frame.cols() - chipsBackground.width - PREVIEW_GAP, y);
 
         // Draw military scores

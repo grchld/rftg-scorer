@@ -41,7 +41,7 @@ class UserControls {
                     CARD_TEXT_COLOR, CARD_TEXT_SHADOW, CARD_TEXT_FONT_FACE, CARD_TEXT_FONT_SCALE, CARD_TEXT_THICKNESS, CARD_TEXT_BORDER);
         }
         cardCountBackground = load("icon_11", 120, 120);
-        chipsBackground = load("icon_12", 110, 110);
+        chipsBackground = load("chip", 155, 155);
         militaryBackground = load("icon_13", 110, 110);
         resetBackground = load("icon_15", 120, 120);
         totalBackground = load("icon_12", 120, 120);
@@ -63,10 +63,10 @@ class UserControls {
 
             float x = motionEvent.getX() - (view.getWidth() - recognizer.width)/2;
             float y = motionEvent.getY() - (view.getHeight() - recognizer.height)/2;
-            if (x < 120 && y < 120) {
+            if (x < 155 && y < 155) {
                 state.player.chips = 0;
                 state.player.cards.clear();
-            } else if (x > recognizer.width - 120 && y < 120) {
+            } else if (x > recognizer.width - 155 && y < 155) {
                 state.player.chips++;
             }
 

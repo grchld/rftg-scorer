@@ -41,10 +41,10 @@ class UserControls {
                     CARD_TEXT_COLOR, CARD_TEXT_SHADOW, CARD_TEXT_FONT_FACE, CARD_TEXT_FONT_SCALE, CARD_TEXT_THICKNESS, CARD_TEXT_BORDER);
         }
         cardCountBackground = load("icon_11", 120, 120);
-        chipsBackground = load("chip", 155, 155);
+        chipsBackground = load("chip", 125, 125);
         militaryBackground = load("icon_13", 110, 110);
         resetBackground = load("icon_15", 120, 120);
-        totalBackground = load("icon_12", 120, 120);
+        totalBackground = load("total", 125, 125);
     }
 
     void release() {

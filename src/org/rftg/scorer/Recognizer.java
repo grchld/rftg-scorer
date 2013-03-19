@@ -41,7 +41,7 @@ class Recognizer {
 
     private static final Scalar COLOR_SHADOW = new Scalar(0, 0, 0);
     private static final Scalar COLOR_SCORE = new Scalar(255, 255, 255);
-    private static final Scalar COLOR_TOTAL = new Scalar(255, 255, 255);
+    private static final Scalar COLOR_TOTAL = new Scalar(0, 0, 0);
     private static final Scalar COLOR_MATCH_OLD = new Scalar(255, 0, 0);
     private static final Scalar COLOR_MATCH_NEW = new Scalar(0, 255, 0);
     private static final Scalar COLOR_CHIPS = new Scalar(255, 255, 0);
@@ -367,7 +367,7 @@ class Recognizer {
 
         // Draw total
         Sprite totalBackground = recognizerResources.userControls.totalBackground;
-        draw(frame, totalBackground, Sprite.textSpriteWithDilate(""+scoring.score, COLOR_TOTAL, COLOR_SHADOW, 1, 4, 3, 1),
+        draw(frame, totalBackground, Sprite.textSpriteWithDilate(""+scoring.score, COLOR_TOTAL, COLOR_SHADOW, 1, scoring.score >= 100 ? 3 : 4, 3, 1),
                 frame.cols() - totalBackground.width - PREVIEW_GAP,
                 frame.rows() - totalBackground.height - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP);
 

@@ -133,7 +133,7 @@ class CardPatterns {
                     synchronized (cardMatches) {
                         CardMatch match = cardMatches[bestCardNumber];
                         if (match == null || match.score < bestScore) {
-                            cardMatches[bestCardNumber] = new CardMatch(bestCardNumber, bestScore, rect);
+                            cardMatches[bestCardNumber] = new CardMatch(bestCardNumber, bestScore, secondBestScore, rect);
                         }
                     }
                 }

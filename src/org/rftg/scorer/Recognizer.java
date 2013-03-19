@@ -18,6 +18,7 @@ class Recognizer {
     private static final boolean DEBUG_SHOW_ALL_RECTANGLES = false;
     private static final boolean DEBUG_SHOW_SEGMENTS = false;
     private static final boolean DEBUG_SHOW_RECTANGLE_COUNTER = false;
+    private static final boolean DEBUG_SHOW_CARD_SCORES = false;
 
     private static final int MAX_RECTANGLES = 400;
     private static final int MAX_RECTANGLES_TO_USE_OUTERS = 100;
@@ -263,6 +264,11 @@ class Recognizer {
         for (CardMatch match : matches) {
             Point[] points = match.rect;
             recognizerResources.userControls.cardNames[match.cardNumber].draw(frame, (int)points[0].x + screen.cardNameOffsetX, (int)points[0].y + screen.cardNameOffsetY);
+            if (DEBUG_SHOW_CARD_SCORES) {
+                Sprite score = Sprite.textSpriteWithDilate(""+match.score + " >> " + match.secondScore, COLOR_SCORE, COLOR_SHADOW, 1, 1.3, 1, 1);
+                score.draw(frame, (int)points[0].x + 10, (int)points[0].y + 70);
+                score.release();
+            }
         }
 
         Scoring scoring = new Scoring(state.player);

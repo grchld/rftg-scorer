@@ -21,10 +21,6 @@ class UserControls {
     private final static Scalar CARD_TEXT_SHADOW = new Scalar(0, 0, 0);
 
     private final static int CARD_TEXT_FONT_FACE = 1;
-    private final static double CARD_TEXT_FONT_SCALE = 1.2;
-    private final static int CARD_TEXT_THICKNESS = 1;
-
-    private final static int CARD_TEXT_BORDER = 2;
 
     public final Sprite[] cardNames;
     public final Sprite cardCountBackground;
@@ -35,16 +31,17 @@ class UserControls {
 
     UserControls(RecognizerResources recognizerResources) {
         this.recognizerResources = recognizerResources;
+        ScreenProperties screen = recognizerResources.screenProperties;
         cardNames = new Sprite[recognizerResources.maxCardNum + 1];
         for (int i = 0 ; i <= recognizerResources.maxCardNum ; i++) {
             cardNames[i] = Sprite.textSpriteWithDilate(recognizerResources.cardInfo.cards[i].name,
-                    CARD_TEXT_COLOR, CARD_TEXT_SHADOW, CARD_TEXT_FONT_FACE, CARD_TEXT_FONT_SCALE, CARD_TEXT_THICKNESS, CARD_TEXT_BORDER);
+                    CARD_TEXT_COLOR, CARD_TEXT_SHADOW, CARD_TEXT_FONT_FACE, screen.cardTextFontScale, screen.cardTextThickness, screen.cardTextBorder);
         }
-        cardCountBackground = load("cards", 120, 120);
-        chipsBackground = load("chip", 125, 125);
-        militaryBackground = load("military", 100, 100);
-        resetBackground = load("reset", 125, 125);
-        totalBackground = load("total", 125, 125);
+        cardCountBackground = load("cards", screen.cardsIconSize);
+        chipsBackground = load("chip", screen.chipsIconSize);
+        militaryBackground = load("military", screen.militaryIconSize);
+        resetBackground = load("reset", screen.resetIconSize);
+        totalBackground = load("total", screen.totalIconSize);
     }
 
     void release() {
@@ -76,7 +73,7 @@ class UserControls {
         }
     }
 
-    private Sprite load(String imageName, int width, int height) {
+    private Sprite load(String imageName, ScreenProperties.Dimensions size) {
         int id = recognizerResources.resourceContext.getResources().getIdentifier(imageName, "drawable", "org.rftg.scorer");
 
         Bitmap bitmap = BitmapFactory.decodeResource(recognizerResources.resourceContext.getResources(), id, new BitmapFactory.Options());
@@ -86,7 +83,7 @@ class UserControls {
         bitmap.recycle();
 
         Mat scaledRGBA = new Mat();
-        Imgproc.resize(tempRGBA, scaledRGBA, new Size(width, height));
+        Imgproc.resize(tempRGBA, scaledRGBA, new Size(size.width, size.height));
         tempRGBA.release();
 
         Mat image = new Mat();

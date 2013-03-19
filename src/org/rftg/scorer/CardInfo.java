@@ -104,7 +104,7 @@ class CardInfo {
                                 power.phase = DEVELOP;
                                 break;
                             case 3:
-                                power.phase = EXPLORE;
+                                power.phase = SETTLE;
                                 break;
                             case 4:
                                 if (Collections.disjoint(Card.TRADE_POWERS, power.powers)) {

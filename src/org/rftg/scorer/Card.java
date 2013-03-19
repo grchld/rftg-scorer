@@ -323,19 +323,19 @@ class Card {
         WORLD_CONSUME {
             @Override
             public boolean match(Card card) {
-                return card.cardType == CardType.WORLD || card.phasePowers.contains(Phase.CONSUME);
+                return card.cardType == CardType.WORLD && card.phasePowers.contains(Phase.CONSUME);
             }
         },
         WORLD_EXPLORE {
             @Override
             public boolean match(Card card) {
-                return card.cardType == CardType.WORLD || card.phasePowers.contains(Phase.EXPLORE);
+                return card.cardType == CardType.WORLD && card.phasePowers.contains(Phase.EXPLORE);
             }
         },
         WORLD_TRADE {
             @Override
             public boolean match(Card card) {
-                return card.cardType == CardType.WORLD || card.phasePowers.contains(Phase.TRADE);
+                return card.cardType == CardType.WORLD && card.phasePowers.contains(Phase.TRADE);
             }
         };
 

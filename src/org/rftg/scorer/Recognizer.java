@@ -339,7 +339,7 @@ class Recognizer {
         }
 
         // Draw reset button
-        recognizerResources.userControls.resetBackground.draw(frame, 0, 0);
+        recognizerResources.userControls.resetBackground.draw(frame, PREVIEW_GAP, PREVIEW_GAP);
 
         // Draw chips buttons
         Sprite chipsBackground = recognizerResources.userControls.chipsBackground;
@@ -357,8 +357,8 @@ class Recognizer {
 
         y += chipsBackground.height + PREVIEW_GAP;
         Sprite militaryBackground = recognizerResources.userControls.militaryBackground;
-        draw(frame, militaryBackground, Sprite.textSpriteWithDilate(militaryValue, COLOR_MILITARY, COLOR_SHADOW, 1, 3, 2, 1),
-                frame.cols() - militaryBackground.width - PREVIEW_GAP, y);
+        draw(frame, militaryBackground, Sprite.textSpriteWithDilate(militaryValue, COLOR_MILITARY, COLOR_SHADOW, 1, 3, 3, 0),
+                frame.cols() - militaryBackground.width - PREVIEW_GAP - (chipsBackground.width - militaryBackground.width) / 2, y);
 
         // Draw card counter
         Sprite cardCountBackground = recognizerResources.userControls.cardCountBackground;

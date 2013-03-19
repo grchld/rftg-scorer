@@ -118,7 +118,9 @@ class Sprite {
         Mat mask = new Mat(image.rows(), image.cols(), CvType.CV_8U, MASK_TRANSPARENT);
         Core.putText(mask, text, textOrigin, fontFace, fontScale, MASK_OPAQUE, thickness);
 
-        Imgproc.dilate(mask, mask, DILATE_KERNEL, DILATE_ANCHOR, dilateSize);
+        if (dilateSize > 0) {
+            Imgproc.dilate(mask, mask, DILATE_KERNEL, DILATE_ANCHOR, dilateSize);
+        }
 
         return new Sprite(image, mask);
     }

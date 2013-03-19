@@ -40,10 +40,10 @@ class UserControls {
             cardNames[i] = Sprite.textSpriteWithDilate(recognizerResources.cardInfo.cards[i].name,
                     CARD_TEXT_COLOR, CARD_TEXT_SHADOW, CARD_TEXT_FONT_FACE, CARD_TEXT_FONT_SCALE, CARD_TEXT_THICKNESS, CARD_TEXT_BORDER);
         }
-        cardCountBackground = load("icon_11", 120, 120);
+        cardCountBackground = load("cards", 120, 120);
         chipsBackground = load("chip", 125, 125);
-        militaryBackground = load("icon_13", 110, 110);
-        resetBackground = load("icon_15", 120, 120);
+        militaryBackground = load("military", 100, 100);
+        resetBackground = load("reset", 125, 125);
         totalBackground = load("total", 125, 125);
     }
 

@@ -14,12 +14,16 @@ This project is open-source and non-profitable, however it contains art which be
 
 For now, only the first expansion pack (The Gathering Storm) is supported, but I think this can be easily changed in future.
 
+As far as card matcher uses the whole image of a card, it can work for localized card sets well too. I've checked it on Russian and French card sets.
+
 Requirements
 ------------
 
 Android device with rear camera, HD-resolution screen, >1Ghz ARM CPU with NEON support and two or more cores :)
 
-I can run it on my SGS3 and have absolutely no clue if it works on any other devices, however I hope it does.
+I can run it on my Samsung Galaxy S3 and have absolutely no clue if it works on any other devices, however I hope it does.
+
+Upd: I also try it out on Samsung Galaxy W I8150 with 480x800 screen and single core CPU and it is still usable.
 
 Installation
 ------------
@@ -43,10 +47,12 @@ Press red reset button to clear recognized cards list and to reset chips counter
 
 Don't leave recognizer in a working state when it is not needed or your battery will drain fast. It should be just enough to lock the phone with the power button to pause recognition loop.
 
+![Usage](usage.jpg)
+
 Known issues
 ------------
 
-* False positives - this is the great problem, because it is hard to be noticed by user. Check the total amount of recognized cards.
+* False positives, although this case seems to be rare, this could still be a great problem, because it is hard to be noticed by user. Check the total amount of recognized cards.
 
 * Make it works faster. I've already do some ARM-NEON-specific optimization, but further optimization is definitely possible.
 

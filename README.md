@@ -1,4 +1,4 @@
-RftG-Scorer 
+RftG-Scorer
 ===========
 
 Race For The Galaxy board game scorer for android with recognition ability

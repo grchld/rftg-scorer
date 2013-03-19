@@ -322,9 +322,14 @@ class Recognizer {
 
         // Draw accepted cards
         if (!scoring.cardScores.isEmpty()) {
-            int step = (frame.cols() - PREVIEW_GAP - PREVIEW_STEP) / scoring.cardScores.size();
-            if (step > PREVIEW_STEP) {
-                step = PREVIEW_STEP;
+            int step;
+            if (scoring.cardScores.size() > 1) {
+                step = (frame.cols() - PREVIEW_GAP - PREVIEW_STEP) / (scoring.cardScores.size() - 1);
+                if (step > PREVIEW_STEP) {
+                    step = PREVIEW_STEP;
+                }
+            } else {
+                step = 0;
             }
 
             int previewX = PREVIEW_GAP;

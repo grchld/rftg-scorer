@@ -54,7 +54,6 @@ class Recognizer {
     private final RecognizerResources recognizerResources;
     private final State state;
 
-    private Mat real;
     private Mat rgb;
     private Mat gray;
     private Mat canny;
@@ -97,20 +96,6 @@ class Recognizer {
         int xOrigin = width/2;
         int yOrigin = height/2;
 
-        Mat tempReal;
-        try {
-
-            tempReal = Utils.loadResource(recognizerResources.resourceContext, R.drawable.real);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        real = new Mat(tempReal.rows(), tempReal.cols(), CvType.CV_8UC3);
-
-        Imgproc.cvtColor(tempReal, real, Imgproc.COLOR_BGR2RGB);
-
-        tempReal.release();
-
         rgb = new Mat(height, width, CvType.CV_8UC3);
 
         gray = new Mat(height, width, CvType.CV_8UC1);
@@ -138,7 +123,6 @@ class Recognizer {
 
     void release() {
         rgb.release();
-        real.release();
         gray.release();
         canny.release();
         sobel.release();

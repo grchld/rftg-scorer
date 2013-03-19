@@ -46,10 +46,7 @@ class Hough implements Runnable {
     @Override
     public void run() {
 
-        long time = System.currentTimeMillis();
         int segmentCount = recognizerResources.customNativeTools.houghVertical(sobel, mask, origin, maxGap, minLength, segmentsStack);
-
-        Log.e("rftg", "Hough-native: " + (System.currentTimeMillis() - time));
 
         for (int i = 0 ; i < segmentCount ; i++) {
             segmentsStack.get(0, i, segmentData);

@@ -155,7 +155,7 @@ class Recognizer {
     Mat onFrame(Mat frame) {
 
         if (frameTimer != 0) {
-            Log.e("rftg", "Inter frame time: " + (System.currentTimeMillis() - frameTimer));
+            Log.v("rftg", "Inter frame time: " + (System.currentTimeMillis() - frameTimer));
         }
 
         long totalTimer = System.currentTimeMillis();
@@ -174,21 +174,21 @@ class Recognizer {
         realsub.release();
         /**/
 
-        Log.e("rftg", "Prepare image: " + (System.currentTimeMillis() - time));
+        Log.v("rftg", "Prepare image: " + (System.currentTimeMillis() - time));
 
         time = System.currentTimeMillis();
         Imgproc.cvtColor(frame, gray, Imgproc.COLOR_RGB2GRAY);
-        Log.e("rftg", "Convert color: " + (System.currentTimeMillis() - time));
+        Log.v("rftg", "Convert color: " + (System.currentTimeMillis() - time));
         time = System.currentTimeMillis();
         recognizerResources.customNativeTools.sobel(gray, sobel);
 
-        Log.e("rftg", "Sobel: " + (System.currentTimeMillis() - time));
+        Log.v("rftg", "Sobel: " + (System.currentTimeMillis() - time));
 
         time = System.currentTimeMillis();
 
         recognizerResources.customNativeTools.transpose(sobel, sobelTransposed);
 
-        Log.e("rftg", "Transpose: " + (System.currentTimeMillis() - time));
+        Log.v("rftg", "Transpose: " + (System.currentTimeMillis() - time));
 
         time = System.currentTimeMillis();
 
@@ -199,11 +199,11 @@ class Recognizer {
 
         recognizerResources.executor.sync();
 
-        Log.e("rftg", "Hough: " + (System.currentTimeMillis() - time));
+        Log.v("rftg", "Hough: " + (System.currentTimeMillis() - time));
 
         time = System.currentTimeMillis();
         List<Point[]> rectangles = extractRectangles();
-        Log.e("rftg", "Extraction: " + (System.currentTimeMillis() - time));
+        Log.v("rftg", "Extraction: " + (System.currentTimeMillis() - time));
 
         /*
         Point[] p = rectangles.get(4);
@@ -217,7 +217,7 @@ class Recognizer {
             recognizerResources.executor.submit(new SampleExtractor(recognizerResources, frame, rect, selection[selectionCounter++]));
         }
         recognizerResources.executor.sync();
-        Log.e("rftg", "Scaling&Normalizing " + (System.currentTimeMillis() - time));
+        Log.v("rftg", "Scaling&Normalizing " + (System.currentTimeMillis() - time));
 /*
         time = System.currentTimeMillis();
         for (int i = 0 ; i < rectangles.size() ; i++) {
@@ -230,7 +230,7 @@ class Recognizer {
             });
         }
         recognizerResources.executor.sync();
-        Log.e("rftg", "Normalize " + (System.currentTimeMillis() - time));
+        Log.v("rftg", "Normalize " + (System.currentTimeMillis() - time));
 */
         Arrays.fill(cardMatches, null);
 
@@ -239,7 +239,7 @@ class Recognizer {
             recognizerResources.cardPatterns.invokeAnalyse(selection[i], cardMatches, rectangles.get(i));
         }
         recognizerResources.executor.sync();
-        Log.e("rftg", "Matching " + (System.currentTimeMillis() - time));
+        Log.v("rftg", "Matching " + (System.currentTimeMillis() - time));
 
 
         time = System.currentTimeMillis();
@@ -264,7 +264,7 @@ class Recognizer {
             matches.add(match);
         }
 
-        Log.e("rftg", "Match filtering: " + (System.currentTimeMillis() - time));
+        Log.v("rftg", "Match filtering: " + (System.currentTimeMillis() - time));
 
 
         // Drawing results
@@ -416,9 +416,9 @@ class Recognizer {
             }
         }
 
-        Log.e("rftg", "Drawing: " + (System.currentTimeMillis() - time));
+        Log.v("rftg", "Drawing: " + (System.currentTimeMillis() - time));
 
-        Log.e("rftg", "Total calc time: " + (System.currentTimeMillis() - totalTimer));
+        Log.v("rftg", "Total calc time: " + (System.currentTimeMillis() - totalTimer));
 
         frameTimer = System.currentTimeMillis();
 

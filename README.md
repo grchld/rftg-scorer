@@ -18,6 +18,7 @@ Requirements
 ------------
 
 Android device with rear camera, HD-resolution screen, >1Ghz ARM CPU with NEON support and two or more cores :)
+
 I can run it on my SGS3 and have absolutely no clue if it works on any other devices, however I hope it does.
 
 Installation
@@ -25,7 +26,7 @@ Installation
 
 This application uses OpenCV library, so OpenCV Manager must me installed from Play Market or, alternatively, downloaded and installed from [this](http://opencv.org/) site.
 
-RtfG-Scorer apk is [here](https://github.com/grchld/rftg-scorer/blob/release/RftG-Scorer.apk?raw=true).
+RftG-Scorer apk is [here](https://github.com/grchld/rftg-scorer/blob/release/RftG-Scorer.apk?raw=true).
 
 Usage
 -----

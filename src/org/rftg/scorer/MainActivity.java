@@ -34,7 +34,7 @@ public class MainActivity extends Activity implements CvCameraViewListener {
                         if (state == null) {
                             state = new State();
                         }
-                        recognizerResources = new RecognizerResources(MainActivity.this, cardInfo, state.settings);
+                        recognizerResources = new RecognizerResources(MainActivity.this, cardInfo, state.settings, new ScreenProperties(openCvCameraView.getWidth(), openCvCameraView.getHeight()));
                     }
 
                     openCvCameraView.enableView();

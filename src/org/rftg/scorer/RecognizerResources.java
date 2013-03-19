@@ -14,8 +14,10 @@ class RecognizerResources {
     final int maxCardNum;
     final CardInfo cardInfo;
     final UserControls userControls;
+    final ScreenProperties screenProperties;
 
-    RecognizerResources(Context resourceContext, CardInfo cardInfo, Settings settings) {
+    RecognizerResources(Context resourceContext, CardInfo cardInfo, Settings settings, ScreenProperties screenProperties) {
+        this.screenProperties = screenProperties;
         this.cardInfo = cardInfo;
         this.maxCardNum = settings.gameType.maxCardNum;
         this.resourceContext = resourceContext;

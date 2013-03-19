@@ -1,6 +1,5 @@
 package org.rftg.scorer;
 
-import android.util.Log;
 import org.opencv.android.Utils;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
@@ -48,10 +47,8 @@ class Recognizer {
     private static final Scalar COLOR_CARDS = new Scalar(128, 255, 128);
     private static final Scalar COLOR_MILITARY = new Scalar(255, 0, 0);
 
-    private static final int PREVIEW_GAP = 10;
-    private static final int PREVIEW_STEP = CardPatterns.PREVIEW_WIDTH + PREVIEW_GAP;
-
     private final RecognizerResources recognizerResources;
+    private final ScreenProperties screen;
     private final State state;
 
     private Mat rgb;
@@ -82,14 +79,13 @@ class Recognizer {
     final int width;
     final int height;
 
-    private long frameTimer;
-
 
     Recognizer(RecognizerResources recognizerResources, State state, int width, int height) {
         this.width = width;
         this.height = height;
         this.state = state;
         this.recognizerResources = recognizerResources;
+        this.screen = recognizerResources.screenProperties;
 
         cardMatches = new CardMatch[recognizerResources.maxCardNum + 1];
 
@@ -138,43 +134,13 @@ class Recognizer {
 
     Mat onFrame(Mat frame) {
 
-        if (frameTimer != 0) {
-            Log.v("rftg", "Inter frame time: " + (System.currentTimeMillis() - frameTimer));
-        }
-
-        long totalTimer = System.currentTimeMillis();
-
-        long time;
-
-        time = System.currentTimeMillis();
-
-
         Imgproc.cvtColor(frame, rgb, Imgproc.COLOR_RGBA2RGB);
         frame = rgb;
 
-        /*
-        Mat realsub = frame.submat(0,real.rows(),0,real.cols());
-        real.copyTo(realsub);
-        realsub.release();
-        /**/
-
-        Log.v("rftg", "Prepare image: " + (System.currentTimeMillis() - time));
-
-        time = System.currentTimeMillis();
         Imgproc.cvtColor(frame, gray, Imgproc.COLOR_RGB2GRAY);
-        Log.v("rftg", "Convert color: " + (System.currentTimeMillis() - time));
-        time = System.currentTimeMillis();
         recognizerResources.customNativeTools.sobel(gray, sobel);
 
-        Log.v("rftg", "Sobel: " + (System.currentTimeMillis() - time));
-
-        time = System.currentTimeMillis();
-
         recognizerResources.customNativeTools.transpose(sobel, sobelTransposed);
-
-        Log.v("rftg", "Transpose: " + (System.currentTimeMillis() - time));
-
-        time = System.currentTimeMillis();
 
         recognizerResources.executor.submit(houghLeft);
         recognizerResources.executor.submit(houghRight);
@@ -183,50 +149,20 @@ class Recognizer {
 
         recognizerResources.executor.sync();
 
-        Log.v("rftg", "Hough: " + (System.currentTimeMillis() - time));
-
-        time = System.currentTimeMillis();
         List<Point[]> rectangles = extractRectangles();
-        Log.v("rftg", "Extraction: " + (System.currentTimeMillis() - time));
 
-        /*
-        Point[] p = rectangles.get(4);
-        rectangles.clear();
-        rectangles.add(p);
-        /**/
-
-        time = System.currentTimeMillis();
         int selectionCounter = 0;
         for (Point[] rect : rectangles) {
             recognizerResources.executor.submit(new SampleExtractor(recognizerResources, frame, rect, selection[selectionCounter++]));
         }
         recognizerResources.executor.sync();
-        Log.v("rftg", "Scaling&Normalizing " + (System.currentTimeMillis() - time));
-/*
-        time = System.currentTimeMillis();
-        for (int i = 0 ; i < rectangles.size() ; i++) {
-            final Mat image = selection[i];
-            recognizerResources.executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    recognizerResources.customNativeTools.normalize(image);
-                }
-            });
-        }
-        recognizerResources.executor.sync();
-        Log.v("rftg", "Normalize " + (System.currentTimeMillis() - time));
-*/
+
         Arrays.fill(cardMatches, null);
 
-        time = System.currentTimeMillis();
         for (int i = 0 ; i < selectionCounter ; i++) {
             recognizerResources.cardPatterns.invokeAnalyse(selection[i], cardMatches, rectangles.get(i));
         }
         recognizerResources.executor.sync();
-        Log.v("rftg", "Matching " + (System.currentTimeMillis() - time));
-
-
-        time = System.currentTimeMillis();
 
         List<CardMatch> allMatches = new ArrayList<CardMatch>(64);
         for (int cardNumber = 0 ; cardNumber <= recognizerResources.maxCardNum ; cardNumber ++ ) {
@@ -248,12 +184,7 @@ class Recognizer {
             matches.add(match);
         }
 
-        Log.v("rftg", "Match filtering: " + (System.currentTimeMillis() - time));
-
-
         // Drawing results
-
-        time = System.currentTimeMillis();
 
         if (DEBUG_SHOW_ALL_RECTANGLES) {
             List<MatOfPoint> allRectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
@@ -299,24 +230,29 @@ class Recognizer {
         // Show card names
         for (CardMatch match : matches) {
             Point[] points = match.rect;
-            recognizerResources.userControls.cardNames[match.cardNumber].draw(frame, (int)points[0].x + 10, (int)points[0].y + 50);
+            recognizerResources.userControls.cardNames[match.cardNumber].draw(frame, (int)points[0].x + screen.cardNameOffsetX, (int)points[0].y + screen.cardNameOffsetY);
         }
 
         Scoring scoring = new Scoring(state.player);
 
         // Draw accepted cards
         if (!scoring.cardScores.isEmpty()) {
-            int step = (frame.cols() - PREVIEW_GAP - PREVIEW_STEP) / scoring.cardScores.size();
-            if (step > PREVIEW_STEP) {
-                step = PREVIEW_STEP;
+            int step;
+            if (scoring.cardScores.size() > 1) {
+                step = (frame.cols() - screen.previewGap - screen.previewStep) / (scoring.cardScores.size() - 1);
+                if (step > screen.previewStep) {
+                    step = screen.previewStep;
+                }
+            } else {
+                step = 0;
             }
 
-            int previewX = PREVIEW_GAP;
-            int previewY = frame.rows() - CardPatterns.PREVIEW_HEIGHT - PREVIEW_GAP;
+            int previewX = screen.previewGap;
+            int previewY = frame.rows() - screen.previewHeight - screen.previewGap;
 
             for (CardScore cardScore : scoring.cardScores) {
                 draw(frame, recognizerResources.cardPatterns.previews[cardScore.card.id],
-                        Sprite.textSpriteWithDilate(""+cardScore.score, COLOR_SCORE, COLOR_SHADOW, 1, 3, 2, 2),
+                        Sprite.textSpriteWithDilate(""+cardScore.score, COLOR_SCORE, COLOR_SHADOW, 1, screen.previewTextScale, 2, 2),
                         previewX, previewY);
 
                 previewX += step;
@@ -324,13 +260,13 @@ class Recognizer {
         }
 
         // Draw reset button
-        recognizerResources.userControls.resetBackground.draw(frame, PREVIEW_GAP, PREVIEW_GAP);
+        recognizerResources.userControls.resetBackground.draw(frame, screen.previewGap, screen.previewGap);
 
         // Draw chips buttons
         Sprite chipsBackground = recognizerResources.userControls.chipsBackground;
-        int y = PREVIEW_GAP;
-        draw(frame, chipsBackground, Sprite.textSpriteWithDilate(""+state.player.chips, COLOR_CHIPS, COLOR_SHADOW, 1, 4, 3, 1),
-                frame.cols() - chipsBackground.width - PREVIEW_GAP, y);
+        int y = screen.previewGap;
+        draw(frame, chipsBackground, Sprite.textSpriteWithDilate(""+state.player.chips, COLOR_CHIPS, COLOR_SHADOW, 1, screen.chipsTextScale, 3, 1),
+                frame.cols() - chipsBackground.width - screen.previewGap, y);
 
         // Draw military scores
         String militaryValue;
@@ -340,21 +276,21 @@ class Recognizer {
             militaryValue = "" + scoring.military;
         }
 
-        y += chipsBackground.height + PREVIEW_GAP;
+        y += chipsBackground.height + screen.previewGap;
         Sprite militaryBackground = recognizerResources.userControls.militaryBackground;
-        draw(frame, militaryBackground, Sprite.textSpriteWithDilate(militaryValue, COLOR_MILITARY, COLOR_SHADOW, 1, 3, 3, 0),
-                frame.cols() - militaryBackground.width - PREVIEW_GAP - (chipsBackground.width - militaryBackground.width) / 2, y);
+        draw(frame, militaryBackground, Sprite.textSpriteWithDilate(militaryValue, COLOR_MILITARY, COLOR_SHADOW, 1, screen.militaryTextScale, 3, 0),
+                frame.cols() - militaryBackground.width - screen.previewGap - (chipsBackground.width - militaryBackground.width) / 2, y);
 
         // Draw card counter
         Sprite cardCountBackground = recognizerResources.userControls.cardCountBackground;
-        draw(frame, cardCountBackground, Sprite.textSpriteWithDilate(""+state.player.cards.size(), COLOR_CARDS, COLOR_SHADOW, 1, 4, 3, 1),
-                PREVIEW_GAP, frame.rows() - cardCountBackground.height - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP);
+        draw(frame, cardCountBackground, Sprite.textSpriteWithDilate(""+state.player.cards.size(), COLOR_CARDS, COLOR_SHADOW, 1, screen.cardCountTextScale, 3, 1),
+                screen.previewGap, frame.rows() - cardCountBackground.height - screen.previewHeight - 2*screen.previewGap);
 
         // Draw total
         Sprite totalBackground = recognizerResources.userControls.totalBackground;
-        draw(frame, totalBackground, Sprite.textSpriteWithDilate(""+scoring.score, COLOR_TOTAL, COLOR_SHADOW, 1, scoring.score >= 100 ? 3 : 4, 3, 1),
-                frame.cols() - totalBackground.width - PREVIEW_GAP,
-                frame.rows() - totalBackground.height - CardPatterns.PREVIEW_HEIGHT - 2*PREVIEW_GAP);
+        draw(frame, totalBackground, Sprite.textSpriteWithDilate(""+scoring.score, COLOR_TOTAL, COLOR_SHADOW, 1, scoring.score >= 100 ? screen.totalTextScaleShrink : screen.totalTextScale, 3, 1),
+                frame.cols() - totalBackground.width - screen.previewGap,
+                frame.rows() - totalBackground.height - screen.previewHeight - 2*screen.previewGap);
 
         //
         if (DEBUG_SHOW_RECTANGLE_COUNTER) {
@@ -399,12 +335,6 @@ class Recognizer {
                 Core.putText(frame, line.toString(), new Point(line.mx, line.my + 20), 1, 1, blue);
             }
         }
-
-        Log.v("rftg", "Drawing: " + (System.currentTimeMillis() - time));
-
-        Log.v("rftg", "Total calc time: " + (System.currentTimeMillis() - totalTimer));
-
-        frameTimer = System.currentTimeMillis();
 
         return frame;
     }

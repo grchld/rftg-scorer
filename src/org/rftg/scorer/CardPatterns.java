@@ -19,13 +19,9 @@ class CardPatterns {
     public final static int SAMPLE_HEIGHT = 64;
     public final static int SAMPLE_WIDTH = 64;
     public final static int MATCHER_MINIMAL_BOUND = 5000;
-    public final static int MATCHER_MINIMAL_GAP = 700;
+    public final static int MATCHER_MINIMAL_GAP = 1000;
     public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
     public final static MatOfPoint2f SAMPLE_RECT = new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(SAMPLE_WIDTH, SAMPLE_HEIGHT), new Point(0, SAMPLE_HEIGHT));
-
-    public final static int PREVIEW_HEIGHT = 119;
-    public final static int PREVIEW_WIDTH = 85;
-    public final static Size PREVIEW_SIZE = new Size(PREVIEW_WIDTH, PREVIEW_HEIGHT);
 
     public final static int SAMPLE_INTER = Imgproc.INTER_LINEAR;
 
@@ -76,8 +72,10 @@ class CardPatterns {
 
                 samples[num] = scaledSample;
 
-                Mat scaledPreview = new Mat(PREVIEW_WIDTH, PREVIEW_HEIGHT, CvType.CV_8UC3);
-                Imgproc.resize(tempSample, scaledPreview, PREVIEW_SIZE);
+                ScreenProperties screen = recognizerResources.screenProperties;
+
+                Mat scaledPreview = new Mat(screen.previewWidth, screen.previewHeight, CvType.CV_8UC3);
+                Imgproc.resize(tempSample, scaledPreview, screen.previewSize);
 
                 previews[num] = new Sprite(scaledPreview);
 
@@ -126,14 +124,12 @@ class CardPatterns {
 
                     int score = recognizerResources.customNativeTools.compare(selection, sample);
 
-                    if (score > MATCHER_MINIMAL_BOUND) {
-                        if (bestScore < score) {
-                            secondBestScore = bestScore;
-                            bestScore = score;
-                            bestCardNumber = cardNumber;
-                        } else if (secondBestScore < score) {
-                            secondBestScore = score;
-                        }
+                    if (bestScore < score) {
+                        secondBestScore = bestScore;
+                        bestScore = score;
+                        bestCardNumber = cardNumber;
+                    } else if (secondBestScore < score) {
+                        secondBestScore = score;
                     }
 
                 }

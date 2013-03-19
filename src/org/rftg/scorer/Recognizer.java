@@ -83,8 +83,6 @@ class Recognizer {
     final int width;
     final int height;
 
-    private long frameTimer;
-
 
     Recognizer(RecognizerResources recognizerResources, State state, int width, int height) {
         this.width = width;
@@ -154,43 +152,13 @@ class Recognizer {
 
     Mat onFrame(Mat frame) {
 
-        if (frameTimer != 0) {
-            Log.v("rftg", "Inter frame time: " + (System.currentTimeMillis() - frameTimer));
-        }
-
-        long totalTimer = System.currentTimeMillis();
-
-        long time;
-
-        time = System.currentTimeMillis();
-
-
         Imgproc.cvtColor(frame, rgb, Imgproc.COLOR_RGBA2RGB);
         frame = rgb;
 
-        /*
-        Mat realsub = frame.submat(0,real.rows(),0,real.cols());
-        real.copyTo(realsub);
-        realsub.release();
-        /**/
-
-        Log.v("rftg", "Prepare image: " + (System.currentTimeMillis() - time));
-
-        time = System.currentTimeMillis();
         Imgproc.cvtColor(frame, gray, Imgproc.COLOR_RGB2GRAY);
-        Log.v("rftg", "Convert color: " + (System.currentTimeMillis() - time));
-        time = System.currentTimeMillis();
         recognizerResources.customNativeTools.sobel(gray, sobel);
 
-        Log.v("rftg", "Sobel: " + (System.currentTimeMillis() - time));
-
-        time = System.currentTimeMillis();
-
         recognizerResources.customNativeTools.transpose(sobel, sobelTransposed);
-
-        Log.v("rftg", "Transpose: " + (System.currentTimeMillis() - time));
-
-        time = System.currentTimeMillis();
 
         recognizerResources.executor.submit(houghLeft);
         recognizerResources.executor.submit(houghRight);
@@ -199,50 +167,20 @@ class Recognizer {
 
         recognizerResources.executor.sync();
 
-        Log.v("rftg", "Hough: " + (System.currentTimeMillis() - time));
-
-        time = System.currentTimeMillis();
         List<Point[]> rectangles = extractRectangles();
-        Log.v("rftg", "Extraction: " + (System.currentTimeMillis() - time));
 
-        /*
-        Point[] p = rectangles.get(4);
-        rectangles.clear();
-        rectangles.add(p);
-        /**/
-
-        time = System.currentTimeMillis();
         int selectionCounter = 0;
         for (Point[] rect : rectangles) {
             recognizerResources.executor.submit(new SampleExtractor(recognizerResources, frame, rect, selection[selectionCounter++]));
         }
         recognizerResources.executor.sync();
-        Log.v("rftg", "Scaling&Normalizing " + (System.currentTimeMillis() - time));
-/*
-        time = System.currentTimeMillis();
-        for (int i = 0 ; i < rectangles.size() ; i++) {
-            final Mat image = selection[i];
-            recognizerResources.executor.submit(new Runnable() {
-                @Override
-                public void run() {
-                    recognizerResources.customNativeTools.normalize(image);
-                }
-            });
-        }
-        recognizerResources.executor.sync();
-        Log.v("rftg", "Normalize " + (System.currentTimeMillis() - time));
-*/
+
         Arrays.fill(cardMatches, null);
 
-        time = System.currentTimeMillis();
         for (int i = 0 ; i < selectionCounter ; i++) {
             recognizerResources.cardPatterns.invokeAnalyse(selection[i], cardMatches, rectangles.get(i));
         }
         recognizerResources.executor.sync();
-        Log.v("rftg", "Matching " + (System.currentTimeMillis() - time));
-
-
-        time = System.currentTimeMillis();
 
         List<CardMatch> allMatches = new ArrayList<CardMatch>(64);
         for (int cardNumber = 0 ; cardNumber <= recognizerResources.maxCardNum ; cardNumber ++ ) {
@@ -264,12 +202,7 @@ class Recognizer {
             matches.add(match);
         }
 
-        Log.v("rftg", "Match filtering: " + (System.currentTimeMillis() - time));
-
-
         // Drawing results
-
-        time = System.currentTimeMillis();
 
         if (DEBUG_SHOW_ALL_RECTANGLES) {
             List<MatOfPoint> allRectanglesToDraw = new ArrayList<MatOfPoint>(rectangles.size());
@@ -420,12 +353,6 @@ class Recognizer {
                 Core.putText(frame, line.toString(), new Point(line.mx, line.my + 20), 1, 1, blue);
             }
         }
-
-        Log.v("rftg", "Drawing: " + (System.currentTimeMillis() - time));
-
-        Log.v("rftg", "Total calc time: " + (System.currentTimeMillis() - totalTimer));
-
-        frameTimer = System.currentTimeMillis();
 
         return frame;
     }

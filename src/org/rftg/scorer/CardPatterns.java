@@ -16,6 +16,9 @@ class CardPatterns {
     public final static int ORIGINAL_SAMPLE_WIDTH = 372;
     public final static int ORIGINAL_SAMPLE_BORDER = 23;
 
+    public final static double CARD_HORIZONTAL_BORDER = ((double)ORIGINAL_SAMPLE_BORDER)/ORIGINAL_SAMPLE_HEIGHT;
+    public final static double CARD_VERTICAL_BORDER = ((double)ORIGINAL_SAMPLE_BORDER)/ORIGINAL_SAMPLE_WIDTH;
+
     public final static int SAMPLE_HEIGHT = 64;
     public final static int SAMPLE_WIDTH = 64;
     public final static int MATCHER_MINIMAL_BOUND = 5000;

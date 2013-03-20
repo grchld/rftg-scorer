@@ -18,7 +18,8 @@ class Recognizer {
     private static final boolean DEBUG_SHOW_SEGMENTS = false;
     private static final boolean DEBUG_SHOW_RECTANGLE_COUNTER = false;
 
-    private static final int MAX_RECTANGLES = 500;
+    private static final int MAX_RECTANGLES = 400;
+    private static final int MAX_RECTANGLES_TO_USE_OUTERS = 100;
 
     private static final int MAX_GAP_LEFT = 10;
     private static final int MAX_GAP = 2;
@@ -149,7 +150,12 @@ class Recognizer {
 
         recognizerResources.executor.sync();
 
-        List<Point[]> rectangles = extractRectangles();
+        List<Point[]> rectangles = new ArrayList<Point[]>(MAX_RECTANGLES);
+        extractRectangles(rectangles, false);
+        int innerRectangles = rectangles.size();
+        if (rectangles.size() <= MAX_RECTANGLES_TO_USE_OUTERS) {
+            extractRectangles(rectangles, true);
+        }
 
         int selectionCounter = 0;
         for (Point[] rect : rectangles) {
@@ -294,7 +300,7 @@ class Recognizer {
 
         //
         if (DEBUG_SHOW_RECTANGLE_COUNTER) {
-            Core.putText(frame, ""+rectangles.size(), new Point(50,50), 1, 1, new Scalar(255, 255, 255));
+            Core.putText(frame, ""+innerRectangles + "+" + (rectangles.size() - innerRectangles), new Point(50,50), 1, 1, new Scalar(255, 255, 255));
         }
 
         if (DEBUG_SHOW_SEGMENTS) {
@@ -339,8 +345,25 @@ class Recognizer {
         return frame;
     }
 
-    private List<Point[]> extractRectangles() {
-        List<Point[]> rectangles = new ArrayList<Point[]>(MAX_RECTANGLES);
+    private void extractRectangles(List<Point[]> rectangles, boolean outer) {
+
+        List<Line> linesLeft;
+        List<Line> linesRight;
+        List<Line> linesTop;
+        List<Line> linesBottom;
+
+        if (outer) {
+            linesLeft = this.linesRight;
+            linesRight = this.linesLeft;
+            linesTop = this.linesBottom;
+            linesBottom = this.linesTop;
+        } else {
+            linesLeft = this.linesLeft;
+            linesRight = this.linesRight;
+            linesTop = this.linesTop;
+            linesBottom = this.linesBottom;
+        }
+
 
         int minRight = 0;
         int minTop = 0;
@@ -417,15 +440,26 @@ class Recognizer {
                         Point p3 = right.intersect(bottom);
                         Point p4 = left.intersect(bottom);
 
+                        if (outer) {
+                            Point np1 = new Point(p1.x + (p2.x - p1.x) * CardPatterns.CARD_VERTICAL_BORDER, p1.y + (p4.y - p1.y) * CardPatterns.CARD_HORIZONTAL_BORDER);
+                            Point np2 = new Point(p2.x - (p2.x - p1.x) * CardPatterns.CARD_VERTICAL_BORDER, p2.y + (p3.y - p2.y) * CardPatterns.CARD_HORIZONTAL_BORDER);
+                            Point np3 = new Point(p3.x - (p3.x - p4.x) * CardPatterns.CARD_VERTICAL_BORDER, p3.y - (p3.y - p2.y) * CardPatterns.CARD_HORIZONTAL_BORDER);
+                            Point np4 = new Point(p4.x + (p3.x - p4.x) * CardPatterns.CARD_VERTICAL_BORDER, p4.y - (p4.y - p1.y) * CardPatterns.CARD_HORIZONTAL_BORDER);
+
+                            p1 = np1;
+                            p2 = np2;
+                            p3 = np3;
+                            p4 = np4;
+                        }
+
                         rectangles.add(new Point[]{p1, p2, p3, p4});
                         if (rectangles.size() >= MAX_RECTANGLES) {
-                            return rectangles;
+                            return;
                         }
                     }
                 }
             }
         }
-        return rectangles;
     }
 
     private void draw(Mat frame, Sprite background, Sprite text, int x, int y) {

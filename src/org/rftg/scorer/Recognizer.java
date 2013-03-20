@@ -157,17 +157,13 @@ class Recognizer {
             extractRectangles(rectangles, true);
         }
 
-        int selectionCounter = 0;
-        for (Point[] rect : rectangles) {
-            recognizerResources.executor.submit(new SampleExtractor(recognizerResources, frame, rect, selection[selectionCounter++]));
-        }
-        recognizerResources.executor.sync();
-
         Arrays.fill(cardMatches, null);
 
-        for (int i = 0 ; i < selectionCounter ; i++) {
-            recognizerResources.cardPatterns.invokeAnalyse(selection[i], cardMatches, rectangles.get(i));
+        int selectionCounter = 0;
+        for (Point[] rect : rectangles) {
+            recognizerResources.executor.submit(new SampleExtractor(recognizerResources, frame, rect, selection[selectionCounter++], cardMatches));
         }
+
         recognizerResources.executor.sync();
 
         List<CardMatch> allMatches = new ArrayList<CardMatch>(64);

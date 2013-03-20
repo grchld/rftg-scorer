@@ -13,12 +13,14 @@ class SampleExtractor implements Runnable {
     private Point[] rect;
     private Mat destination;
     private RecognizerResources recognizerResources;
+    private CardMatch[] cardMatches;
 
-    SampleExtractor(RecognizerResources recognizerResources, Mat image, Point[] rect, Mat destination) {
+    SampleExtractor(RecognizerResources recognizerResources, Mat image, Point[] rect, Mat destination, CardMatch[] cardMatches) {
         this.recognizerResources = recognizerResources;
         this.image = image;
         this.rect = rect;
         this.destination = destination;
+        this.cardMatches = cardMatches;
     }
 
     @Override
@@ -28,6 +30,9 @@ class SampleExtractor implements Runnable {
         Imgproc.warpPerspective(image, destination, scaleDown, CardPatterns.SAMPLE_SIZE, CardPatterns.SAMPLE_INTER);
         recognizerResources.customNativeTools.normalize(destination);
         scaleDown.release();
+
+        recognizerResources.cardPatterns.invokeAnalyse(destination, cardMatches, rect);
+
     }
 
 }

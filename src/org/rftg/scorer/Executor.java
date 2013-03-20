@@ -17,10 +17,14 @@ public class Executor {
     private final List<Future> synchronizingFutures = new ArrayList<Future>();
 
     public Executor() {
-        this.executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        this.executorService = availableProcessors <= 1 ? null : Executors.newFixedThreadPool(availableProcessors);
     }
 
     public void sync() {
+        if (executorService == null) {
+            return;
+        }
         synchronized (synchronizingFutures) {
             while (true) {
                 synchronized (addedFutures) {
@@ -46,20 +50,35 @@ public class Executor {
     }
 
     public void submit(Runnable task) {
-        Future future = this.executorService.submit(task);
-        synchronized (addedFutures) {
-            addedFutures.add(future);
+        if (executorService == null) {
+            task.run();
+        } else {
+            Future future = this.executorService.submit(task);
+            synchronized (addedFutures) {
+                addedFutures.add(future);
+            }
         }
     }
 
     public void submit(Callable<?> task) {
-        Future future = this.executorService.submit(task);
-        synchronized (addedFutures) {
-            addedFutures.add(future);
+        if (executorService == null) {
+            try {
+                task.call();
+            } catch (Exception e) {
+                Log.e("rftg", "Executor error", e);
+                throw new RuntimeException(e);
+            }
+        } else {
+            Future future = this.executorService.submit(task);
+            synchronized (addedFutures) {
+                addedFutures.add(future);
+            }
         }
     }
 
     public void shutdown() {
-        this.executorService.shutdown();
+        if (executorService != null) {
+            this.executorService.shutdown();
+        }
     }
 }

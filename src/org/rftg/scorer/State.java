@@ -14,6 +14,7 @@ import java.io.*;
 class State {
 
     private final static String STATE = "state";
+    private final static int STATE_VERSION = 1;
     Settings settings = new Settings();
     Player player = new Player();
 
@@ -29,8 +30,8 @@ class State {
                 } finally {
                     ois.close();
                 }
-            } catch (Exception e) {
-                Log.e("rftg", "Can't load state", e);
+            } catch (Throwable t) {
+                Log.e("rftg", "Can't load state", t);
             }
         }
         return null;
@@ -41,11 +42,15 @@ class State {
     }
 
     void load(ObjectInputStream ois, CardInfo cardInfo) throws IOException, ClassNotFoundException {
+        if (ois.readInt() != STATE_VERSION) {
+            throw new IOException("Wrong state version");
+        }
         settings.load(ois, cardInfo);
         player.load(ois, cardInfo);
     }
 
     void save(ObjectOutputStream oos) throws IOException {
+        oos.writeInt(STATE_VERSION);
         settings.save(oos);
         player.save(oos);
     }

@@ -28,7 +28,7 @@ Upd: I also try it out on Samsung Galaxy W I8150 with 480x800 screen and single 
 Installation
 ------------
 
-This application uses OpenCV library, so OpenCV Manager must me installed from Play Market or, alternatively, downloaded and installed from [this](http://opencv.org/) site.
+This application uses OpenCV library, so OpenCV Manager must be installed from Play Market or, alternatively, downloaded and installed from [this](http://opencv.org/) site.
 
 RftG-Scorer apk is [here](https://github.com/grchld/rftg-scorer/blob/release/RftG-Scorer.apk?raw=true).
 

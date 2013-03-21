@@ -25,13 +25,13 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
     Mat& src = *(Mat*)srcAddr;
     Mat& dst = *(Mat*)dstAddr;
 
-    CV_Assert(src.depth() == CV_8U);
-    CV_Assert(dst.depth() == CV_8U);
-    CV_Assert(src.rows == dst.rows);
-    CV_Assert(src.cols == dst.cols);
-    CV_Assert(src.cols == dst.cols);
-    CV_Assert(src.channels() == dst.channels());
-    CV_Assert(src.channels() == 1);
+    CV_DbgAssert(src.depth() == CV_8U);
+    CV_DbgAssert(dst.depth() == CV_8U);
+    CV_DbgAssert(src.rows == dst.rows);
+    CV_DbgAssert(src.cols == dst.cols);
+    CV_DbgAssert(src.cols == dst.cols);
+    CV_DbgAssert(src.channels() == dst.channels());
+    CV_DbgAssert(src.channels() == 1);
 
     const int rows = src.rows;
     const int cols = src.cols;
@@ -220,12 +220,12 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
     Mat& image = *(Mat*)imageAddr;
     Mat& segmentsMat = *(Mat*)segmentsAddr;
 
-    CV_Assert(image.channels() == 1);
-    CV_Assert(image.depth() == CV_8U);
+    CV_DbgAssert(image.channels() == 1);
+    CV_DbgAssert(image.depth() == CV_8U);
 
-    CV_Assert(segmentsMat.channels() == 4);
-    CV_Assert(segmentsMat.depth() == CV_16S);
-    CV_Assert(segmentsMat.rows == 1);
+    CV_DbgAssert(segmentsMat.channels() == 4);
+    CV_DbgAssert(segmentsMat.depth() == CV_16S);
+    CV_DbgAssert(segmentsMat.rows == 1);
 
     int segmentNumber = 0;
     const int maxSegments = segmentsMat.cols;
@@ -334,12 +334,12 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
     Mat& src = *(Mat*)srcAddr;
     Mat& dst = *(Mat*)dstAddr;
 
-    CV_Assert(src.depth() == CV_8U);
-    CV_Assert(dst.depth() == CV_8U);
-    CV_Assert(src.rows == dst.cols);
-    CV_Assert(src.cols == dst.rows);
-    CV_Assert(src.channels() == 1);
-    CV_Assert(dst.channels() == 1);
+    CV_DbgAssert(src.depth() == CV_8U);
+    CV_DbgAssert(dst.depth() == CV_8U);
+    CV_DbgAssert(src.rows == dst.cols);
+    CV_DbgAssert(src.cols == dst.rows);
+    CV_DbgAssert(src.channels() == 1);
+    CV_DbgAssert(dst.channels() == 1);
 
     int cols = src.cols;
     int rows = src.rows;
@@ -523,14 +523,14 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
     int cols = selection.cols;
     int rows = selection.rows;
 
-    CV_Assert(selection.depth() == CV_8U);
-    CV_Assert(pattern.depth() == CV_8U);
-    CV_Assert(pattern.rows == rows);
-    CV_Assert(pattern.cols == cols);
-    CV_Assert(selection.channels() == 3);
-    CV_Assert(pattern.channels() == 3);
+    CV_DbgAssert(selection.depth() == CV_8U);
+    CV_DbgAssert(pattern.depth() == CV_8U);
+    CV_DbgAssert(pattern.rows == rows);
+    CV_DbgAssert(pattern.cols == cols);
+    CV_DbgAssert(selection.channels() == 3);
+    CV_DbgAssert(pattern.channels() == 3);
 
-    CV_Assert(selection.ptr<uchar>(1) - selection.ptr<uchar>(0) == 3*cols);
+    CV_DbgAssert(selection.ptr<uchar>(1) - selection.ptr<uchar>(0) == 3*cols);
 
     jint score = 0;
 
@@ -627,10 +627,10 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
     int rows = image.rows;
     int total = cols*rows;
 
-    CV_Assert(image.depth() == CV_8U);
-    CV_Assert(image.channels() == 3);
+    CV_DbgAssert(image.depth() == CV_8U);
+    CV_DbgAssert(image.channels() == 3);
 
-    CV_Assert(image.ptr<uchar>(1) - image.ptr<uchar>(0) == 3*cols);
+    CV_DbgAssert(image.ptr<uchar>(1) - image.ptr<uchar>(0) == 3*cols);
 
     int sum0 = 0, sum1 = 0, sum2 = 0;
     int sq0 = 0, sq1 = 0, sq2 = 0;

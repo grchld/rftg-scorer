@@ -5,6 +5,8 @@ Race For The Galaxy board game scorer for Android with recognition ability.
 
 [Open on Google Play](https://play.google.com/store/apps/details?id=org.rftg.scorer) or [Download from Github repository](https://github.com/grchld/rftg-scorer/blob/release/RftG-Scorer.apk?raw=true)
 
+![RftG-Scorer on Google Play](RftG-Scorer-QR.png)
+
 About
 -----
 

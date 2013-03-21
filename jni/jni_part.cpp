@@ -582,7 +582,7 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
         : [S]"r" (s), [P]"r" (p), [SIZE]"r" (cols*rows/16),
           [COMPARE_BOUND_A]"i" (COMPARE_BOUND_1), [COMPARE_BOUND_B]"i" (COMPARE_BOUND_2),
           [COMPARE_SCORE_DIFF_A]"i" (COMPARE_SCORE_1 - COMPARE_SCORE_2), [COMPARE_SCORE_B]"i" (COMPARE_SCORE_2)
-        : "memory", "r0", "r1", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
+        : "cc", "memory", "r0", "r1", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
     );
 
     #else
@@ -623,19 +623,81 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
 {
     Mat& image = *(Mat*)imageAddr;
 
-    int cols = image.cols;
-    int rows = image.rows;
-    int total = cols*rows;
+    const int cols = image.cols;
+    const int rows = image.rows;
+    const int total = cols*rows;
 
     CV_DbgAssert(image.depth() == CV_8U);
     CV_DbgAssert(image.channels() == 3);
 
     CV_DbgAssert(image.ptr<uchar>(1) - image.ptr<uchar>(0) == 3*cols);
 
-    int sum0 = 0, sum1 = 0, sum2 = 0;
-    int sq0 = 0, sq1 = 0, sq2 = 0;
-
     uchar* a = image.ptr<uchar>(0);
+
+    int sum0, sum1, sum2;
+    int sq0, sq1, sq2;
+
+    #if HAVE_NEON == 1
+
+    asm (
+
+        "mov r3, %[SIZE]\n\t"
+        "mov r0, %[SRC]\n\t"
+        "vmov.i8 q7, 0\n\t" // sum0, sum1
+        "vmov.i8 d16, 0\n\t" // sum2
+        "vmov.i8 q13, 0\n\t" // sq0
+        "vmov.i8 q14, 0\n\t" // sq1
+        "vmov.i8 q15, 0\n\t" // sq2
+
+        "CustomNativeTools_normalize_loop_1:\n\t"
+
+        "vld3.8 {d0,d1,d2}, [r0]!\n\t"
+
+        "vmull.u8 q3, d0, d0\n\t"
+        "vmull.u8 q4, d1, d1\n\t"
+        "vmull.u8 q5, d2, d2\n\t"
+
+        "vpadal.u16 q13, q3\n\t"
+        "vpadal.u16 q14, q4\n\t"
+        "vpadal.u16 q15, q5\n\t"
+
+        "vpaddl.u8 q0, q0\n\t"
+        "vpaddl.u8 d2, d2\n\t"
+
+        "vpadal.u16 q7, q0\n\t"
+        "vpadal.u16 d16, d2\n\t"
+
+        "subs r3, r3, 1\n\t"
+        "bgt CustomNativeTools_normalize_loop_1\n\t"
+
+        "vpaddl.u32 q7, q7\n\t"
+        "vpaddl.u32 d16, d16\n\t"
+
+        "vmov.u32 %[SUM0], d14[0]\n\t"
+        "vmov.u32 %[SUM1], d15[0]\n\t"
+        "vmov.u32 %[SUM2], d16[0]\n\t"
+
+        "vadd.i32 d26, d26, d27\n\t"
+        "vpaddl.u32 d26, d26\n\t"
+        "vmov.u32 %[SQ0], d26[0]\n\t"
+
+        "vadd.i32 d28, d28, d29\n\t"
+        "vpaddl.u32 d28, d28\n\t"
+        "vmov.u32 %[SQ1], d28[0]\n\t"
+
+        "vadd.i32 d30, d30, d31\n\t"
+        "vpaddl.u32 d30, d30\n\t"
+        "vmov.u32 %[SQ2], d30[0]\n\t"
+
+        : [SUM0]"=r" (sum0), [SUM1]"=r" (sum1), [SUM2]"=r" (sum2), [SQ0]"=r" (sq0), [SQ1]"=r" (sq1), [SQ2]"=r" (sq2)
+        : [SRC]"r" (a), [SIZE]"r" (total/8)
+        : "cc", "r0", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
+    );
+
+    #else
+
+    sum0 = 0; sum1 = 0; sum2 = 0;
+    sq0 = 0; sq1 = 0; sq2 = 0;
 
     for (int i = total ; i > 0 ; i--) {
         uchar v0 = *(a++);
@@ -650,6 +712,8 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
         sum2 += v2;
         sq2 += v2*v2;
     }
+
+    #endif
 
     float sum0norm = sum0 / total;
     float sq0norm = sq0 / total;
@@ -689,6 +753,93 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
 
     a = image.ptr<uchar>(0);
 
+    #if HAVE_NEON == 1
+
+    asm (
+        "mov r3, %[SIZE]\n\t"
+        "mov r0, %[SRC]\n\t"
+
+        "vdup.32 q10, %[ALPHA0]\n\t"
+        "vdup.32 q11, %[ALPHA1]\n\t"
+        "vdup.32 q12, %[ALPHA2]\n\t"
+        "vdup.32 q13, %[BETA0]\n\t"
+        "vdup.32 q14, %[BETA1]\n\t"
+        "vdup.32 q15, %[BETA2]\n\t"
+
+        "CustomNativeTools_normalize_loop_2:\n\t"
+        "vld3.8 {d0,d2,d4}, [r0]\n\t"
+
+        // red
+        "vmovl.u8 q4, d0\n\t"
+
+        "vmovl.u16 q5, d8\n\t"
+        "vcvt.f32.u32 q5, q5\n\t"
+        "vmov q6, q13\n\t"
+        "vmla.f32 q6, q5, q10\n\t"
+        "vcvt.u32.f32 q6, q6\n\t"
+        "vqmovn.u32 d8, q6\n\t"
+
+        "vmovl.u16 q5, d9\n\t"
+        "vcvt.f32.u32 q5, q5\n\t"
+        "vmov q6, q13\n\t"
+        "vmla.f32 q6, q5, q10\n\t"
+        "vcvt.u32.f32 q6, q6\n\t"
+        "vqmovn.u32 d9, q6\n\t"
+
+        "vqmovn.u16 d0, q4\n\t"
+
+        // green
+        "vmovl.u8 q4, d2\n\t"
+
+        "vmovl.u16 q5, d8\n\t"
+        "vcvt.f32.u32 q5, q5\n\t"
+        "vmov q6, q14\n\t"
+        "vmla.f32 q6, q5, q11\n\t"
+        "vcvt.u32.f32 q6, q6\n\t"
+        "vqmovn.u32 d8, q6\n\t"
+
+        "vmovl.u16 q5, d9\n\t"
+        "vcvt.f32.u32 q5, q5\n\t"
+        "vmov q6, q14\n\t"
+        "vmla.f32 q6, q5, q11\n\t"
+        "vcvt.u32.f32 q6, q6\n\t"
+        "vqmovn.u32 d9, q6\n\t"
+
+        "vqmovn.u16 d2, q4\n\t"
+
+        // blue
+        "vmovl.u8 q4, d4\n\t"
+
+        "vmovl.u16 q5, d8\n\t"
+        "vcvt.f32.u32 q5, q5\n\t"
+        "vmov q6, q15\n\t"
+        "vmla.f32 q6, q5, q12\n\t"
+        "vcvt.u32.f32 q6, q6\n\t"
+        "vqmovn.u32 d8, q6\n\t"
+
+        "vmovl.u16 q5, d9\n\t"
+        "vcvt.f32.u32 q5, q5\n\t"
+        "vmov q6, q15\n\t"
+        "vmla.f32 q6, q5, q12\n\t"
+        "vcvt.u32.f32 q6, q6\n\t"
+        "vqmovn.u32 d9, q6\n\t"
+
+        "vqmovn.u16 d4, q4\n\t"
+
+
+        "vst3.8 {d0,d2,d4}, [r0]!\n\t"
+        "subs r3, r3, 1\n\t"
+        "bgt CustomNativeTools_normalize_loop_2\n\t"
+
+        : 
+        : [SRC]"r" (a), [SIZE]"r" (total/8),
+          [ALPHA0]"r" (alpha0), [ALPHA1]"r" (alpha1), [ALPHA2]"r" (alpha2),
+          [BETA0]"r" (beta0), [BETA1]"r" (beta1), [BETA2]"r" (beta2)
+        : "cc", "memory", "r0", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
+    );
+
+    #else
+    
     for (int i = total ; i > 0 ; i--) {
         uchar v0 = *a;
         float f0 = alpha0 * v0 + beta0;
@@ -724,6 +875,8 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
         a++;
 
     }
+
+    #endif
 
 }
 

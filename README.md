@@ -3,7 +3,7 @@ RftG-Scorer
 
 Race For The Galaxy board game scorer for Android with recognition ability.
 
-[Download for Android](https://github.com/grchld/rftg-scorer/blob/release/RftG-Scorer.apk?raw=true)
+[Open on Google Play](https://play.google.com/store/apps/details?id=org.rftg.scorer) or [Download from Github repository](https://github.com/grchld/rftg-scorer/blob/release/RftG-Scorer.apk?raw=true)
 
 About
 -----
@@ -28,9 +28,9 @@ Upd: I also try it out on Samsung Galaxy W I8150 with 480x800 screen and single 
 Installation
 ------------
 
-This application uses OpenCV library, so OpenCV Manager must be installed from Play Market or, alternatively, downloaded and installed from [this](http://opencv.org/) site.
+This application uses OpenCV library, so OpenCV Manager must be installed from Play Market or, alternatively, downloaded and installed from OpenCV site (http://opencv.org/).
 
-RftG-Scorer apk is [here](https://github.com/grchld/rftg-scorer/blob/release/RftG-Scorer.apk?raw=true).
+RftG-Scorer.apk can be downloaded from Google Play (https://play.google.com/store/apps/details?id=org.rftg.scorer)  or directry from Github repo (https://github.com/grchld/rftg-scorer/blob/release/RftG-Scorer.apk?raw=true)
 
 Usage
 -----

@@ -558,8 +558,10 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
         "CustomNativeTools_compare_loop:\n\t"
         "vld3.8 {d0,d2,d4}, [r0]!\n\t"
         "vld3.8 {d1,d3,d5}, [r0]!\n\t"
+        "pld [r0, #40]\n\t"
         "vld3.8 {d6,d8,d10}, [r1]!\n\t"
         "vld3.8 {d7,d9,d11}, [r1]!\n\t"
+        "pld [r1, #40]\n\t"
         "vabd.u8 q6, q0, q3\n\t"
         "vabd.u8 q7, q1, q4\n\t"
         "vabd.u8 q8, q2, q5\n\t"
@@ -652,6 +654,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
         "CustomNativeTools_normalize_loop_1:\n\t"
 
         "vld3.8 {d0,d1,d2}, [r0]!\n\t"
+        "pld [r0, #16]\n\t"
 
         "vmull.u8 q3, d0, d0\n\t"
         "vmull.u8 q4, d1, d1\n\t"
@@ -768,6 +771,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
 
         "CustomNativeTools_normalize_loop_2:\n\t"
         "vld3.8 {d0,d2,d4}, [r0]\n\t"
+        "pld [r0, #40]\n\t"
 
         // red
         "vmovl.u8 q4, d0\n\t"

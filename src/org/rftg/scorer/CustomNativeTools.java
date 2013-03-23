@@ -41,4 +41,10 @@ class CustomNativeTools {
     }
 
     private native void normalize(long image);
+
+    public void drawSobel(Mat sobel, Mat flame) {
+        drawSobel(sobel.getNativeObjAddr(), flame.getNativeObjAddr());
+    }
+
+    private native void drawSobel(long sobel, long flame);
 }

@@ -16,9 +16,9 @@ using namespace cv;
 extern "C" {
 
 #define SOBEL_V_LIGHT_BOUND 65
-#define SOBEL_V_DARK_BOUND 100
-#define SOBEL_H_LIGHT_BOUND 150
-#define SOBEL_H_DARK_BOUND 100
+#define SOBEL_V_DARK_BOUND 85
+#define SOBEL_H_LIGHT_BOUND 140
+#define SOBEL_H_DARK_BOUND 85
 
 JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr)
 {
@@ -920,6 +920,67 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
 
     #endif
 
+}
+
+JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_drawSobel(JNIEnv*, jobject, jlong sobelAddr, jlong frameAddr)
+{
+    Mat& sobel = *(Mat*)sobelAddr;
+    Mat& frame = *(Mat*)frameAddr;
+
+    int total = sobel.cols * sobel.rows;
+
+    uchar* s = sobel.ptr<uchar>(0);
+    uchar* f = frame.ptr<uchar>(0);
+
+    for (int i = total ; i > 0 ; i--) {
+        uchar mask = *(s++);
+
+        uchar* r = f++;
+        uchar* g = f++;
+        uchar* b = f++;
+
+
+        if (mask & 0x80) {
+            if (mask & 0x20) {
+                *r = 224;
+                *g = 224;
+                *b = 255;
+            } else if (mask & 0x10) {
+                *r = 224;
+                *g = 224;
+                *b = 255;
+            } else {
+                *r = 255;
+                *g = 255;
+                *b = 0;
+            }
+        } else if (mask & 0x40) {
+            if (mask & 0x20) {
+                *r = 224;
+                *g = 224;
+                *b = 255;
+            } else if (mask & 0x10) {
+                *r = 224;
+                *g = 224;
+                *b = 255;
+            } else {
+                *r = 255;
+                *g = 0;
+                *b = 255;
+            }
+        } else {
+            if (mask & 0x20) {
+                *r = 255;
+                *g = 0;
+                *b = 0;
+            } else if (mask & 0x10) {
+                *r = 0;
+                *g = 255;
+                *b = 0;
+            }
+        }
+
+    }
 }
 
 }

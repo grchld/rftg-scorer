@@ -14,6 +14,7 @@ import static org.rftg.scorer.Scoring.CardScore;
  */
 class Recognizer {
 
+    private static final boolean DEBUG_SHOW_SOBEL = false;
     private static final boolean DEBUG_SHOW_ALL_RECTANGLES = false;
     private static final boolean DEBUG_SHOW_SEGMENTS = false;
     private static final boolean DEBUG_SHOW_RECTANGLE_COUNTER = false;
@@ -318,10 +319,14 @@ class Recognizer {
             Core.putText(frame, ""+innerRectangles + "+" + (rectangles.size() - innerRectangles), new Point(50,50), 1, 1, new Scalar(255, 255, 255));
         }
 
+        if (DEBUG_SHOW_SOBEL) {
+            recognizerResources.customNativeTools.drawSobel(sobel, frame);
+        }
+
         if (DEBUG_SHOW_SEGMENTS) {
             Scalar green = new Scalar(0, 255, 0);
             Scalar red = new Scalar(255, 0, 0);
-            Scalar blue = new Scalar(255, 0, 255);
+            Scalar magenta = new Scalar(255, 0, 255);
             Scalar yellow = new Scalar(255, 255, 0);
 
             for (Line line : linesLeft) {
@@ -352,8 +357,8 @@ class Recognizer {
                 Core.line(frame,
                         new Point(line.x1, line.y1),
                         new Point(line.x2, line.y2),
-                        blue);
-                Core.putText(frame, line.toString(), new Point(line.mx, line.my + 20), 1, 1, blue);
+                        magenta);
+                Core.putText(frame, line.toString(), new Point(line.mx, line.my + 20), 1, 1, magenta);
             }
         }
 

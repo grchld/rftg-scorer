@@ -121,25 +121,13 @@ class CardPatterns {
             @Override
             public void run() {
 
-                int bestCardNumber = 0;
-                int secondBestScore = 0;
-                int bestScore = 0;
+                long matchResult = recognizerResources.customNativeTools.match(selection, samplesFused, SAMPLE_HEIGHT*SAMPLE_WIDTH, recognizerResources.maxCardNum + 1);
 
-                for (int cardNumber = 0; cardNumber <= recognizerResources.maxCardNum; cardNumber++) {
-
-                    Mat sample = samples[cardNumber];
-
-                    int score = recognizerResources.customNativeTools.compare(selection, sample);
-
-                    if (bestScore < score) {
-                        secondBestScore = bestScore;
-                        bestScore = score;
-                        bestCardNumber = cardNumber;
-                    } else if (secondBestScore < score) {
-                        secondBestScore = score;
-                    }
-
-                }
+                int bestCardNumber = (int)matchResult & 0xffff;
+                matchResult >>= 16;
+                int bestScore = (int)matchResult & 0xffff;
+                matchResult >>= 32;
+                int secondBestScore = (int)matchResult;
 
                 if (bestScore > MATCHER_MINIMAL_BOUND && bestScore - secondBestScore > MATCHER_MINIMAL_GAP) {
                     synchronized (cardMatches) {

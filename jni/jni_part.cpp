@@ -515,29 +515,15 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
 #define COMPARE_SCORE_1 3
 #define COMPARE_SCORE_2 2
 
-JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, jobject, jlong selectionAddr, jlong patternAddr)
+JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jobject, jlong selectionAddr, jlong patternsAddr, jint patternSize, jint patternsCount)
 {
     Mat& selection = *(Mat*)selectionAddr;
-    Mat& pattern = *(Mat*)patternAddr;
-
-    int cols = selection.cols;
-    int rows = selection.rows;
-
-    CV_DbgAssert(selection.depth() == CV_8U);
-    CV_DbgAssert(pattern.depth() == CV_8U);
-    CV_DbgAssert(pattern.rows == rows);
-    CV_DbgAssert(pattern.cols == cols);
-    CV_DbgAssert(selection.channels() == 3);
-    CV_DbgAssert(pattern.channels() == 3);
-
-    CV_DbgAssert(selection.ptr<uchar>(1) - selection.ptr<uchar>(0) == 3*cols);
-
-    jint score = 0;
-
-    uchar* s = selection.ptr<uchar>(0);
-    uchar* p = pattern.ptr<uchar>(0);
+    Mat& pattern = *(Mat*)patternsAddr;
 
     #if HAVE_NEON == 1
+
+    int best;
+    int second_best;
 
     asm (
         "mov r0, %[COMPARE_BOUND_B]\n\t"
@@ -548,19 +534,27 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
         "vdup.8 q12, r0\n\t" /* q12: COMPARE_SCORE_2 */
         "mov r0, %[COMPARE_SCORE_DIFF_A]\n\t"
         "vdup.8 q13, r0\n\t" /* q13: COMPARE_SCORE_DIFF_1 */
-        "mov r0, 0\n\t"
-        "vdup.8 q10, r0\n\t" /* q10: scorer */
 
+        "mov r0, %[SELECTION]\n\t"
+        "pld [r0]\n\t"
+        "mov r1, %[PATTERN]\n\t"
+        "pld [r1]\n\t"
+
+        "mov %[BEST], #0\n\t" /* bestScore << 16 + bestCardNumber */
+        "mov %[SECOND_BEST], #0\n\t" /* secondBestScore << 16 + secondBestCardNumber */
+
+        "mov r2, %[COUNT]\n\t"
+        "CustomNativeTools_match_loop_1:\n\t"
         "mov r3, %[SIZE]\n\t"
-        "mov r0, %[S]\n\t"
-        "mov r1, %[P]\n\t"
-        "mov r2, %[S]\n\t"
-        "CustomNativeTools_compare_loop:\n\t"
+
+        "vmov.i8 q10, #0\n\t" /* q10: scorer */
+
+        "CustomNativeTools_match_loop_2:\n\t"
         "vld3.8 {d0,d2,d4}, [r0]!\n\t"
         "vld3.8 {d1,d3,d5}, [r0]!\n\t"
-        "pld [r0, #40]\n\t"
         "vld3.8 {d6,d8,d10}, [r1]!\n\t"
         "vld3.8 {d7,d9,d11}, [r1]!\n\t"
+        "pld [r0, #40]\n\t"
         "pld [r1, #40]\n\t"
         "vabd.u8 q6, q0, q3\n\t"
         "vabd.u8 q7, q1, q4\n\t"
@@ -573,49 +567,93 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
         "vand q6, q6, q13\n\t"
         "vadd.i8 q7, q7, q6\n\t"
         "vpadal.u8 q10, q7\n\t"
-        "subs r3, r3, 1\n\t"
-        "bgt CustomNativeTools_compare_loop\n\t"
-        "vpaddl.u16 q10, q10\n\t"
-        "vpaddl.u32 q10, q10\n\t"
-        "vadd.i64 d20, d20, d21\n\t"
-        "vmov.u32 r0, d20[0]\n\t"
-        "mov %[SCORE], r0\n\t"
-        : [SCORE]"=r" (score)
-        : [S]"r" (s), [P]"r" (p), [SIZE]"r" (cols*rows/16),
+        "subs r3, 1\n\t"
+        "bgt CustomNativeTools_match_loop_2\n\t"
+
+        "mov r0, %[SELECTION]\n\t"
+        "pld [r0]\n\t"
+
+        "vadd.i16 d20, d20, d21\n\t"
+        "vpaddl.u16 d20, d20\n\t"
+        "vpaddl.u32 d20, d20\n\t"
+
+        "vmov.u32 r4, d20[0]\n\t"
+
+        "cmp %[SECOND_BEST], r4, lsl #16\n\t"
+        "itttt le\n\t"
+        "orrle r4, %[COUNT], r4, lsl #16\n\t"
+        "suble r4, r2\n\t"
+        "movle %[SECOND_BEST], r4\n\t"
+        "cmple %[BEST], r4\n\t"
+        "itt le\n\t"
+        "movle %[SECOND_BEST], %[BEST]\n\t"
+        "movle %[BEST], r4\n\t"
+
+        "subs r2, 1\n\t"
+        "bgt CustomNativeTools_match_loop_1\n\t"
+
+
+        : [BEST]"=&r" (best), [SECOND_BEST]"=&r" (second_best)
+        : [SELECTION]"r" (selection.ptr<uchar>(0)), [PATTERN]"r" (pattern.ptr<uchar>(0)), [SIZE]"r" (patternSize/16), [COUNT]"r" (patternsCount),
           [COMPARE_BOUND_A]"i" (COMPARE_BOUND_1), [COMPARE_BOUND_B]"i" (COMPARE_BOUND_2),
           [COMPARE_SCORE_DIFF_A]"i" (COMPARE_SCORE_1 - COMPARE_SCORE_2), [COMPARE_SCORE_B]"i" (COMPARE_SCORE_2)
-        : "cc", "memory", "r0", "r1", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
+        : "cc", "r0", "r1", "r2", "r3", "r4", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
     );
+
+    return ((jlong)second_best) << 32 | ((jlong)best);
 
     #else
 
-    for (int i = cols*rows ; i > 0 ; i--) {
-        int a1 = (int)(*(s++)) - (int)(*(p++));
-        if (a1 < 0) {
-            a1 = -a1;
+    uchar* p = pattern.ptr<uchar>(0);
+
+    int bestCardNumber = 0;
+    int bestScore = 0;
+    int secondBestCardNumber = 0;
+    int secondBestScore = 0;
+
+    for (int cardNumber = 0 ; cardNumber < patternsCount ; cardNumber++) {
+
+        uchar* s = selection.ptr<uchar>(0);
+
+        int score = 0;
+
+        for (int i = patternSize ; i > 0 ; i--) {
+            int a1 = (int)(*(s++)) - (int)(*(p++));
+            if (a1 < 0) {
+                a1 = -a1;
+            }
+
+            int a2 = (int)(*(s++)) - (int)(*(p++));
+            if (a2 < 0) {
+                a2 = -a2;
+            }
+
+            int a3 = (int)(*(s++)) - (int)(*(p++));
+            if (a3 < 0) {
+                a3 = -a3;
+            }
+
+            int a = a1 + a2 + a3;
+            if (a <= COMPARE_BOUND_1) {
+                score += COMPARE_SCORE_1;
+            } else if (a <= COMPARE_BOUND_2) {
+                score += COMPARE_SCORE_2;
+            }
         }
 
-        int a2 = (int)(*(s++)) - (int)(*(p++));
-        if (a2 < 0) {
-            a2 = -a2;
-        }
-
-        int a3 = (int)(*(s++)) - (int)(*(p++));
-        if (a3 < 0) {
-            a3 = -a3;
-        }
-
-        int a = a1 + a2 + a3;
-        if (a <= COMPARE_BOUND_1) {
-            score += COMPARE_SCORE_1;
-        } else if (a <= COMPARE_BOUND_2) {
-            score += COMPARE_SCORE_2;
+        if (bestScore < score) {
+            secondBestScore = bestScore;
+            bestScore = score;
+            bestCardNumber = cardNumber;
+        } else if (secondBestScore < score) {
+            secondBestScore = score;
         }
     }
 
+    return (((jlong)secondBestScore) << 48) | (((jlong)secondBestCardNumber) << 32) | (((jlong)bestScore) << 16) | ((jlong)bestCardNumber);
+
     #endif
 
-    return score;
 }
 
 #define NORMAL_DISPERSION 70.*70.
@@ -835,7 +873,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
         "subs r3, r3, 1\n\t"
         "bgt CustomNativeTools_normalize_loop_2\n\t"
 
-        : 
+        :
         : [SRC]"r" (a), [SIZE]"r" (total/8),
           [ALPHA0]"r" (alpha0), [ALPHA1]"r" (alpha1), [ALPHA2]"r" (alpha2),
           [BETA0]"r" (beta0), [BETA1]"r" (beta1), [BETA2]"r" (beta2)
@@ -843,7 +881,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
     );
 
     #else
-    
+
     for (int i = total ; i > 0 ; i--) {
         uchar v0 = *a;
         float f0 = alpha0 * v0 + beta0;

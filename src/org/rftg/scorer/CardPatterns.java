@@ -29,6 +29,8 @@ class CardPatterns {
     public final static int SAMPLE_INTER = Imgproc.INTER_LINEAR;
 
     private final Mat[] samples;
+    private final Mat samplesFused;
+
     private final RecognizerResources recognizerResources;
     public final Sprite[] previews;
 
@@ -37,6 +39,7 @@ class CardPatterns {
 
         this.recognizerResources = recognizerResources;
 
+        samplesFused = new Mat((recognizerResources.maxCardNum + 1)*SAMPLE_HEIGHT, SAMPLE_WIDTH, CvType.CV_8UC3);
         samples = new Mat[recognizerResources.maxCardNum + 1];
         previews = new Sprite[recognizerResources.maxCardNum + 1];
 
@@ -68,7 +71,7 @@ class CardPatterns {
 
                 tempSampleBGR.release();
 
-                Mat scaledSample = new Mat(SAMPLE_WIDTH, SAMPLE_HEIGHT, CvType.CV_8UC3);
+                Mat scaledSample = samplesFused.submat(num*SAMPLE_HEIGHT, (num+1)*SAMPLE_HEIGHT, 0, SAMPLE_WIDTH);
                 Imgproc.warpAffine(tempSample, scaledSample, sampleScaleDown, SAMPLE_SIZE, SAMPLE_INTER);
 
                 recognizerResources.customNativeTools.normalize(scaledSample);
@@ -77,7 +80,7 @@ class CardPatterns {
 
                 ScreenProperties screen = recognizerResources.screenProperties;
 
-                Mat scaledPreview = new Mat(screen.previewWidth, screen.previewHeight, CvType.CV_8UC3);
+                Mat scaledPreview = new Mat(screen.previewHeight, screen.previewWidth, CvType.CV_8UC3);
                 Imgproc.resize(tempSample, scaledPreview, screen.previewSize);
 
                 previews[num] = new Sprite(scaledPreview);
@@ -105,6 +108,7 @@ class CardPatterns {
                 sample.release();
             }
         }
+        samplesFused.release();
         for (Sprite preview : previews) {
             if (preview != null) {
                 preview.release();

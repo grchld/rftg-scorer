@@ -8,6 +8,7 @@ LOCAL_MODULE    := rftg_scorer
 LOCAL_SRC_FILES := jni_part.cpp
 LOCAL_LDLIBS +=  -llog -ldl
 LOCAL_CFLAGS += -O2
+# -g -S -dA
 
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)

@@ -63,6 +63,7 @@ class Recognizer {
     private List<Line> linesTop = new ArrayList<Line>();
     private List<Line> linesBottom = new ArrayList<Line>();
 
+    private Mat selectionFused;
     private Mat[] selection = new Mat[MAX_RECTANGLES];
 
     private CardMatch[] cardMatches;
@@ -107,8 +108,9 @@ class Recognizer {
         houghTop = new Hough(recognizerResources, sobelTransposed, true, MASK_TOP, xOrigin, MAX_GAP, MIN_LENGTH, linesTop);
         houghBottom = new Hough(recognizerResources, sobelTransposed, true, MASK_BOTTOM, xOrigin, MAX_GAP, MIN_LENGTH, linesBottom);
 
+        selectionFused = new Mat(CardPatterns.SAMPLE_HEIGHT*MAX_RECTANGLES, CardPatterns.SAMPLE_WIDTH, CvType.CV_8UC3);
         for (int i = 0 ; i < MAX_RECTANGLES ; i++) {
-            selection[i] = new Mat(CardPatterns.SAMPLE_HEIGHT, CardPatterns.SAMPLE_WIDTH, CvType.CV_8UC3);
+            selection[i] = selectionFused.submat(i*CardPatterns.SAMPLE_HEIGHT , (i+1)*CardPatterns.SAMPLE_HEIGHT, 0, CardPatterns.SAMPLE_WIDTH);
         }
 
         minX = 50;
@@ -131,6 +133,7 @@ class Recognizer {
         for (Mat mat : selection) {
             mat.release();
         }
+        selectionFused.release();
     }
 
     Mat onFrame(Mat frame) {

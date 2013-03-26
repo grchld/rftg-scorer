@@ -30,11 +30,11 @@ class CustomNativeTools {
 
     private native void transpose(long src, long dst);
 
-    public int compare(Mat selection, Mat pattern) {
-        return compare(selection.getNativeObjAddr(), pattern.getNativeObjAddr());
+    public long match(Mat selection, Mat patterns, int patternSize, int patternsCount) {
+        return match(selection.getNativeObjAddr(), patterns.getNativeObjAddr(), patternSize, patternsCount);
     }
 
-    private native int compare(long selection, long pattern);
+    private native long match(long selection, long patterns, int patternSize, int patternsCount);
 
     public void normalize(Mat image) {
         normalize(image.getNativeObjAddr());

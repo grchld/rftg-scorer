@@ -25,13 +25,13 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
     Mat& src = *(Mat*)srcAddr;
     Mat& dst = *(Mat*)dstAddr;
 
-    CV_Assert(src.depth() == CV_8U);
-    CV_Assert(dst.depth() == CV_8U);
-    CV_Assert(src.rows == dst.rows);
-    CV_Assert(src.cols == dst.cols);
-    CV_Assert(src.cols == dst.cols);
-    CV_Assert(src.channels() == dst.channels());
-    CV_Assert(src.channels() == 1);
+    CV_DbgAssert(src.depth() == CV_8U);
+    CV_DbgAssert(dst.depth() == CV_8U);
+    CV_DbgAssert(src.rows == dst.rows);
+    CV_DbgAssert(src.cols == dst.cols);
+    CV_DbgAssert(src.cols == dst.cols);
+    CV_DbgAssert(src.channels() == dst.channels());
+    CV_DbgAssert(src.channels() == 1);
 
     const int rows = src.rows;
     const int cols = src.cols;
@@ -220,12 +220,12 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
     Mat& image = *(Mat*)imageAddr;
     Mat& segmentsMat = *(Mat*)segmentsAddr;
 
-    CV_Assert(image.channels() == 1);
-    CV_Assert(image.depth() == CV_8U);
+    CV_DbgAssert(image.channels() == 1);
+    CV_DbgAssert(image.depth() == CV_8U);
 
-    CV_Assert(segmentsMat.channels() == 4);
-    CV_Assert(segmentsMat.depth() == CV_16S);
-    CV_Assert(segmentsMat.rows == 1);
+    CV_DbgAssert(segmentsMat.channels() == 4);
+    CV_DbgAssert(segmentsMat.depth() == CV_16S);
+    CV_DbgAssert(segmentsMat.rows == 1);
 
     int segmentNumber = 0;
     const int maxSegments = segmentsMat.cols;
@@ -334,12 +334,12 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
     Mat& src = *(Mat*)srcAddr;
     Mat& dst = *(Mat*)dstAddr;
 
-    CV_Assert(src.depth() == CV_8U);
-    CV_Assert(dst.depth() == CV_8U);
-    CV_Assert(src.rows == dst.cols);
-    CV_Assert(src.cols == dst.rows);
-    CV_Assert(src.channels() == 1);
-    CV_Assert(dst.channels() == 1);
+    CV_DbgAssert(src.depth() == CV_8U);
+    CV_DbgAssert(dst.depth() == CV_8U);
+    CV_DbgAssert(src.rows == dst.cols);
+    CV_DbgAssert(src.cols == dst.rows);
+    CV_DbgAssert(src.channels() == 1);
+    CV_DbgAssert(dst.channels() == 1);
 
     int cols = src.cols;
     int rows = src.rows;
@@ -515,29 +515,15 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
 #define COMPARE_SCORE_1 3
 #define COMPARE_SCORE_2 2
 
-JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, jobject, jlong selectionAddr, jlong patternAddr)
+JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jobject, jlong selectionAddr, jlong patternsAddr, jint patternSize, jint patternsCount)
 {
     Mat& selection = *(Mat*)selectionAddr;
-    Mat& pattern = *(Mat*)patternAddr;
-
-    int cols = selection.cols;
-    int rows = selection.rows;
-
-    CV_Assert(selection.depth() == CV_8U);
-    CV_Assert(pattern.depth() == CV_8U);
-    CV_Assert(pattern.rows == rows);
-    CV_Assert(pattern.cols == cols);
-    CV_Assert(selection.channels() == 3);
-    CV_Assert(pattern.channels() == 3);
-
-    CV_Assert(selection.ptr<uchar>(1) - selection.ptr<uchar>(0) == 3*cols);
-
-    jint score = 0;
-
-    uchar* s = selection.ptr<uchar>(0);
-    uchar* p = pattern.ptr<uchar>(0);
+    Mat& pattern = *(Mat*)patternsAddr;
 
     #if HAVE_NEON == 1
+
+    int best;
+    int second_best;
 
     asm (
         "mov r0, %[COMPARE_BOUND_B]\n\t"
@@ -548,18 +534,28 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
         "vdup.8 q12, r0\n\t" /* q12: COMPARE_SCORE_2 */
         "mov r0, %[COMPARE_SCORE_DIFF_A]\n\t"
         "vdup.8 q13, r0\n\t" /* q13: COMPARE_SCORE_DIFF_1 */
-        "mov r0, 0\n\t"
-        "vdup.8 q10, r0\n\t" /* q10: scorer */
 
+        "mov r0, %[SELECTION]\n\t"
+        "pld [r0]\n\t"
+        "mov r1, %[PATTERN]\n\t"
+        "pld [r1]\n\t"
+
+        "mov %[BEST], #0\n\t" /* bestScore << 16 + bestCardNumber */
+        "mov %[SECOND_BEST], #0\n\t" /* secondBestScore << 16 + secondBestCardNumber */
+
+        "mov r2, %[COUNT]\n\t"
+        "CustomNativeTools_match_loop_1:\n\t"
         "mov r3, %[SIZE]\n\t"
-        "mov r0, %[S]\n\t"
-        "mov r1, %[P]\n\t"
-        "mov r2, %[S]\n\t"
-        "CustomNativeTools_compare_loop:\n\t"
+
+        "vmov.i8 q10, #0\n\t" /* q10: scorer */
+
+        "CustomNativeTools_match_loop_2:\n\t"
         "vld3.8 {d0,d2,d4}, [r0]!\n\t"
         "vld3.8 {d1,d3,d5}, [r0]!\n\t"
         "vld3.8 {d6,d8,d10}, [r1]!\n\t"
         "vld3.8 {d7,d9,d11}, [r1]!\n\t"
+        "pld [r0, #40]\n\t"
+        "pld [r1, #40]\n\t"
         "vabd.u8 q6, q0, q3\n\t"
         "vabd.u8 q7, q1, q4\n\t"
         "vabd.u8 q8, q2, q5\n\t"
@@ -571,49 +567,93 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_compare(JNIEnv*, j
         "vand q6, q6, q13\n\t"
         "vadd.i8 q7, q7, q6\n\t"
         "vpadal.u8 q10, q7\n\t"
-        "subs r3, r3, 1\n\t"
-        "bgt CustomNativeTools_compare_loop\n\t"
-        "vpaddl.u16 q10, q10\n\t"
-        "vpaddl.u32 q10, q10\n\t"
-        "vadd.i64 d20, d20, d21\n\t"
-        "vmov.u32 r0, d20[0]\n\t"
-        "mov %[SCORE], r0\n\t"
-        : [SCORE]"=r" (score)
-        : [S]"r" (s), [P]"r" (p), [SIZE]"r" (cols*rows/16),
+        "subs r3, 1\n\t"
+        "bgt CustomNativeTools_match_loop_2\n\t"
+
+        "mov r0, %[SELECTION]\n\t"
+        "pld [r0]\n\t"
+
+        "vadd.i16 d20, d20, d21\n\t"
+        "vpaddl.u16 d20, d20\n\t"
+        "vpaddl.u32 d20, d20\n\t"
+
+        "vmov.u32 r4, d20[0]\n\t"
+
+        "cmp %[SECOND_BEST], r4, lsl #16\n\t"
+        "itttt le\n\t"
+        "orrle r4, %[COUNT], r4, lsl #16\n\t"
+        "suble r4, r2\n\t"
+        "movle %[SECOND_BEST], r4\n\t"
+        "cmple %[BEST], r4\n\t"
+        "itt le\n\t"
+        "movle %[SECOND_BEST], %[BEST]\n\t"
+        "movle %[BEST], r4\n\t"
+
+        "subs r2, 1\n\t"
+        "bgt CustomNativeTools_match_loop_1\n\t"
+
+
+        : [BEST]"=&r" (best), [SECOND_BEST]"=&r" (second_best)
+        : [SELECTION]"r" (selection.ptr<uchar>(0)), [PATTERN]"r" (pattern.ptr<uchar>(0)), [SIZE]"r" (patternSize/16), [COUNT]"r" (patternsCount),
           [COMPARE_BOUND_A]"i" (COMPARE_BOUND_1), [COMPARE_BOUND_B]"i" (COMPARE_BOUND_2),
           [COMPARE_SCORE_DIFF_A]"i" (COMPARE_SCORE_1 - COMPARE_SCORE_2), [COMPARE_SCORE_B]"i" (COMPARE_SCORE_2)
-        : "memory", "r0", "r1", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
+        : "cc", "r0", "r1", "r2", "r3", "r4", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
     );
+
+    return ((jlong)second_best) << 32 | ((jlong)best);
 
     #else
 
-    for (int i = cols*rows ; i > 0 ; i--) {
-        int a1 = (int)(*(s++)) - (int)(*(p++));
-        if (a1 < 0) {
-            a1 = -a1;
+    uchar* p = pattern.ptr<uchar>(0);
+
+    int bestCardNumber = 0;
+    int bestScore = 0;
+    int secondBestCardNumber = 0;
+    int secondBestScore = 0;
+
+    for (int cardNumber = 0 ; cardNumber < patternsCount ; cardNumber++) {
+
+        uchar* s = selection.ptr<uchar>(0);
+
+        int score = 0;
+
+        for (int i = patternSize ; i > 0 ; i--) {
+            int a1 = (int)(*(s++)) - (int)(*(p++));
+            if (a1 < 0) {
+                a1 = -a1;
+            }
+
+            int a2 = (int)(*(s++)) - (int)(*(p++));
+            if (a2 < 0) {
+                a2 = -a2;
+            }
+
+            int a3 = (int)(*(s++)) - (int)(*(p++));
+            if (a3 < 0) {
+                a3 = -a3;
+            }
+
+            int a = a1 + a2 + a3;
+            if (a <= COMPARE_BOUND_1) {
+                score += COMPARE_SCORE_1;
+            } else if (a <= COMPARE_BOUND_2) {
+                score += COMPARE_SCORE_2;
+            }
         }
 
-        int a2 = (int)(*(s++)) - (int)(*(p++));
-        if (a2 < 0) {
-            a2 = -a2;
-        }
-
-        int a3 = (int)(*(s++)) - (int)(*(p++));
-        if (a3 < 0) {
-            a3 = -a3;
-        }
-
-        int a = a1 + a2 + a3;
-        if (a <= COMPARE_BOUND_1) {
-            score += COMPARE_SCORE_1;
-        } else if (a <= COMPARE_BOUND_2) {
-            score += COMPARE_SCORE_2;
+        if (bestScore < score) {
+            secondBestScore = bestScore;
+            bestScore = score;
+            bestCardNumber = cardNumber;
+        } else if (secondBestScore < score) {
+            secondBestScore = score;
         }
     }
 
+    return (((jlong)secondBestScore) << 48) | (((jlong)secondBestCardNumber) << 32) | (((jlong)bestScore) << 16) | ((jlong)bestCardNumber);
+
     #endif
 
-    return score;
 }
 
 #define NORMAL_DISPERSION 70.*70.
@@ -623,19 +663,82 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
 {
     Mat& image = *(Mat*)imageAddr;
 
-    int cols = image.cols;
-    int rows = image.rows;
-    int total = cols*rows;
+    const int cols = image.cols;
+    const int rows = image.rows;
+    const int total = cols*rows;
 
-    CV_Assert(image.depth() == CV_8U);
-    CV_Assert(image.channels() == 3);
+    CV_DbgAssert(image.depth() == CV_8U);
+    CV_DbgAssert(image.channels() == 3);
 
-    CV_Assert(image.ptr<uchar>(1) - image.ptr<uchar>(0) == 3*cols);
-
-    int sum0 = 0, sum1 = 0, sum2 = 0;
-    int sq0 = 0, sq1 = 0, sq2 = 0;
+    CV_DbgAssert(image.ptr<uchar>(1) - image.ptr<uchar>(0) == 3*cols);
 
     uchar* a = image.ptr<uchar>(0);
+
+    int sum0, sum1, sum2;
+    int sq0, sq1, sq2;
+
+    #if HAVE_NEON == 1
+
+    asm (
+
+        "mov r3, %[SIZE]\n\t"
+        "mov r0, %[SRC]\n\t"
+        "vmov.i8 q7, 0\n\t" // sum0, sum1
+        "vmov.i8 d16, 0\n\t" // sum2
+        "vmov.i8 q13, 0\n\t" // sq0
+        "vmov.i8 q14, 0\n\t" // sq1
+        "vmov.i8 q15, 0\n\t" // sq2
+
+        "CustomNativeTools_normalize_loop_1:\n\t"
+
+        "vld3.8 {d0,d1,d2}, [r0]!\n\t"
+        "pld [r0, #16]\n\t"
+
+        "vmull.u8 q3, d0, d0\n\t"
+        "vmull.u8 q4, d1, d1\n\t"
+        "vmull.u8 q5, d2, d2\n\t"
+
+        "vpadal.u16 q13, q3\n\t"
+        "vpadal.u16 q14, q4\n\t"
+        "vpadal.u16 q15, q5\n\t"
+
+        "vpaddl.u8 q0, q0\n\t"
+        "vpaddl.u8 d2, d2\n\t"
+
+        "vpadal.u16 q7, q0\n\t"
+        "vpadal.u16 d16, d2\n\t"
+
+        "subs r3, r3, 1\n\t"
+        "bgt CustomNativeTools_normalize_loop_1\n\t"
+
+        "vpaddl.u32 q7, q7\n\t"
+        "vpaddl.u32 d16, d16\n\t"
+
+        "vmov.u32 %[SUM0], d14[0]\n\t"
+        "vmov.u32 %[SUM1], d15[0]\n\t"
+        "vmov.u32 %[SUM2], d16[0]\n\t"
+
+        "vadd.i32 d26, d26, d27\n\t"
+        "vpaddl.u32 d26, d26\n\t"
+        "vmov.u32 %[SQ0], d26[0]\n\t"
+
+        "vadd.i32 d28, d28, d29\n\t"
+        "vpaddl.u32 d28, d28\n\t"
+        "vmov.u32 %[SQ1], d28[0]\n\t"
+
+        "vadd.i32 d30, d30, d31\n\t"
+        "vpaddl.u32 d30, d30\n\t"
+        "vmov.u32 %[SQ2], d30[0]\n\t"
+
+        : [SUM0]"=r" (sum0), [SUM1]"=r" (sum1), [SUM2]"=r" (sum2), [SQ0]"=r" (sq0), [SQ1]"=r" (sq1), [SQ2]"=r" (sq2)
+        : [SRC]"r" (a), [SIZE]"r" (total/8)
+        : "cc", "r0", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
+    );
+
+    #else
+
+    sum0 = 0; sum1 = 0; sum2 = 0;
+    sq0 = 0; sq1 = 0; sq2 = 0;
 
     for (int i = total ; i > 0 ; i--) {
         uchar v0 = *(a++);
@@ -650,6 +753,8 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
         sum2 += v2;
         sq2 += v2*v2;
     }
+
+    #endif
 
     float sum0norm = sum0 / total;
     float sq0norm = sq0 / total;
@@ -689,6 +794,94 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
 
     a = image.ptr<uchar>(0);
 
+    #if HAVE_NEON == 1
+
+    asm (
+        "mov r3, %[SIZE]\n\t"
+        "mov r0, %[SRC]\n\t"
+
+        "vdup.32 q10, %[ALPHA0]\n\t"
+        "vdup.32 q11, %[ALPHA1]\n\t"
+        "vdup.32 q12, %[ALPHA2]\n\t"
+        "vdup.32 q13, %[BETA0]\n\t"
+        "vdup.32 q14, %[BETA1]\n\t"
+        "vdup.32 q15, %[BETA2]\n\t"
+
+        "CustomNativeTools_normalize_loop_2:\n\t"
+        "vld3.8 {d0,d2,d4}, [r0]\n\t"
+        "pld [r0, #40]\n\t"
+
+        // red
+        "vmovl.u8 q4, d0\n\t"
+
+        "vmovl.u16 q5, d8\n\t"
+        "vcvt.f32.u32 q5, q5\n\t"
+        "vmov q6, q13\n\t"
+        "vmla.f32 q6, q5, q10\n\t"
+        "vcvt.u32.f32 q6, q6\n\t"
+        "vqmovn.u32 d8, q6\n\t"
+
+        "vmovl.u16 q5, d9\n\t"
+        "vcvt.f32.u32 q5, q5\n\t"
+        "vmov q6, q13\n\t"
+        "vmla.f32 q6, q5, q10\n\t"
+        "vcvt.u32.f32 q6, q6\n\t"
+        "vqmovn.u32 d9, q6\n\t"
+
+        "vqmovn.u16 d0, q4\n\t"
+
+        // green
+        "vmovl.u8 q4, d2\n\t"
+
+        "vmovl.u16 q5, d8\n\t"
+        "vcvt.f32.u32 q5, q5\n\t"
+        "vmov q6, q14\n\t"
+        "vmla.f32 q6, q5, q11\n\t"
+        "vcvt.u32.f32 q6, q6\n\t"
+        "vqmovn.u32 d8, q6\n\t"
+
+        "vmovl.u16 q5, d9\n\t"
+        "vcvt.f32.u32 q5, q5\n\t"
+        "vmov q6, q14\n\t"
+        "vmla.f32 q6, q5, q11\n\t"
+        "vcvt.u32.f32 q6, q6\n\t"
+        "vqmovn.u32 d9, q6\n\t"
+
+        "vqmovn.u16 d2, q4\n\t"
+
+        // blue
+        "vmovl.u8 q4, d4\n\t"
+
+        "vmovl.u16 q5, d8\n\t"
+        "vcvt.f32.u32 q5, q5\n\t"
+        "vmov q6, q15\n\t"
+        "vmla.f32 q6, q5, q12\n\t"
+        "vcvt.u32.f32 q6, q6\n\t"
+        "vqmovn.u32 d8, q6\n\t"
+
+        "vmovl.u16 q5, d9\n\t"
+        "vcvt.f32.u32 q5, q5\n\t"
+        "vmov q6, q15\n\t"
+        "vmla.f32 q6, q5, q12\n\t"
+        "vcvt.u32.f32 q6, q6\n\t"
+        "vqmovn.u32 d9, q6\n\t"
+
+        "vqmovn.u16 d4, q4\n\t"
+
+
+        "vst3.8 {d0,d2,d4}, [r0]!\n\t"
+        "subs r3, r3, 1\n\t"
+        "bgt CustomNativeTools_normalize_loop_2\n\t"
+
+        :
+        : [SRC]"r" (a), [SIZE]"r" (total/8),
+          [ALPHA0]"r" (alpha0), [ALPHA1]"r" (alpha1), [ALPHA2]"r" (alpha2),
+          [BETA0]"r" (beta0), [BETA1]"r" (beta1), [BETA2]"r" (beta2)
+        : "cc", "memory", "r0", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
+    );
+
+    #else
+
     for (int i = total ; i > 0 ; i--) {
         uchar v0 = *a;
         float f0 = alpha0 * v0 + beta0;
@@ -724,6 +917,8 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
         a++;
 
     }
+
+    #endif
 
 }
 

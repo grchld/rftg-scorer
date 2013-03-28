@@ -9,7 +9,7 @@ import java.io.ObjectOutputStream;
  */
 class Settings {
 
-    Card.GameType gameType = Card.GameType.EXP1;
+    Card.GameType gameType = Card.GameType.EXP3;
 
     void load(ObjectInputStream ois, CardInfo cardInfo) throws IOException, ClassNotFoundException {
         gameType = (Card.GameType) ois.readObject();

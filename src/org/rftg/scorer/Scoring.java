@@ -16,6 +16,7 @@ class Scoring {
 
     final List<Card> cards;
     int chips;
+    int prestige;
     int military;
     int goodTypes;
 
@@ -36,6 +37,7 @@ class Scoring {
     Scoring(Player player) {
         cards = player.cards;
         chips = player.chips;
+        prestige = player.prestige;
 
         calcGoodTypes();
         calcMilitary();
@@ -81,6 +83,9 @@ class Scoring {
                     case TOTAL_MILITARY:
                         score += military;
                         break;
+                    case PRESTIGE:
+                        score += prestige;
+                        break;
                 }
             }
 
@@ -92,6 +97,7 @@ class Scoring {
                         case NEGATIVE_MILITARY:
                         case THREE_VP:
                         case TOTAL_MILITARY:
+                        case PRESTIGE:
                             break;
                         case NAME:
                             if (extra.namedCard == c) {
@@ -132,14 +138,24 @@ class Scoring {
                     if (power.powers.size() == 1) {
                         military += power.value;
                     } else if (power.powers.contains(Card.PowerType.PER_MILITARY)) {
-                        throw new UnsupportedOperationException("todo");
+                        military += power.value * countByFlag(Card.Flag.MILITARY);
                     } else if (power.powers.contains(Card.PowerType.PER_CHROMO)) {
-                        throw new UnsupportedOperationException("todo");
+                        military += power.value * countByFlag(Card.Flag.CHROMO);
                     } else if (power.powers.contains(Card.PowerType.IF_IMPERIUM)) {
-                        throw new UnsupportedOperationException("todo");
+                        military += power.value * (countByFlag(Card.Flag.IMPERIUM) > 0 ? 1 : 0);
                     }
                 }
             }
         }
+    }
+
+    private int countByFlag(Card.Flag flag) {
+        int result = 0;
+        for (Card card : cards) {
+            if (card.flags.contains(flag)) {
+                result++;
+            }
+        }
+        return result;
     }
 }

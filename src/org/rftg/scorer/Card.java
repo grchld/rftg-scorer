@@ -269,7 +269,7 @@ class Card {
                 return card.cardType == CardType.WORLD && card.goodType == GoodType.NOVELTY && card.flags.contains(Flag.WINDFALL);
             }
         },
-        PRESTIGE,
+        PRESTIGE, // prestige
         RARE_PRODUCTION {
             @Override
             public boolean match(Card card) {

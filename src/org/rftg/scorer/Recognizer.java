@@ -235,7 +235,17 @@ class Recognizer {
                 rectanglesOld.add(rect);
             } else {
                 rectanglesNew.add(rect);
-                state.player.cards.add(recognizerResources.cardInfo.cards[match.cardNumber]);
+                Card card = recognizerResources.cardInfo.cards[match.cardNumber];
+                if (card.gamblingWorld) {
+                    // need to remove another "Gambling World" card
+                    for (int i = 0 ; i < state.player.cards.size() ; i++) {
+                        if (state.player.cards.get(i).gamblingWorld) {
+                            state.player.cards.remove(i);
+                            break;
+                        }
+                    }
+                }
+                state.player.cards.add(card);
             }
 
         }

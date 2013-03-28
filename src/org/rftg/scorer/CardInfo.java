@@ -61,6 +61,9 @@ class CardInfo {
                         card = new Card();
                         card.id = id++;
                         card.name = s[1];
+                        if ("Gambling World".equals(card.name)) {
+                            card.gamblingWorld = true;
+                        }
                         break;
                     case 'T':
                         switch (s[1].charAt(0)) {

@@ -19,6 +19,8 @@ class Card {
     List<Extra> extras = new ArrayList<Extra>(4);
     Set<Phase> phasePowers = EnumSet.noneOf(Phase.class);
 
+    boolean gamblingWorld;
+
     enum GameType {
         BASE("The base game", 94),
         EXP1("The Gathering Storm", 113),

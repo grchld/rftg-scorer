@@ -9,6 +9,7 @@ import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author gc
@@ -23,25 +24,36 @@ class UserControls {
     private final static int CARD_TEXT_FONT_FACE = 1;
 
     public final Sprite[] cardNames;
-    public final Sprite cardCountBackground;
-    public final Sprite chipsBackground;
-    public final Sprite militaryBackground;
-    public final Sprite resetBackground;
-    public final Sprite totalBackground;
+    public Sprite cardCountBackground;
+    public Sprite chipsBackground;
+    public Sprite militaryBackground;
+    public Sprite resetBackground;
+    public Sprite totalBackground;
 
-    UserControls(RecognizerResources recognizerResources) {
+    UserControls(final RecognizerResources recognizerResources) {
         this.recognizerResources = recognizerResources;
-        ScreenProperties screen = recognizerResources.screenProperties;
+        final ScreenProperties screen = recognizerResources.screenProperties;
+
         cardNames = new Sprite[recognizerResources.maxCardNum + 1];
-        for (int i = 0 ; i <= recognizerResources.maxCardNum ; i++) {
-            cardNames[i] = Sprite.textSpriteWithDilate(recognizerResources.cardInfo.cards[i].name,
-                    CARD_TEXT_COLOR, CARD_TEXT_SHADOW, CARD_TEXT_FONT_FACE, screen.cardTextFontScale, screen.cardTextThickness, screen.cardTextBorder);
-        }
-        cardCountBackground = load("cards", screen.cardsIconSize);
-        chipsBackground = load("chip", screen.chipsIconSize);
-        militaryBackground = load("military", screen.militaryIconSize);
-        resetBackground = load("reset", screen.resetIconSize);
-        totalBackground = load("total", screen.totalIconSize);
+        recognizerResources.executor.submit(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0 ; i <= recognizerResources.maxCardNum ; i++) {
+                    cardNames[i] = Sprite.textSpriteWithDilate(recognizerResources.cardInfo.cards[i].name,
+                            CARD_TEXT_COLOR, CARD_TEXT_SHADOW, CARD_TEXT_FONT_FACE, screen.cardTextFontScale, screen.cardTextThickness, screen.cardTextBorder);
+                }
+            }
+        });
+        recognizerResources.executor.submit(new Runnable() {
+            @Override
+            public void run() {
+                cardCountBackground = load("cards", screen.cardsIconSize);
+                chipsBackground = load("chip", screen.chipsIconSize);
+                militaryBackground = load("military", screen.militaryIconSize);
+                resetBackground = load("reset", screen.resetIconSize);
+                totalBackground = load("total", screen.totalIconSize);
+            }
+        });
     }
 
     void release() {

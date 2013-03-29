@@ -58,7 +58,7 @@ public class MainActivity extends Activity implements CvCameraViewListener {
         openCvCameraView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
-                if (recognizerResources != null && state != null && recognizer != null) {
+                if (recognizerResources != null && state != null && recognizer != null && recognizerResources.isLoaded()) {
                     return recognizerResources.userControls.onTouch(view, motionEvent, recognizer, state);
                 } else {
                     return false;

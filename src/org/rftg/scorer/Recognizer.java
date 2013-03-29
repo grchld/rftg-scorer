@@ -156,6 +156,12 @@ class Recognizer {
 
     Mat onFrame(Mat frame) {
 
+        if (!recognizerResources.isLoaded()) {
+
+            Core.putText(frame, "Loading: " + recognizerResources.getLoadingPercent() + "%", new Point(frame.width() / 2 - 200, frame.height()/2 - 20), 1, 3, COLOR_SCORE, 3);
+            return frame;
+        }
+
         Imgproc.cvtColor(frame, rgb, Imgproc.COLOR_RGBA2RGB);
         frame = rgb;
 

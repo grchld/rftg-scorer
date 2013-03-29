@@ -1,6 +1,5 @@
 package org.rftg.scorer;
 
-import android.util.Log;
 import org.opencv.android.Utils;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
@@ -34,6 +33,7 @@ class CardPatterns {
     private final RecognizerResources recognizerResources;
     public final Sprite[] previews;
 
+    private final Mat sampleScaleDown;
 
     public CardPatterns(final RecognizerResources recognizerResources) {
 
@@ -43,13 +43,12 @@ class CardPatterns {
         samples = new Mat[recognizerResources.maxCardNum + 1];
         previews = new Sprite[recognizerResources.maxCardNum + 1];
 
-        final Mat sampleScaleDown = Imgproc.getAffineTransform(
+        sampleScaleDown = Imgproc.getAffineTransform(
                 new MatOfPoint2f(
                         new Point(ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_BORDER),
                         new Point(ORIGINAL_SAMPLE_WIDTH-ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_BORDER),
                         new Point(ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_HEIGHT-ORIGINAL_SAMPLE_BORDER)),
                 new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(0, SAMPLE_HEIGHT)));
-        long time = System.currentTimeMillis();
 
         class Task implements Callable<Void> {
 
@@ -95,14 +94,12 @@ class CardPatterns {
         for (int num = 0; num <= recognizerResources.maxCardNum; num++) {
             recognizerResources.executor.submit(new Task(num));
         }
-        recognizerResources.executor.sync();
 
-        Log.i("rftg", "Parallel loading time: " + (System.currentTimeMillis() - time));
-
-        sampleScaleDown.release();
+        // Loading is not complete yet!!! check loaded flag before use!
     }
 
     public void release() {
+        sampleScaleDown.release();
         for (Mat sample : samples) {
             if (sample != null) {
                 sample.release();

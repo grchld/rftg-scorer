@@ -14,7 +14,7 @@ import java.io.*;
 class State {
 
     private final static String STATE = "state";
-    private final static int STATE_VERSION = 2;
+    private final static int STATE_VERSION = 3;
     Settings settings = new Settings();
     Player player = new Player();
 

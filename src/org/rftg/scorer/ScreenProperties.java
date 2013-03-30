@@ -16,6 +16,7 @@ class ScreenProperties {
 
     Dimensions cardsIconSize = new Dimensions(120, 120);
     Dimensions chipsIconSize = new Dimensions(125, 125);
+    Dimensions prestigeIconSize = new Dimensions(125, 125);
 
     Dimensions militaryIconSize = new Dimensions(100, 100);
     Dimensions resetIconSize = new Dimensions(125, 125);
@@ -30,6 +31,7 @@ class ScreenProperties {
 
     double previewTextScale = 3;
     double chipsTextScale = 4;
+    double prestigeTextScale = 4;
     double militaryTextScale = 3;
     double cardCountTextScale = 4;
     double totalTextScale = 4;
@@ -48,6 +50,7 @@ class ScreenProperties {
 
             cardsIconSize = new Dimensions(100, 100);
             chipsIconSize = new Dimensions(100, 100);
+            prestigeIconSize = new Dimensions(100, 100);
 
             militaryIconSize = new Dimensions(90, 90);
             resetIconSize = new Dimensions(100, 100);
@@ -62,6 +65,7 @@ class ScreenProperties {
 
             previewTextScale = 2.5;
             chipsTextScale = 3;
+            prestigeTextScale = 3;
             militaryTextScale = 2.5;
             cardCountTextScale = 2.8;
             totalTextScale = 3;

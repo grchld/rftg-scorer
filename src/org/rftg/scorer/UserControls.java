@@ -29,6 +29,7 @@ class UserControls {
     public Sprite militaryBackground;
     public Sprite resetBackground;
     public Sprite totalBackground;
+    public Sprite prestigeBackground;
 
     UserControls(final RecognizerResources recognizerResources) {
         this.recognizerResources = recognizerResources;
@@ -49,6 +50,7 @@ class UserControls {
             public void run() {
                 cardCountBackground = load("cards", screen.cardsIconSize);
                 chipsBackground = load("chip", screen.chipsIconSize);
+                prestigeBackground = load("prestige", screen.prestigeIconSize);
                 militaryBackground = load("military", screen.militaryIconSize);
                 resetBackground = load("reset", screen.resetIconSize);
                 totalBackground = load("total", screen.totalIconSize);
@@ -70,13 +72,17 @@ class UserControls {
     boolean onTouch(View view, MotionEvent motionEvent, Recognizer recognizer, State state) {
         if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
 
+            ScreenProperties screen = recognizerResources.screenProperties;
             float x = motionEvent.getX() - (view.getWidth() - recognizer.width)/2;
             float y = motionEvent.getY() - (view.getHeight() - recognizer.height)/2;
-            if (x < 155 && y < 155) {
+            if (x < screen.resetIconSize.width + screen.previewGap && y < screen.resetIconSize.height + screen.previewGap) {
                 state.player.chips = 0;
+                state.player.prestige = 0;
                 state.player.cards.clear();
-            } else if (x > recognizer.width - 155 && y < 155) {
+            } else if (x > recognizer.width - (screen.chipsIconSize.width + screen.previewGap) && y < screen.chipsIconSize.height + screen.previewGap) {
                 state.player.chips++;
+            } else if (state.settings.usePrestige && x > recognizer.width - (screen.chipsIconSize.width + screen.prestigeIconSize.width + 2 * screen.previewGap) && y < screen.prestigeIconSize.height + screen.previewGap) {
+                state.player.prestige++;
             }
 
             return true;

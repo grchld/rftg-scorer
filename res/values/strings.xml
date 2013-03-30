@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">RftG-Scorer</string>
+    <string name="game_type">Game type</string>
+    <string name="prestige_enable">Enable prestige</string>
+    <string name="prestige_disable">Disable prestige</string>
 </resources>

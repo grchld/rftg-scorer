@@ -48,6 +48,7 @@ class Recognizer {
     private static final Scalar COLOR_MATCH_OLD = new Scalar(255, 0, 0);
     private static final Scalar COLOR_MATCH_NEW = new Scalar(0, 255, 0);
     private static final Scalar COLOR_CHIPS = new Scalar(255, 255, 0);
+    private static final Scalar COLOR_PRESTIGE = new Scalar(0, 255, 255);
     private static final Scalar COLOR_CARDS = new Scalar(128, 255, 128);
     private static final Scalar COLOR_MILITARY = new Scalar(255, 0, 0);
 
@@ -318,6 +319,13 @@ class Recognizer {
         int y = screen.previewGap;
         draw(frame, chipsBackground, Sprite.textSpriteWithDilate(""+state.player.chips, COLOR_CHIPS, COLOR_SHADOW, 1, screen.chipsTextScale, 3, 1),
                 frame.cols() - chipsBackground.width - screen.previewGap, y);
+
+        // Draw prestige
+        if (state.settings.usePrestige) {
+            Sprite prestigeBackground = recognizerResources.userControls.prestigeBackground;
+            draw(frame, prestigeBackground, Sprite.textSpriteWithDilate(""+state.player.prestige, COLOR_PRESTIGE, COLOR_SHADOW, 1, screen.prestigeTextScale, 3, 1),
+                    frame.cols() - chipsBackground.width - prestigeBackground.width - 2* screen.previewGap, y);
+        }
 
         // Draw military scores
         String militaryValue;

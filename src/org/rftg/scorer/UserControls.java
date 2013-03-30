@@ -34,11 +34,11 @@ class UserControls {
         this.recognizerResources = recognizerResources;
         final ScreenProperties screen = recognizerResources.screenProperties;
 
-        cardNames = new Sprite[recognizerResources.maxCardNum + 1];
+        cardNames = new Sprite[Card.GameType.EXP3.maxCardNum + 1];
         recognizerResources.executor.submit(new Runnable() {
             @Override
             public void run() {
-                for (int i = 0 ; i <= recognizerResources.maxCardNum ; i++) {
+                for (int i = 0 ; i <= Card.GameType.EXP3.maxCardNum ; i++) {
                     cardNames[i] = Sprite.textSpriteWithDilate(recognizerResources.cardInfo.cards[i].name,
                             CARD_TEXT_COLOR, CARD_TEXT_SHADOW, CARD_TEXT_FONT_FACE, screen.cardTextFontScale, screen.cardTextThickness, screen.cardTextBorder);
                 }

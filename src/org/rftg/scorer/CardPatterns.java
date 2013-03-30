@@ -39,9 +39,9 @@ class CardPatterns {
 
         this.recognizerResources = recognizerResources;
 
-        samplesFused = new Mat((recognizerResources.maxCardNum + 1)*SAMPLE_HEIGHT, SAMPLE_WIDTH, CvType.CV_8UC3);
-        samples = new Mat[recognizerResources.maxCardNum + 1];
-        previews = new Sprite[recognizerResources.maxCardNum + 1];
+        samplesFused = new Mat((Card.GameType.EXP3.maxCardNum + 1)*SAMPLE_HEIGHT, SAMPLE_WIDTH, CvType.CV_8UC3);
+        samples = new Mat[Card.GameType.EXP3.maxCardNum + 1];
+        previews = new Sprite[Card.GameType.EXP3.maxCardNum + 1];
 
         sampleScaleDown = Imgproc.getAffineTransform(
                 new MatOfPoint2f(
@@ -91,7 +91,7 @@ class CardPatterns {
 
         }
 
-        for (int num = 0; num <= recognizerResources.maxCardNum; num++) {
+        for (int num = 0; num <= Card.GameType.EXP3.maxCardNum; num++) {
             recognizerResources.executor.submit(new Task(num));
         }
 
@@ -113,12 +113,12 @@ class CardPatterns {
         }
     }
 
-    public void invokeAnalyse(final Mat selection, final CardMatch[] cardMatches, final Point[] rect) {
+    public void invokeAnalyse(final Mat selection, final CardMatch[] cardMatches, final Point[] rect, final int maxCardNum) {
         recognizerResources.executor.submit(new Runnable() {
             @Override
             public void run() {
 
-                long matchResult = recognizerResources.customNativeTools.match(selection, samplesFused, SAMPLE_HEIGHT*SAMPLE_WIDTH, recognizerResources.maxCardNum + 1);
+                long matchResult = recognizerResources.customNativeTools.match(selection, samplesFused, SAMPLE_HEIGHT*SAMPLE_WIDTH, maxCardNum + 1);
 
                 int bestCardNumber = (int)matchResult & 0xffff;
                 matchResult >>= 16;

@@ -93,7 +93,7 @@ class Recognizer {
         this.recognizerResources = recognizerResources;
         this.screen = recognizerResources.screenProperties;
 
-        cardMatches = new CardMatch[recognizerResources.maxCardNum + 1];
+        cardMatches = new CardMatch[Card.GameType.EXP3.maxCardNum + 1];
 
         int xOrigin = width/2;
         int yOrigin = height/2;
@@ -195,13 +195,13 @@ class Recognizer {
 
         int selectionCounter = 0;
         for (Point[] rect : rectangles) {
-            recognizerResources.executor.submit(new SampleExtractor(recognizerResources, frame, rect, selection[selectionCounter++], cardMatches));
+            recognizerResources.executor.submit(new SampleExtractor(recognizerResources, frame, rect, selection[selectionCounter++], cardMatches, state.settings.gameType.maxCardNum));
         }
 
         recognizerResources.executor.sync();
 
         List<CardMatch> allMatches = new ArrayList<CardMatch>(64);
-        for (int cardNumber = 0 ; cardNumber <= recognizerResources.maxCardNum ; cardNumber ++ ) {
+        for (int cardNumber = 0 ; cardNumber <= state.settings.gameType.maxCardNum ; cardNumber ++ ) {
             CardMatch match = cardMatches[cardNumber];
             if (match != null) {
                 allMatches.add(match);

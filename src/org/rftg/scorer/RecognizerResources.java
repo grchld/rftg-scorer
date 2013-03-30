@@ -11,7 +11,6 @@ class RecognizerResources {
     final Executor executor;
     CardPatterns cardPatterns;
     final CustomNativeTools customNativeTools;
-    final int maxCardNum;
     final CardInfo cardInfo;
     UserControls userControls;
     final ScreenProperties screenProperties;
@@ -23,7 +22,6 @@ class RecognizerResources {
     RecognizerResources(Context resourceContext, CardInfo cardInfo, Settings settings, ScreenProperties screenProperties) {
         this.screenProperties = screenProperties;
         this.cardInfo = cardInfo;
-        this.maxCardNum = settings.gameType.maxCardNum;
         this.resourceContext = resourceContext;
         this.executor = new Executor();
         this.customNativeTools = new CustomNativeTools();

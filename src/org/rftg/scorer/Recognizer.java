@@ -1,5 +1,6 @@
 package org.rftg.scorer;
 
+import android.util.Log;
 import org.opencv.android.Utils;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
@@ -159,6 +160,12 @@ class Recognizer {
         if (!recognizerResources.isLoaded()) {
 
             Core.putText(frame, "Loading: " + recognizerResources.getLoadingPercent() + "%", new Point(frame.width() / 2 - 200, frame.height()/2 - 20), 1, 3, COLOR_SCORE, 3);
+            try {
+                // Yield some more resources loading thread
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Log.e("rftg", e.getMessage(), e);
+            }
             return frame;
         }
 

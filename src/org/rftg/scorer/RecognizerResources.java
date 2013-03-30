@@ -9,15 +9,16 @@ class RecognizerResources {
 
     final Context resourceContext;
     final Executor executor;
-    final CardPatterns cardPatterns;
+    CardPatterns cardPatterns;
     final CustomNativeTools customNativeTools;
     final int maxCardNum;
     final CardInfo cardInfo;
-    final UserControls userControls;
+    UserControls userControls;
     final ScreenProperties screenProperties;
 
     private volatile boolean loaded;
-    private final int startCount;
+    private volatile boolean loadingStarted;
+    private int startCount;
 
     RecognizerResources(Context resourceContext, CardInfo cardInfo, Settings settings, ScreenProperties screenProperties) {
         this.screenProperties = screenProperties;
@@ -26,6 +27,11 @@ class RecognizerResources {
         this.resourceContext = resourceContext;
         this.executor = new Executor();
         this.customNativeTools = new CustomNativeTools();
+
+        // Loading is not completed!!! Check isLoaded
+    }
+
+    private void startLoading() {
         this.userControls = new UserControls(this);
         this.cardPatterns = new CardPatterns(this);
 
@@ -33,8 +39,6 @@ class RecognizerResources {
         if (startCount == 0) {
             loaded = true;
         }
-
-        // Loading is not completed!!! Check isLoaded
     }
 
     public void release() {
@@ -44,6 +48,14 @@ class RecognizerResources {
     }
 
     public boolean isLoaded() {
+        if (!loaded) {
+            synchronized (this) {
+                if (!loadingStarted) {
+                    startLoading();
+                    loadingStarted = true;
+                }
+            }
+        }
         return loaded;
     }
 

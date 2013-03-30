@@ -14,13 +14,20 @@ class ScreenProperties {
     int cardTextThickness = 1;
     int cardTextBorder = 2;
 
-    Dimensions cardsIconSize = new Dimensions(120, 120);
-    Dimensions chipsIconSize = new Dimensions(125, 125);
-    Dimensions prestigeIconSize = new Dimensions(125, 125);
+    private Dimensions cardsIconSize = new Dimensions(120, 120);
+    private Dimensions chipsIconSize = new Dimensions(125, 125);
+    private Dimensions prestigeIconSize = new Dimensions(125, 125);
 
-    Dimensions militaryIconSize = new Dimensions(100, 100);
-    Dimensions resetIconSize = new Dimensions(125, 125);
-    Dimensions totalIconSize = new Dimensions(125, 125);
+    private Dimensions militaryIconSize = new Dimensions(100, 100);
+    private Dimensions resetIconSize = new Dimensions(125, 125);
+    private Dimensions totalIconSize = new Dimensions(125, 125);
+
+    Position cardsIconPosition;
+    Position chipsIconPosition;
+    Position prestigeIconPosition;
+    Position militaryIconPosition;
+    Position resetIconPosition;
+    Position totalIconPosition;
 
     int previewHeight = 119;
     int previewWidth = 85;
@@ -73,6 +80,28 @@ class ScreenProperties {
 
             cardNameOffsetX = 8;
             cardNameOffsetY = 40;
+        }
+
+        resetIconPosition = new Position(previewGap, previewGap, resetIconSize);
+        cardsIconPosition = new Position(previewGap, - cardsIconSize.height - previewHeight - 2*previewGap, cardsIconSize);
+        chipsIconPosition = new Position(- chipsIconSize.width - previewGap, previewGap, chipsIconSize);
+        prestigeIconPosition = new Position(chipsIconPosition.x - prestigeIconSize.width - previewGap, previewGap, prestigeIconSize);
+        militaryIconPosition = new Position(chipsIconPosition.x + (chipsIconSize.width - militaryIconSize.width) / 2,
+                prestigeIconPosition.y + prestigeIconSize.height + previewGap, militaryIconSize);
+        totalIconPosition = new Position(- totalIconSize.width - previewGap, - totalIconSize.height - previewHeight - 2*previewGap, totalIconSize);
+
+    }
+
+    // Negative values mean offsets from opposite edges
+    static class Position {
+        final int x;
+        final int y;
+        final Dimensions dimensions;
+
+        Position(int x, int y, Dimensions dimensions) {
+            this.x = x;
+            this.y = y;
+            this.dimensions = dimensions;
         }
     }
 

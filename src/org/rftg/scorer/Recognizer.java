@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.rftg.scorer.Scoring.CardScore;
+import static org.rftg.scorer.ScreenProperties.Position;
 
 /**
  * @author gc
@@ -48,7 +49,7 @@ class Recognizer {
     private static final Scalar COLOR_MATCH_OLD = new Scalar(255, 0, 0);
     private static final Scalar COLOR_MATCH_NEW = new Scalar(0, 255, 0);
     private static final Scalar COLOR_CHIPS = new Scalar(255, 255, 0);
-    private static final Scalar COLOR_PRESTIGE = new Scalar(0, 255, 255);
+    private static final Scalar COLOR_PRESTIGE = new Scalar(0, 255, 0);
     private static final Scalar COLOR_CARDS = new Scalar(128, 255, 128);
     private static final Scalar COLOR_MILITARY = new Scalar(255, 0, 0);
 
@@ -312,19 +313,16 @@ class Recognizer {
         }
 
         // Draw reset button
-        recognizerResources.userControls.resetBackground.draw(frame, screen.previewGap, screen.previewGap);
+        draw(frame,recognizerResources.userControls.resetBackground, null, screen.resetIconPosition);
 
         // Draw chips buttons
-        Sprite chipsBackground = recognizerResources.userControls.chipsBackground;
-        int y = screen.previewGap;
-        draw(frame, chipsBackground, Sprite.textSpriteWithDilate(""+state.player.chips, COLOR_CHIPS, COLOR_SHADOW, 1, screen.chipsTextScale, 3, 1),
-                frame.cols() - chipsBackground.width - screen.previewGap, y);
+        draw(frame, recognizerResources.userControls.chipsBackground, Sprite.textSpriteWithDilate(""+state.player.chips, COLOR_CHIPS, COLOR_SHADOW, 1, screen.chipsTextScale, 3, 1),
+                screen.chipsIconPosition);
 
         // Draw prestige
         if (state.settings.usePrestige) {
-            Sprite prestigeBackground = recognizerResources.userControls.prestigeBackground;
-            draw(frame, prestigeBackground, Sprite.textSpriteWithDilate(""+state.player.prestige, COLOR_PRESTIGE, COLOR_SHADOW, 1, screen.prestigeTextScale, 3, 1),
-                    frame.cols() - chipsBackground.width - prestigeBackground.width - 2* screen.previewGap, y);
+            draw(frame, recognizerResources.userControls.prestigeBackground, Sprite.textSpriteWithDilate(""+state.player.prestige, COLOR_PRESTIGE, COLOR_SHADOW, 1, screen.prestigeTextScale, 3, 1),
+                    screen.prestigeIconPosition);
         }
 
         // Draw military scores
@@ -335,21 +333,16 @@ class Recognizer {
             militaryValue = "" + scoring.military;
         }
 
-        y += chipsBackground.height + screen.previewGap;
-        Sprite militaryBackground = recognizerResources.userControls.militaryBackground;
-        draw(frame, militaryBackground, Sprite.textSpriteWithDilate(militaryValue, COLOR_MILITARY, COLOR_SHADOW, 1, screen.militaryTextScale, 3, 0),
-                frame.cols() - militaryBackground.width - screen.previewGap - (chipsBackground.width - militaryBackground.width) / 2, y);
+        draw(frame, recognizerResources.userControls.militaryBackground, Sprite.textSpriteWithDilate(militaryValue, COLOR_MILITARY, COLOR_SHADOW, 1, screen.militaryTextScale, 3, 0),
+                screen.militaryIconPosition);
 
         // Draw card counter
-        Sprite cardCountBackground = recognizerResources.userControls.cardCountBackground;
-        draw(frame, cardCountBackground, Sprite.textSpriteWithDilate(""+state.player.cards.size(), COLOR_CARDS, COLOR_SHADOW, 1, screen.cardCountTextScale, 3, 1),
-                screen.previewGap, frame.rows() - cardCountBackground.height - screen.previewHeight - 2*screen.previewGap);
+        draw(frame, recognizerResources.userControls.cardCountBackground, Sprite.textSpriteWithDilate(""+state.player.cards.size(), COLOR_CARDS, COLOR_SHADOW, 1, screen.cardCountTextScale, 3, 1),
+                screen.cardsIconPosition);
 
         // Draw total
-        Sprite totalBackground = recognizerResources.userControls.totalBackground;
-        draw(frame, totalBackground, Sprite.textSpriteWithDilate(""+scoring.score, COLOR_TOTAL, COLOR_SHADOW, 1, scoring.score >= 100 ? screen.totalTextScaleShrink : screen.totalTextScale, 3, 1),
-                frame.cols() - totalBackground.width - screen.previewGap,
-                frame.rows() - totalBackground.height - screen.previewHeight - 2*screen.previewGap);
+        draw(frame, recognizerResources.userControls.totalBackground, Sprite.textSpriteWithDilate(""+scoring.score, COLOR_TOTAL, COLOR_SHADOW, 1, scoring.score >= 100 ? screen.totalTextScaleShrink : screen.totalTextScale, 3, 1),
+                screen.totalIconPosition);
 
         //
         if (DEBUG_SHOW_RECTANGLE_COUNTER) {
@@ -519,12 +512,25 @@ class Recognizer {
         }
     }
 
+    private void draw(Mat frame, Sprite background, Sprite text, Position position) {
+        draw(frame, background, text, position.x, position.y);
+    }
+
     private void draw(Mat frame, Sprite background, Sprite text, int x, int y) {
+        if (x < 0) {
+            x += frame.cols();
+        }
+        if (y < 0) {
+            y += frame.rows();
+        }
+
         background.draw(frame, x, y);
 
-        text.draw(frame,
-                x + background.width / 2 - text.width / 2,
-                y + background.height / 2 - text.height / 2);
-        text.release();
+        if (text != null) {
+            text.draw(frame,
+                    x + background.width / 2 - text.width / 2,
+                    y + background.height / 2 - text.height / 2);
+            text.release();
+        }
     }
 }

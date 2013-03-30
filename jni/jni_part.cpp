@@ -16,9 +16,9 @@ using namespace cv;
 extern "C" {
 
 #define SOBEL_V_LIGHT_BOUND 65
-#define SOBEL_V_DARK_BOUND 85
-#define SOBEL_H_LIGHT_BOUND 140
-#define SOBEL_H_DARK_BOUND 85
+#define SOBEL_V_DARK_BOUND 100
+#define SOBEL_H_LIGHT_BOUND 150
+#define SOBEL_H_DARK_BOUND 100
 
 JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr)
 {

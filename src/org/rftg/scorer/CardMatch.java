@@ -11,12 +11,14 @@ public class CardMatch {
 
     final int cardNumber;
     final int score;
+    final int secondScore;
     final Point[] rect;
     final double minx, maxx, miny, maxy;
 
-    CardMatch(int cardNumber, int score, Point[] rect) {
+    CardMatch(int cardNumber, int score, int secondScore, Point[] rect) {
         this.cardNumber = cardNumber;
         this.score = score;
+        this.secondScore = secondScore;
         this.rect = rect;
         minx = Math.max(rect[0].x, rect[3].x);
         maxx = Math.min(rect[1].x, rect[2].x);

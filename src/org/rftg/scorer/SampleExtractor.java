@@ -10,17 +10,19 @@ import org.opencv.imgproc.Imgproc;
 */
 class SampleExtractor implements Runnable {
     private Mat image;
+    private int maxCardNum;
     private Point[] rect;
     private Mat destination;
     private RecognizerResources recognizerResources;
     private CardMatch[] cardMatches;
 
-    SampleExtractor(RecognizerResources recognizerResources, Mat image, Point[] rect, Mat destination, CardMatch[] cardMatches) {
+    SampleExtractor(RecognizerResources recognizerResources, Mat image, Point[] rect, Mat destination, CardMatch[] cardMatches, int maxCardNum) {
         this.recognizerResources = recognizerResources;
         this.image = image;
         this.rect = rect;
         this.destination = destination;
         this.cardMatches = cardMatches;
+        this.maxCardNum = maxCardNum;
     }
 
     @Override
@@ -31,7 +33,7 @@ class SampleExtractor implements Runnable {
         recognizerResources.customNativeTools.normalize(destination);
         scaleDown.release();
 
-        recognizerResources.cardPatterns.invokeAnalyse(destination, cardMatches, rect);
+        recognizerResources.cardPatterns.invokeAnalyse(destination, cardMatches, rect, maxCardNum);
 
     }
 

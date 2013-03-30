@@ -9,6 +9,10 @@ import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
 
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.rftg.scorer.ScreenProperties.Dimensions;
+import static org.rftg.scorer.ScreenProperties.Position;
 
 /**
  * @author gc
@@ -23,25 +27,38 @@ class UserControls {
     private final static int CARD_TEXT_FONT_FACE = 1;
 
     public final Sprite[] cardNames;
-    public final Sprite cardCountBackground;
-    public final Sprite chipsBackground;
-    public final Sprite militaryBackground;
-    public final Sprite resetBackground;
-    public final Sprite totalBackground;
+    public Sprite cardCountBackground;
+    public Sprite chipsBackground;
+    public Sprite militaryBackground;
+    public Sprite resetBackground;
+    public Sprite totalBackground;
+    public Sprite prestigeBackground;
 
-    UserControls(RecognizerResources recognizerResources) {
+    UserControls(final RecognizerResources recognizerResources) {
         this.recognizerResources = recognizerResources;
-        ScreenProperties screen = recognizerResources.screenProperties;
-        cardNames = new Sprite[recognizerResources.maxCardNum + 1];
-        for (int i = 0 ; i <= recognizerResources.maxCardNum ; i++) {
-            cardNames[i] = Sprite.textSpriteWithDilate(recognizerResources.cardInfo.cards[i].name,
-                    CARD_TEXT_COLOR, CARD_TEXT_SHADOW, CARD_TEXT_FONT_FACE, screen.cardTextFontScale, screen.cardTextThickness, screen.cardTextBorder);
-        }
-        cardCountBackground = load("cards", screen.cardsIconSize);
-        chipsBackground = load("chip", screen.chipsIconSize);
-        militaryBackground = load("military", screen.militaryIconSize);
-        resetBackground = load("reset", screen.resetIconSize);
-        totalBackground = load("total", screen.totalIconSize);
+        final ScreenProperties screen = recognizerResources.screenProperties;
+
+        cardNames = new Sprite[Card.GameType.EXP3.maxCardNum + 1];
+        recognizerResources.executor.submit(new Runnable() {
+            @Override
+            public void run() {
+                for (int i = 0; i <= Card.GameType.EXP3.maxCardNum; i++) {
+                    cardNames[i] = Sprite.textSpriteWithDilate(recognizerResources.cardInfo.cards[i].name,
+                            CARD_TEXT_COLOR, CARD_TEXT_SHADOW, CARD_TEXT_FONT_FACE, screen.cardTextFontScale, screen.cardTextThickness, screen.cardTextBorder);
+                }
+            }
+        });
+        recognizerResources.executor.submit(new Runnable() {
+            @Override
+            public void run() {
+                cardCountBackground = load("cards", screen.cardsIconPosition.dimensions);
+                chipsBackground = load("chip", screen.chipsIconPosition.dimensions);
+                prestigeBackground = load("prestige", screen.prestigeIconPosition.dimensions);
+                militaryBackground = load("military", screen.militaryIconPosition.dimensions);
+                resetBackground = load("reset", screen.resetIconPosition.dimensions);
+                totalBackground = load("total", screen.totalIconPosition.dimensions);
+            }
+        });
     }
 
     void release() {
@@ -50,6 +67,7 @@ class UserControls {
         }
         cardCountBackground.release();
         chipsBackground.release();
+        prestigeBackground.release();
         militaryBackground.release();
         resetBackground.release();
         totalBackground.release();
@@ -58,13 +76,18 @@ class UserControls {
     boolean onTouch(View view, MotionEvent motionEvent, Recognizer recognizer, State state) {
         if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
 
-            float x = motionEvent.getX() - (view.getWidth() - recognizer.width)/2;
-            float y = motionEvent.getY() - (view.getHeight() - recognizer.height)/2;
-            if (x < 155 && y < 155) {
+            ScreenProperties screen = recognizerResources.screenProperties;
+            int x = (int)motionEvent.getX() - (view.getWidth() - recognizer.width)/2;
+            int y = (int)motionEvent.getY() - (view.getHeight() - recognizer.height)/2;
+
+            if (inside(recognizer, screen.resetIconPosition, x, y)) {
                 state.player.chips = 0;
+                state.player.prestige = 0;
                 state.player.cards.clear();
-            } else if (x > recognizer.width - 155 && y < 155) {
+            } else if (inside(recognizer, screen.chipsIconPosition, x, y)) {
                 state.player.chips++;
+            } else if (state.settings.usePrestige && inside(recognizer, screen.prestigeIconPosition, x, y)) {
+                state.player.prestige++;
             }
 
             return true;
@@ -73,7 +96,19 @@ class UserControls {
         }
     }
 
-    private Sprite load(String imageName, ScreenProperties.Dimensions size) {
+    private boolean inside(Recognizer recognizer, Position position, int x, int y) {
+        int positionX = position.x;
+        if (positionX < 0) {
+            positionX += recognizer.width;
+        }
+        int positionY = position.y;
+        if (positionY < 0) {
+            positionY += recognizer.height;
+        }
+        return x >= positionX && x < positionX + position.dimensions.width && y >= positionY && y < positionY + position.dimensions.height;
+    }
+
+    private Sprite load(String imageName, Dimensions size) {
         int id = recognizerResources.resourceContext.getResources().getIdentifier(imageName, "drawable", "org.rftg.scorer");
 
         Bitmap bitmap = BitmapFactory.decodeResource(recognizerResources.resourceContext.getResources(), id, new BitmapFactory.Options());

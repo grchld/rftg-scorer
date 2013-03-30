@@ -19,6 +19,8 @@ class Card {
     List<Extra> extras = new ArrayList<Extra>(4);
     Set<Phase> phasePowers = EnumSet.noneOf(Phase.class);
 
+    boolean gamblingWorld;
+
     enum GameType {
         BASE("The base game", 94),
         EXP1("The Gathering Storm", 113),
@@ -269,7 +271,7 @@ class Card {
                 return card.cardType == CardType.WORLD && card.goodType == GoodType.NOVELTY && card.flags.contains(Flag.WINDFALL);
             }
         },
-        PRESTIGE,
+        PRESTIGE, // prestige
         RARE_PRODUCTION {
             @Override
             public boolean match(Card card) {

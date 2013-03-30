@@ -1,5 +1,6 @@
 package org.rftg.scorer;
 
+import android.util.Log;
 import org.opencv.android.Utils;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
@@ -8,15 +9,18 @@ import java.io.IOException;
 import java.util.*;
 
 import static org.rftg.scorer.Scoring.CardScore;
+import static org.rftg.scorer.ScreenProperties.Position;
 
 /**
  * @author gc
  */
 class Recognizer {
 
+    private static final boolean DEBUG_SHOW_SOBEL = false;
     private static final boolean DEBUG_SHOW_ALL_RECTANGLES = false;
     private static final boolean DEBUG_SHOW_SEGMENTS = false;
     private static final boolean DEBUG_SHOW_RECTANGLE_COUNTER = false;
+    private static final boolean DEBUG_SHOW_CARD_SCORES = false;
 
     private static final int MAX_RECTANGLES = 400;
     private static final int MAX_RECTANGLES_TO_USE_OUTERS = 100;
@@ -45,6 +49,7 @@ class Recognizer {
     private static final Scalar COLOR_MATCH_OLD = new Scalar(255, 0, 0);
     private static final Scalar COLOR_MATCH_NEW = new Scalar(0, 255, 0);
     private static final Scalar COLOR_CHIPS = new Scalar(255, 255, 0);
+    private static final Scalar COLOR_PRESTIGE = new Scalar(0, 255, 0);
     private static final Scalar COLOR_CARDS = new Scalar(128, 255, 128);
     private static final Scalar COLOR_MILITARY = new Scalar(255, 0, 0);
 
@@ -89,7 +94,7 @@ class Recognizer {
         this.recognizerResources = recognizerResources;
         this.screen = recognizerResources.screenProperties;
 
-        cardMatches = new CardMatch[recognizerResources.maxCardNum + 1];
+        cardMatches = new CardMatch[Card.GameType.EXP3.maxCardNum + 1];
 
         int xOrigin = width/2;
         int yOrigin = height/2;
@@ -138,6 +143,18 @@ class Recognizer {
 
     Mat onFrame(Mat frame) {
 
+        if (!recognizerResources.isLoaded()) {
+
+            Core.putText(frame, "Loading: " + recognizerResources.getLoadingPercent() + "%", new Point(frame.width() / 2 - 200, frame.height()/2 - 20), 1, 3, COLOR_SCORE, 3);
+            try {
+                // Yield some more resources loading thread
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Log.e("rftg", e.getMessage(), e);
+            }
+            return frame;
+        }
+
         Imgproc.cvtColor(frame, rgb, Imgproc.COLOR_RGBA2RGB);
         frame = rgb;
 
@@ -164,13 +181,13 @@ class Recognizer {
 
         int selectionCounter = 0;
         for (Point[] rect : rectangles) {
-            recognizerResources.executor.submit(new SampleExtractor(recognizerResources, frame, rect, selection[selectionCounter++], cardMatches));
+            recognizerResources.executor.submit(new SampleExtractor(recognizerResources, frame, rect, selection[selectionCounter++], cardMatches, state.settings.gameType.maxCardNum));
         }
 
         recognizerResources.executor.sync();
 
         List<CardMatch> allMatches = new ArrayList<CardMatch>(64);
-        for (int cardNumber = 0 ; cardNumber <= recognizerResources.maxCardNum ; cardNumber ++ ) {
+        for (int cardNumber = 0 ; cardNumber <= state.settings.gameType.maxCardNum ; cardNumber ++ ) {
             CardMatch match = cardMatches[cardNumber];
             if (match != null) {
                 allMatches.add(match);
@@ -218,7 +235,17 @@ class Recognizer {
                 rectanglesOld.add(rect);
             } else {
                 rectanglesNew.add(rect);
-                state.player.cards.add(recognizerResources.cardInfo.cards[match.cardNumber]);
+                Card card = recognizerResources.cardInfo.cards[match.cardNumber];
+                if (card.gamblingWorld) {
+                    // need to remove another "Gambling World" card
+                    for (int i = 0 ; i < state.player.cards.size() ; i++) {
+                        if (state.player.cards.get(i).gamblingWorld) {
+                            state.player.cards.remove(i);
+                            break;
+                        }
+                    }
+                }
+                state.player.cards.add(card);
             }
 
         }
@@ -236,6 +263,11 @@ class Recognizer {
         for (CardMatch match : matches) {
             Point[] points = match.rect;
             recognizerResources.userControls.cardNames[match.cardNumber].draw(frame, (int)points[0].x + screen.cardNameOffsetX, (int)points[0].y + screen.cardNameOffsetY);
+            if (DEBUG_SHOW_CARD_SCORES) {
+                Sprite score = Sprite.textSpriteWithDilate(""+match.score + " >> " + match.secondScore, COLOR_SCORE, COLOR_SHADOW, 1, 1.3, 1, 1);
+                score.draw(frame, (int)points[0].x + 10, (int)points[0].y + 70);
+                score.release();
+            }
         }
 
         Scoring scoring = new Scoring(state.player);
@@ -265,13 +297,17 @@ class Recognizer {
         }
 
         // Draw reset button
-        recognizerResources.userControls.resetBackground.draw(frame, screen.previewGap, screen.previewGap);
+        draw(frame,recognizerResources.userControls.resetBackground, null, screen.resetIconPosition);
 
         // Draw chips buttons
-        Sprite chipsBackground = recognizerResources.userControls.chipsBackground;
-        int y = screen.previewGap;
-        draw(frame, chipsBackground, Sprite.textSpriteWithDilate(""+state.player.chips, COLOR_CHIPS, COLOR_SHADOW, 1, screen.chipsTextScale, 3, 1),
-                frame.cols() - chipsBackground.width - screen.previewGap, y);
+        draw(frame, recognizerResources.userControls.chipsBackground, Sprite.textSpriteWithDilate(""+state.player.chips, COLOR_CHIPS, COLOR_SHADOW, 1, screen.chipsTextScale, 3, 1),
+                screen.chipsIconPosition);
+
+        // Draw prestige
+        if (state.settings.usePrestige) {
+            draw(frame, recognizerResources.userControls.prestigeBackground, Sprite.textSpriteWithDilate(""+state.player.prestige, COLOR_PRESTIGE, COLOR_SHADOW, 1, screen.prestigeTextScale, 3, 1),
+                    screen.prestigeIconPosition);
+        }
 
         // Draw military scores
         String militaryValue;
@@ -281,31 +317,30 @@ class Recognizer {
             militaryValue = "" + scoring.military;
         }
 
-        y += chipsBackground.height + screen.previewGap;
-        Sprite militaryBackground = recognizerResources.userControls.militaryBackground;
-        draw(frame, militaryBackground, Sprite.textSpriteWithDilate(militaryValue, COLOR_MILITARY, COLOR_SHADOW, 1, screen.militaryTextScale, 3, 0),
-                frame.cols() - militaryBackground.width - screen.previewGap - (chipsBackground.width - militaryBackground.width) / 2, y);
+        draw(frame, recognizerResources.userControls.militaryBackground, Sprite.textSpriteWithDilate(militaryValue, COLOR_MILITARY, COLOR_SHADOW, 1, screen.militaryTextScale, 3, 0),
+                screen.militaryIconPosition);
 
         // Draw card counter
-        Sprite cardCountBackground = recognizerResources.userControls.cardCountBackground;
-        draw(frame, cardCountBackground, Sprite.textSpriteWithDilate(""+state.player.cards.size(), COLOR_CARDS, COLOR_SHADOW, 1, screen.cardCountTextScale, 3, 1),
-                screen.previewGap, frame.rows() - cardCountBackground.height - screen.previewHeight - 2*screen.previewGap);
+        draw(frame, recognizerResources.userControls.cardCountBackground, Sprite.textSpriteWithDilate(""+state.player.cards.size(), COLOR_CARDS, COLOR_SHADOW, 1, screen.cardCountTextScale, 3, 1),
+                screen.cardsIconPosition);
 
         // Draw total
-        Sprite totalBackground = recognizerResources.userControls.totalBackground;
-        draw(frame, totalBackground, Sprite.textSpriteWithDilate(""+scoring.score, COLOR_TOTAL, COLOR_SHADOW, 1, scoring.score >= 100 ? screen.totalTextScaleShrink : screen.totalTextScale, 3, 1),
-                frame.cols() - totalBackground.width - screen.previewGap,
-                frame.rows() - totalBackground.height - screen.previewHeight - 2*screen.previewGap);
+        draw(frame, recognizerResources.userControls.totalBackground, Sprite.textSpriteWithDilate(""+scoring.score, COLOR_TOTAL, COLOR_SHADOW, 1, scoring.score >= 100 ? screen.totalTextScaleShrink : screen.totalTextScale, 3, 1),
+                screen.totalIconPosition);
 
         //
         if (DEBUG_SHOW_RECTANGLE_COUNTER) {
             Core.putText(frame, ""+innerRectangles + "+" + (rectangles.size() - innerRectangles), new Point(50,50), 1, 1, new Scalar(255, 255, 255));
         }
 
+        if (DEBUG_SHOW_SOBEL) {
+            recognizerResources.customNativeTools.drawSobel(sobel, frame);
+        }
+
         if (DEBUG_SHOW_SEGMENTS) {
             Scalar green = new Scalar(0, 255, 0);
             Scalar red = new Scalar(255, 0, 0);
-            Scalar blue = new Scalar(255, 0, 255);
+            Scalar magenta = new Scalar(255, 0, 255);
             Scalar yellow = new Scalar(255, 255, 0);
 
             for (Line line : linesLeft) {
@@ -336,8 +371,8 @@ class Recognizer {
                 Core.line(frame,
                         new Point(line.x1, line.y1),
                         new Point(line.x2, line.y2),
-                        blue);
-                Core.putText(frame, line.toString(), new Point(line.mx, line.my + 20), 1, 1, blue);
+                        magenta);
+                Core.putText(frame, line.toString(), new Point(line.mx, line.my + 20), 1, 1, magenta);
             }
         }
 
@@ -461,12 +496,25 @@ class Recognizer {
         }
     }
 
+    private void draw(Mat frame, Sprite background, Sprite text, Position position) {
+        draw(frame, background, text, position.x, position.y);
+    }
+
     private void draw(Mat frame, Sprite background, Sprite text, int x, int y) {
+        if (x < 0) {
+            x += frame.cols();
+        }
+        if (y < 0) {
+            y += frame.rows();
+        }
+
         background.draw(frame, x, y);
 
-        text.draw(frame,
-                x + background.width / 2 - text.width / 2,
-                y + background.height / 2 - text.height / 2);
-        text.release();
+        if (text != null) {
+            text.draw(frame,
+                    x + background.width / 2 - text.width / 2,
+                    y + background.height / 2 - text.height / 2);
+            text.release();
+        }
     }
 }

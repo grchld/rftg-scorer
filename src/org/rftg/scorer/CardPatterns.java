@@ -1,6 +1,5 @@
 package org.rftg.scorer;
 
-import android.util.Log;
 import org.opencv.android.Utils;
 import org.opencv.core.*;
 import org.opencv.imgproc.Imgproc;
@@ -34,22 +33,22 @@ class CardPatterns {
     private final RecognizerResources recognizerResources;
     public final Sprite[] previews;
 
+    private final Mat sampleScaleDown;
 
     public CardPatterns(final RecognizerResources recognizerResources) {
 
         this.recognizerResources = recognizerResources;
 
-        samplesFused = new Mat((recognizerResources.maxCardNum + 1)*SAMPLE_HEIGHT, SAMPLE_WIDTH, CvType.CV_8UC3);
-        samples = new Mat[recognizerResources.maxCardNum + 1];
-        previews = new Sprite[recognizerResources.maxCardNum + 1];
+        samplesFused = new Mat((Card.GameType.EXP3.maxCardNum + 1)*SAMPLE_HEIGHT, SAMPLE_WIDTH, CvType.CV_8UC3);
+        samples = new Mat[Card.GameType.EXP3.maxCardNum + 1];
+        previews = new Sprite[Card.GameType.EXP3.maxCardNum + 1];
 
-        final Mat sampleScaleDown = Imgproc.getAffineTransform(
+        sampleScaleDown = Imgproc.getAffineTransform(
                 new MatOfPoint2f(
                         new Point(ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_BORDER),
                         new Point(ORIGINAL_SAMPLE_WIDTH-ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_BORDER),
                         new Point(ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_HEIGHT-ORIGINAL_SAMPLE_BORDER)),
                 new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(0, SAMPLE_HEIGHT)));
-        long time = System.currentTimeMillis();
 
         class Task implements Callable<Void> {
 
@@ -92,17 +91,15 @@ class CardPatterns {
 
         }
 
-        for (int num = 0; num <= recognizerResources.maxCardNum; num++) {
+        for (int num = 0; num <= Card.GameType.EXP3.maxCardNum; num++) {
             recognizerResources.executor.submit(new Task(num));
         }
-        recognizerResources.executor.sync();
 
-        Log.i("rftg", "Parallel loading time: " + (System.currentTimeMillis() - time));
-
-        sampleScaleDown.release();
+        // Loading is not complete yet!!! check loaded flag before use!
     }
 
     public void release() {
+        sampleScaleDown.release();
         for (Mat sample : samples) {
             if (sample != null) {
                 sample.release();
@@ -116,12 +113,12 @@ class CardPatterns {
         }
     }
 
-    public void invokeAnalyse(final Mat selection, final CardMatch[] cardMatches, final Point[] rect) {
+    public void invokeAnalyse(final Mat selection, final CardMatch[] cardMatches, final Point[] rect, final int maxCardNum) {
         recognizerResources.executor.submit(new Runnable() {
             @Override
             public void run() {
 
-                long matchResult = recognizerResources.customNativeTools.match(selection, samplesFused, SAMPLE_HEIGHT*SAMPLE_WIDTH, recognizerResources.maxCardNum + 1);
+                long matchResult = recognizerResources.customNativeTools.match(selection, samplesFused, SAMPLE_HEIGHT*SAMPLE_WIDTH, maxCardNum + 1);
 
                 int bestCardNumber = (int)matchResult & 0xffff;
                 matchResult >>= 16;
@@ -133,7 +130,7 @@ class CardPatterns {
                     synchronized (cardMatches) {
                         CardMatch match = cardMatches[bestCardNumber];
                         if (match == null || match.score < bestScore) {
-                            cardMatches[bestCardNumber] = new CardMatch(bestCardNumber, bestScore, rect);
+                            cardMatches[bestCardNumber] = new CardMatch(bestCardNumber, bestScore, secondBestScore, rect);
                         }
                     }
                 }

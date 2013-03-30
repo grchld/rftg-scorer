@@ -515,6 +515,9 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
 #define COMPARE_SCORE_1 3
 #define COMPARE_SCORE_2 2
 
+#define FIRST_GAMBLING_WORLD 86
+#define SECOND_GAMBLING_WORLD 144
+
 JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jobject, jlong selectionAddr, jlong patternsAddr, jint patternSize, jint patternsCount)
 {
     Mat& selection = *(Mat*)selectionAddr;
@@ -543,7 +546,8 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jo
         "mov %[BEST], #0\n\t" /* bestScore << 16 + bestCardNumber */
         "mov %[SECOND_BEST], #0\n\t" /* secondBestScore << 16 + secondBestCardNumber */
 
-        "mov r2, %[COUNT]\n\t"
+        "mov r2, #0\n\t"
+
         "CustomNativeTools_match_loop_1:\n\t"
         "mov r3, %[SIZE]\n\t"
 
@@ -579,24 +583,43 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jo
 
         "vmov.u32 r4, d20[0]\n\t"
 
-        "cmp %[SECOND_BEST], r4, lsl #16\n\t"
+        "orr r4, r2, r4, lsl #16\n\t"
+
+        "cmp r2, %[_SECOND_GAMBLING_WORLD]\n\t"
+        "beq CustomNativeTools_match_loop_3\n\t"
+
+        "CustomNativeTools_match_loop_5:\n\t"
+
+        "cmp %[SECOND_BEST], r4\n\t"
         "itttt le\n\t"
-        "orrle r4, %[COUNT], r4, lsl #16\n\t"
-        "suble r4, r2\n\t"
         "movle %[SECOND_BEST], r4\n\t"
         "cmple %[BEST], r4\n\t"
-        "itt le\n\t"
         "movle %[SECOND_BEST], %[BEST]\n\t"
         "movle %[BEST], r4\n\t"
 
-        "subs r2, 1\n\t"
+        "add r2, 1\n\t"
+        "cmp %[COUNT], r2\n\t"
         "bgt CustomNativeTools_match_loop_1\n\t"
+        "bal CustomNativeTools_match_loop_4\n\t"
 
+        "CustomNativeTools_match_loop_3:\n\t"
+
+        "and r3, %[BEST], #0xff\n\t"
+        "cmp r3, %[_FIRST_GAMBLING_WORLD]\n\t"
+        "bne CustomNativeTools_match_loop_5\n\t"
+        "cmp %[BEST], r4\n\t"
+        "it le\n\t"
+        "movle %[BEST], r4\n\t"
+        "add r2, 1\n\t"
+        "bal CustomNativeTools_match_loop_1\n\t"
+        "CustomNativeTools_match_loop_4:\n\t"
 
         : [BEST]"=&r" (best), [SECOND_BEST]"=&r" (second_best)
         : [SELECTION]"r" (selection.ptr<uchar>(0)), [PATTERN]"r" (pattern.ptr<uchar>(0)), [SIZE]"r" (patternSize/16), [COUNT]"r" (patternsCount),
           [COMPARE_BOUND_A]"i" (COMPARE_BOUND_1), [COMPARE_BOUND_B]"i" (COMPARE_BOUND_2),
-          [COMPARE_SCORE_DIFF_A]"i" (COMPARE_SCORE_1 - COMPARE_SCORE_2), [COMPARE_SCORE_B]"i" (COMPARE_SCORE_2)
+          [COMPARE_SCORE_DIFF_A]"i" (COMPARE_SCORE_1 - COMPARE_SCORE_2), [COMPARE_SCORE_B]"i" (COMPARE_SCORE_2),
+          [_FIRST_GAMBLING_WORLD]"i" (FIRST_GAMBLING_WORLD), [_SECOND_GAMBLING_WORLD]"i" (SECOND_GAMBLING_WORLD)
+
         : "cc", "r0", "r1", "r2", "r3", "r4", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
     );
 
@@ -642,11 +665,15 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jo
         }
 
         if (bestScore < score) {
-            secondBestScore = bestScore;
+            if (bestCardNumber != FIRST_GAMBLING_WORLD || cardNumber != SECOND_GAMBLING_WORLD) {
+                secondBestScore = bestScore;
+                secondBestCardNumber = cardNumber;
+            }
             bestScore = score;
             bestCardNumber = cardNumber;
         } else if (secondBestScore < score) {
             secondBestScore = score;
+            secondBestCardNumber = cardNumber;
         }
     }
 
@@ -920,6 +947,67 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
 
     #endif
 
+}
+
+JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_drawSobel(JNIEnv*, jobject, jlong sobelAddr, jlong frameAddr)
+{
+    Mat& sobel = *(Mat*)sobelAddr;
+    Mat& frame = *(Mat*)frameAddr;
+
+    int total = sobel.cols * sobel.rows;
+
+    uchar* s = sobel.ptr<uchar>(0);
+    uchar* f = frame.ptr<uchar>(0);
+
+    for (int i = total ; i > 0 ; i--) {
+        uchar mask = *(s++);
+
+        uchar* r = f++;
+        uchar* g = f++;
+        uchar* b = f++;
+
+
+        if (mask & 0x80) {
+            if (mask & 0x20) {
+                *r = 224;
+                *g = 224;
+                *b = 255;
+            } else if (mask & 0x10) {
+                *r = 224;
+                *g = 224;
+                *b = 255;
+            } else {
+                *r = 255;
+                *g = 255;
+                *b = 0;
+            }
+        } else if (mask & 0x40) {
+            if (mask & 0x20) {
+                *r = 224;
+                *g = 224;
+                *b = 255;
+            } else if (mask & 0x10) {
+                *r = 224;
+                *g = 224;
+                *b = 255;
+            } else {
+                *r = 255;
+                *g = 0;
+                *b = 255;
+            }
+        } else {
+            if (mask & 0x20) {
+                *r = 255;
+                *g = 0;
+                *b = 0;
+            } else if (mask & 0x10) {
+                *r = 0;
+                *g = 255;
+                *b = 0;
+            }
+        }
+
+    }
 }
 
 }

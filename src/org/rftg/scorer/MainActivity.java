@@ -2,9 +2,7 @@ package org.rftg.scorer;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.WindowManager;
+import android.view.*;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener;
@@ -58,13 +56,42 @@ public class MainActivity extends Activity implements CvCameraViewListener {
         openCvCameraView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
-                if (recognizerResources != null && state != null && recognizer != null) {
+                if (recognizerResources != null && state != null && recognizer != null && recognizerResources.isLoaded()) {
                     return recognizerResources.userControls.onTouch(view, motionEvent, recognizer, state);
                 } else {
                     return false;
                 }
             }
         });
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.options, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.prestige:
+                state.settings.usePrestige = !state.settings.usePrestige;
+                if (!state.settings.usePrestige) {
+                    state.player.prestige = 0;
+                }
+                item.setTitle(getResources().getString(
+                        state.settings.usePrestige ? R.string.prestige_disable : R.string.prestige_enable));
+                return true;
+            default:
+                return super.onContextItemSelected(item);
+        }
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.prestige).setTitle(getResources().getString(
+                state.settings.usePrestige ? R.string.prestige_disable : R.string.prestige_enable));
+        return true;
     }
 
     @Override

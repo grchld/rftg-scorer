@@ -14,7 +14,7 @@ This is a little homebrew application for Android based phones which goal is to 
 
 This project is open-source and non-profitable, however it contains art which belongs to [Rio Grande Games](http://www.riograndegames.com) and Race For The Galaxy designer Tom Lehmann. Also, it contains parts of another really cool open project http://keldon.net/rftg/
 
-For now, only the first expansion pack (The Gathering Storm) is supported, but I think this can be easily changed in future.
+All three expansion packs are supported.
 
 As far as card matcher uses the whole image of a card, it can work for localized card sets well too. I've checked it on Russian and French card sets.
 
@@ -49,6 +49,8 @@ Press red reset button to clear recognized cards list and to reset chips counter
 
 Don't leave recognizer in a working state when it is not needed or your battery will drain fast. It should be just enough to lock the phone with the power button to pause recognition loop.
 
+Upd: prestige is also available, just use menu to enable prestige counter button.
+
 ![Usage](usage.jpg)
 
 Known issues
@@ -60,7 +62,4 @@ Known issues
 
 * Application is loading slow (up to 5 sec). This is because of scaling original pictures to formats appropriate for matching and drawing. It's just easier to debug recognition engine and to draw interface in that way.
 
-* Add support for the second and third expansion packs, goal statuses, prestige.
-
 * Redraw/redesign this ugly interface.
-

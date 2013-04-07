@@ -123,14 +123,16 @@ class CardPatterns {
                 int bestCardNumber = (int)matchResult & 0xffff;
                 matchResult >>= 16;
                 int bestScore = (int)matchResult & 0xffff;
-                matchResult >>= 32;
+                matchResult >>= 16;
+                int secondBestCardNumber = (int)matchResult & 0xffff;
+                matchResult >>= 16;
                 int secondBestScore = (int)matchResult;
 
                 if (bestScore > MATCHER_MINIMAL_BOUND && bestScore - secondBestScore > MATCHER_MINIMAL_GAP) {
                     synchronized (cardMatches) {
                         CardMatch match = cardMatches[bestCardNumber];
                         if (match == null || match.score < bestScore) {
-                            cardMatches[bestCardNumber] = new CardMatch(bestCardNumber, bestScore, secondBestScore, rect);
+                            cardMatches[bestCardNumber] = new CardMatch(bestCardNumber, bestScore, secondBestCardNumber, secondBestScore, rect);
                         }
                     }
                 }

@@ -667,7 +667,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jo
         if (bestScore < score) {
             if (bestCardNumber != FIRST_GAMBLING_WORLD || cardNumber != SECOND_GAMBLING_WORLD) {
                 secondBestScore = bestScore;
-                secondBestCardNumber = cardNumber;
+                secondBestCardNumber = bestCardNumber;
             }
             bestScore = score;
             bestCardNumber = cardNumber;

@@ -283,6 +283,7 @@ class Recognizer {
                 Sprite score = Sprite.textSpriteWithDilate(""+match.score + " >> " + match.secondScore, COLOR_SCORE, COLOR_SHADOW, 1, 1.3, 1, 1);
                 score.draw(frame, (int)points[0].x + 10, (int)points[0].y + 70);
                 score.release();
+                recognizerResources.userControls.cardNames[match.secondCardNumber].draw(frame, (int)points[0].x + 10, (int)points[0].y + 100);
             }
         }
 

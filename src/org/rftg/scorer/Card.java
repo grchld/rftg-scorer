@@ -180,7 +180,8 @@ class Card {
             PowerType.TRADE_NO_BONUS,
             PowerType.TRADE_NOVELTY,
             PowerType.TRADE_RARE,
-            PowerType.TRADE_THIS
+            PowerType.TRADE_THIS,
+            PowerType.NO_TRADE
     );
 
     enum ExtraType {

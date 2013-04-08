@@ -173,11 +173,9 @@ class Card {
     }
 
     public static final Set<PowerType> TRADE_POWERS = EnumSet.of(
-            PowerType.TRADE_ACTION,
             PowerType.TRADE_ANY,
             PowerType.TRADE_BONUS_CHROMO,
             PowerType.TRADE_GENE,
-            PowerType.TRADE_NO_BONUS,
             PowerType.TRADE_NOVELTY,
             PowerType.TRADE_RARE,
             PowerType.TRADE_THIS,

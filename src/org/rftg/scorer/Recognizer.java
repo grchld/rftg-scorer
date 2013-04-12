@@ -113,7 +113,7 @@ class Recognizer {
         houghTop = new Hough(recognizerResources, sobelTransposed, true, MASK_TOP, xOrigin, MAX_GAP, MIN_LENGTH, linesTop);
         houghBottom = new Hough(recognizerResources, sobelTransposed, true, MASK_BOTTOM, xOrigin, MAX_GAP, MIN_LENGTH, linesBottom);
 
-        selectionFused = new Mat(CardPatterns.SAMPLE_HEIGHT*MAX_RECTANGLES, CardPatterns.SAMPLE_WIDTH, CvType.CV_8UC3);
+        selectionFused = new Mat(CardPatterns.SAMPLE_HEIGHT*MAX_RECTANGLES, CardPatterns.SAMPLE_WIDTH, CvType.CV_8UC1);
         for (int i = 0 ; i < MAX_RECTANGLES ; i++) {
             selection[i] = selectionFused.submat(i*CardPatterns.SAMPLE_HEIGHT , (i+1)*CardPatterns.SAMPLE_HEIGHT, 0, CardPatterns.SAMPLE_WIDTH);
         }
@@ -181,7 +181,7 @@ class Recognizer {
 
         int selectionCounter = 0;
         for (Point[] rect : rectangles) {
-            recognizerResources.executor.submit(new SampleExtractor(recognizerResources, frame, rect, selection[selectionCounter++], cardMatches, state.settings.gameType.maxCardNum));
+            recognizerResources.executor.submit(new SampleExtractor(recognizerResources, gray, rect, selection[selectionCounter++], cardMatches, state.settings.gameType.maxCardNum));
         }
 
         recognizerResources.executor.sync();
@@ -267,6 +267,7 @@ class Recognizer {
                 Sprite score = Sprite.textSpriteWithDilate(""+match.score + " >> " + match.secondScore, COLOR_SCORE, COLOR_SHADOW, 1, 1.3, 1, 1);
                 score.draw(frame, (int)points[0].x + 10, (int)points[0].y + 70);
                 score.release();
+                recognizerResources.userControls.cardNames[match.secondCardNumber].draw(frame, (int)points[0].x + 10, (int)points[0].y + 100);
             }
         }
 

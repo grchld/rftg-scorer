@@ -48,7 +48,7 @@ class CardInfo {
             int id = 0;
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.startsWith("#") || line.trim().isEmpty()) {
+                if (line.startsWith("#") || line.trim().length() == 0) {
                     continue;
                 }
                 String[] s = line.split(":");

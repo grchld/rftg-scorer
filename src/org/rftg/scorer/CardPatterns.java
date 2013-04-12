@@ -39,7 +39,7 @@ class CardPatterns {
 
         this.recognizerResources = recognizerResources;
 
-        samplesFused = new Mat((Card.GameType.EXP3.maxCardNum + 1)*SAMPLE_HEIGHT, SAMPLE_WIDTH, CvType.CV_8UC3);
+        samplesFused = new Mat((Card.GameType.EXP3.maxCardNum + 1)*SAMPLE_HEIGHT, SAMPLE_WIDTH, CvType.CV_8UC1);
         samples = new Mat[Card.GameType.EXP3.maxCardNum + 1];
         previews = new Sprite[Card.GameType.EXP3.maxCardNum + 1];
 
@@ -62,16 +62,18 @@ class CardPatterns {
             public Void call() throws Exception {
                 int id = recognizerResources.resourceContext.getResources().getIdentifier("card_" + num, "drawable", "org.rftg.scorer");
 
-                Mat tempSampleBGR = Utils.loadResource(recognizerResources.resourceContext, id);
+                Mat origBGR = Utils.loadResource(recognizerResources.resourceContext, id);
 
-                Mat tempSample = new Mat();
+                Mat orig = new Mat();
+                Mat origGray = new Mat();
 
-                Imgproc.cvtColor(tempSampleBGR, tempSample, Imgproc.COLOR_BGR2RGB);
+                Imgproc.cvtColor(origBGR, orig, Imgproc.COLOR_BGR2RGB);
+                Imgproc.cvtColor(origBGR, origGray, Imgproc.COLOR_BGR2GRAY);
 
-                tempSampleBGR.release();
+                origBGR.release();
 
                 Mat scaledSample = samplesFused.submat(num*SAMPLE_HEIGHT, (num+1)*SAMPLE_HEIGHT, 0, SAMPLE_WIDTH);
-                Imgproc.warpAffine(tempSample, scaledSample, sampleScaleDown, SAMPLE_SIZE, SAMPLE_INTER);
+                Imgproc.warpAffine(origGray, scaledSample, sampleScaleDown, SAMPLE_SIZE, SAMPLE_INTER);
 
                 recognizerResources.customNativeTools.normalize(scaledSample);
 
@@ -80,11 +82,12 @@ class CardPatterns {
                 ScreenProperties screen = recognizerResources.screenProperties;
 
                 Mat scaledPreview = new Mat(screen.previewHeight, screen.previewWidth, CvType.CV_8UC3);
-                Imgproc.resize(tempSample, scaledPreview, screen.previewSize);
+                Imgproc.resize(orig, scaledPreview, screen.previewSize);
 
                 previews[num] = new Sprite(scaledPreview);
 
-                tempSample.release();
+                orig.release();
+                origGray.release();
 
                 return null;
             }

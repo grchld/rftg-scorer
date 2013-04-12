@@ -509,8 +509,8 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
 
 }
 
-#define COMPARE_BOUND_1 40
-#define COMPARE_BOUND_2 80
+#define COMPARE_BOUND_1 15
+#define COMPARE_BOUND_2 30
 
 #define COMPARE_SCORE_1 3
 #define COMPARE_SCORE_2 2
@@ -539,9 +539,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jo
         "vdup.8 q13, r0\n\t" /* q13: COMPARE_SCORE_DIFF_1 */
 
         "mov r0, %[SELECTION]\n\t"
-        "pld [r0]\n\t"
         "mov r1, %[PATTERN]\n\t"
-        "pld [r1]\n\t"
 
         "mov %[BEST], #0\n\t" /* bestScore << 16 + bestCardNumber */
         "mov %[SECOND_BEST], #0\n\t" /* secondBestScore << 16 + secondBestCardNumber */
@@ -554,28 +552,19 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jo
         "vmov.i8 q10, #0\n\t" /* q10: scorer */
 
         "CustomNativeTools_match_loop_2:\n\t"
-        "vld3.8 {d0,d2,d4}, [r0]!\n\t"
-        "vld3.8 {d1,d3,d5}, [r0]!\n\t"
-        "vld3.8 {d6,d8,d10}, [r1]!\n\t"
-        "vld3.8 {d7,d9,d11}, [r1]!\n\t"
-        "pld [r0, #40]\n\t"
-        "pld [r1, #40]\n\t"
-        "vabd.u8 q6, q0, q3\n\t"
-        "vabd.u8 q7, q1, q4\n\t"
-        "vabd.u8 q8, q2, q5\n\t"
-        "vqadd.u8 q6, q6, q7\n\t"
-        "vqadd.u8 q6, q6, q8\n\t"
-        "vcle.u8 q7, q6, q14\n\t" /* q7: < COMPARE_BOUND_2 */
-        "vcle.u8 q6, q6, q15\n\t" /* q6: < COMPARE_BOUND_1 */
-        "vand q7, q7, q12\n\t"
-        "vand q6, q6, q13\n\t"
-        "vadd.i8 q7, q7, q6\n\t"
-        "vpadal.u8 q10, q7\n\t"
+        "vldmia r0!, {q0}\n\t"
+        "vldmia r1!, {q1}\n\t"
+        "vabd.u8 q8, q0, q1\n\t"
+        "vcle.u8 q9, q8, q14\n\t" /* q7: < COMPARE_BOUND_2 */
+        "vcle.u8 q8, q8, q15\n\t" /* q6: < COMPARE_BOUND_1 */
+        "vand q9, q9, q12\n\t"
+        "vand q8, q8, q13\n\t"
+        "vadd.i8 q9, q9, q8\n\t"
+        "vpadal.u8 q10, q9\n\t"
         "subs r3, 1\n\t"
         "bgt CustomNativeTools_match_loop_2\n\t"
 
         "mov r0, %[SELECTION]\n\t"
-        "pld [r0]\n\t"
 
         "vadd.i16 d20, d20, d21\n\t"
         "vpaddl.u16 d20, d20\n\t"
@@ -641,22 +630,11 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jo
         int score = 0;
 
         for (int i = patternSize ; i > 0 ; i--) {
-            int a1 = (int)(*(s++)) - (int)(*(p++));
-            if (a1 < 0) {
-                a1 = -a1;
+            int a = (int)(*(s++)) - (int)(*(p++));
+            if (a < 0) {
+                a = -a;
             }
 
-            int a2 = (int)(*(s++)) - (int)(*(p++));
-            if (a2 < 0) {
-                a2 = -a2;
-            }
-
-            int a3 = (int)(*(s++)) - (int)(*(p++));
-            if (a3 < 0) {
-                a3 = -a3;
-            }
-
-            int a = a1 + a2 + a3;
             if (a <= COMPARE_BOUND_1) {
                 score += COMPARE_SCORE_1;
             } else if (a <= COMPARE_BOUND_2) {
@@ -695,16 +673,15 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
     const int total = cols*rows;
 
     CV_DbgAssert(image.depth() == CV_8U);
-    CV_DbgAssert(image.channels() == 3);
+    CV_DbgAssert(image.channels() == 1);
 
-    CV_DbgAssert(image.ptr<uchar>(1) - image.ptr<uchar>(0) == 3*cols);
+    CV_DbgAssert(image.ptr<uchar>(1) - image.ptr<uchar>(0) == cols);
 
     uchar* a = image.ptr<uchar>(0);
 
-    int sum0, sum1, sum2;
-    int sq0, sq1, sq2;
+    int sum, sq;
 
-    #if HAVE_NEON == 1
+    #if HAVE_NEON == 2
 
     asm (
 
@@ -764,64 +741,32 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
 
     #else
 
-    sum0 = 0; sum1 = 0; sum2 = 0;
-    sq0 = 0; sq1 = 0; sq2 = 0;
+    sum = 0;
+    sq = 0;
 
     for (int i = total ; i > 0 ; i--) {
-        uchar v0 = *(a++);
-        sum0 += v0;
-        sq0 += v0*v0;
-
-        uchar v1 = *(a++);
-        sum1 += v1;
-        sq1 += v1*v1;
-
-        uchar v2 = *(a++);
-        sum2 += v2;
-        sq2 += v2*v2;
+        uchar v = *(a++);
+        sum += v;
+        sq += v*v;
     }
 
     #endif
 
-    float sum0norm = sum0 / total;
-    float sq0norm = sq0 / total;
-    float disp0 = sq0norm - sum0norm*sum0norm;
-    float alpha0, beta0;
-    if (disp0 < 1) {
-        alpha0 = 1;
-        beta0 = 0;
+    float sumnorm = sum / total;
+    float sqnorm = sq / total;
+    float disp = sqnorm - sumnorm*sumnorm;
+    float alpha, beta;
+    if (disp < 1) {
+        alpha = 1;
+        beta = 0;
     } else {
-        alpha0 = sqrt(NORMAL_DISPERSION/disp0);
-        beta0 = NORMAL_MEDIAN - alpha0 * sum0norm;
-    }
-
-    float sum1norm = sum1 / total;
-    float sq1norm = sq1 / total;
-    float disp1 = sq1norm - sum1norm*sum1norm;
-    float alpha1, beta1;
-    if (disp1 < 1) {
-        alpha1 = 1;
-        beta1 = 0;
-    } else {
-        alpha1 = sqrt(NORMAL_DISPERSION/disp1);
-        beta1 = NORMAL_MEDIAN - alpha1 * sum1norm;
-    }
-
-    float sum2norm = sum2 / total;
-    float sq2norm = sq2 / total;
-    float disp2 = sq2norm - sum2norm*sum2norm;
-    float alpha2, beta2;
-    if (disp2 < 1) {
-        alpha2 = 1;
-        beta2 = 0;
-    } else {
-        alpha2 = sqrt(NORMAL_DISPERSION/disp2);
-        beta2 = NORMAL_MEDIAN - alpha2 * sum2norm;
+        alpha = sqrt(NORMAL_DISPERSION/disp);
+        beta = NORMAL_MEDIAN - alpha * sumnorm;
     }
 
     a = image.ptr<uchar>(0);
 
-    #if HAVE_NEON == 1
+    #if HAVE_NEON == 2
 
     asm (
         "mov r3, %[SIZE]\n\t"
@@ -910,36 +855,14 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
     #else
 
     for (int i = total ; i > 0 ; i--) {
-        uchar v0 = *a;
-        float f0 = alpha0 * v0 + beta0;
-        if (f0 <= 0) {
+        uchar v = *a;
+        float f = alpha * v + beta;
+        if (f <= 0) {
             *a = 0;
-        } else if (f0 >= 255) {
+        } else if (f >= 255) {
             *a = 255;
         } else {
-            *a = f0;
-        }
-        a++;
-
-        uchar v1 = *a;
-        float f1 = alpha1 * v1 + beta1;
-        if (f1 <= 0) {
-            *a = 0;
-        } else if (f1 >= 255) {
-            *a = 255;
-        } else {
-            *a = f1;
-        }
-        a++;
-
-        uchar v2 = *a;
-        float f2 = alpha2 * v2 + beta2;
-        if (f1 <= 0) {
-            *a = 0;
-        } else if (f2 >= 255) {
-            *a = 255;
-        } else {
-            *a = f2;
+            *a = f;
         }
         a++;
 

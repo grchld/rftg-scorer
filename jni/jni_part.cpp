@@ -681,61 +681,43 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
 
     int sum, sq;
 
-    #if HAVE_NEON == 2
+    #if HAVE_NEON == 1
 
     asm (
 
         "mov r3, %[SIZE]\n\t"
         "mov r0, %[SRC]\n\t"
-        "vmov.i8 q7, 0\n\t" // sum0, sum1
-        "vmov.i8 d16, 0\n\t" // sum2
-        "vmov.i8 q13, 0\n\t" // sq0
-        "vmov.i8 q14, 0\n\t" // sq1
-        "vmov.i8 q15, 0\n\t" // sq2
+        "vmov.i8 q7, 0\n\t" // sum
+        "vmov.i8 q13, 0\n\t" // sq
 
         "CustomNativeTools_normalize_loop_1:\n\t"
 
-        "vld3.8 {d0,d1,d2}, [r0]!\n\t"
-        "pld [r0, #16]\n\t"
+        "vldmia r0!, {q0} \n\t"
 
         "vmull.u8 q3, d0, d0\n\t"
         "vmull.u8 q4, d1, d1\n\t"
-        "vmull.u8 q5, d2, d2\n\t"
 
         "vpadal.u16 q13, q3\n\t"
-        "vpadal.u16 q14, q4\n\t"
-        "vpadal.u16 q15, q5\n\t"
+        "vpadal.u16 q13, q4\n\t"
 
         "vpaddl.u8 q0, q0\n\t"
-        "vpaddl.u8 d2, d2\n\t"
 
         "vpadal.u16 q7, q0\n\t"
-        "vpadal.u16 d16, d2\n\t"
 
         "subs r3, r3, 1\n\t"
         "bgt CustomNativeTools_normalize_loop_1\n\t"
 
         "vpaddl.u32 q7, q7\n\t"
-        "vpaddl.u32 d16, d16\n\t"
+        "vadd.i32 d14, d14, d15\n\t"
 
-        "vmov.u32 %[SUM0], d14[0]\n\t"
-        "vmov.u32 %[SUM1], d15[0]\n\t"
-        "vmov.u32 %[SUM2], d16[0]\n\t"
+        "vmov.u32 %[SUM], d14[0]\n\t"
 
         "vadd.i32 d26, d26, d27\n\t"
         "vpaddl.u32 d26, d26\n\t"
-        "vmov.u32 %[SQ0], d26[0]\n\t"
+        "vmov.u32 %[SQ], d26[0]\n\t"
 
-        "vadd.i32 d28, d28, d29\n\t"
-        "vpaddl.u32 d28, d28\n\t"
-        "vmov.u32 %[SQ1], d28[0]\n\t"
-
-        "vadd.i32 d30, d30, d31\n\t"
-        "vpaddl.u32 d30, d30\n\t"
-        "vmov.u32 %[SQ2], d30[0]\n\t"
-
-        : [SUM0]"=r" (sum0), [SUM1]"=r" (sum1), [SUM2]"=r" (sum2), [SQ0]"=r" (sq0), [SQ1]"=r" (sq1), [SQ2]"=r" (sq2)
-        : [SRC]"r" (a), [SIZE]"r" (total/8)
+        : [SUM]"=r" (sum), [SQ]"=r" (sq)
+        : [SRC]"r" (a), [SIZE]"r" (total/16)
         : "cc", "r0", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
     );
 
@@ -766,24 +748,18 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
 
     a = image.ptr<uchar>(0);
 
-    #if HAVE_NEON == 2
+    #if HAVE_NEON == 1
 
     asm (
         "mov r3, %[SIZE]\n\t"
         "mov r0, %[SRC]\n\t"
 
-        "vdup.32 q10, %[ALPHA0]\n\t"
-        "vdup.32 q11, %[ALPHA1]\n\t"
-        "vdup.32 q12, %[ALPHA2]\n\t"
-        "vdup.32 q13, %[BETA0]\n\t"
-        "vdup.32 q14, %[BETA1]\n\t"
-        "vdup.32 q15, %[BETA2]\n\t"
+        "vdup.32 q10, %[ALPHA]\n\t"
+        "vdup.32 q13, %[BETA]\n\t"
 
         "CustomNativeTools_normalize_loop_2:\n\t"
-        "vld3.8 {d0,d2,d4}, [r0]\n\t"
-        "pld [r0, #40]\n\t"
+        "vldmia r0, {d0}\n\t"
 
-        // red
         "vmovl.u8 q4, d0\n\t"
 
         "vmovl.u16 q5, d8\n\t"
@@ -802,53 +778,13 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
 
         "vqmovn.u16 d0, q4\n\t"
 
-        // green
-        "vmovl.u8 q4, d2\n\t"
-
-        "vmovl.u16 q5, d8\n\t"
-        "vcvt.f32.u32 q5, q5\n\t"
-        "vmov q6, q14\n\t"
-        "vmla.f32 q6, q5, q11\n\t"
-        "vcvt.u32.f32 q6, q6\n\t"
-        "vqmovn.u32 d8, q6\n\t"
-
-        "vmovl.u16 q5, d9\n\t"
-        "vcvt.f32.u32 q5, q5\n\t"
-        "vmov q6, q14\n\t"
-        "vmla.f32 q6, q5, q11\n\t"
-        "vcvt.u32.f32 q6, q6\n\t"
-        "vqmovn.u32 d9, q6\n\t"
-
-        "vqmovn.u16 d2, q4\n\t"
-
-        // blue
-        "vmovl.u8 q4, d4\n\t"
-
-        "vmovl.u16 q5, d8\n\t"
-        "vcvt.f32.u32 q5, q5\n\t"
-        "vmov q6, q15\n\t"
-        "vmla.f32 q6, q5, q12\n\t"
-        "vcvt.u32.f32 q6, q6\n\t"
-        "vqmovn.u32 d8, q6\n\t"
-
-        "vmovl.u16 q5, d9\n\t"
-        "vcvt.f32.u32 q5, q5\n\t"
-        "vmov q6, q15\n\t"
-        "vmla.f32 q6, q5, q12\n\t"
-        "vcvt.u32.f32 q6, q6\n\t"
-        "vqmovn.u32 d9, q6\n\t"
-
-        "vqmovn.u16 d4, q4\n\t"
-
-
-        "vst3.8 {d0,d2,d4}, [r0]!\n\t"
+        "vstmia r0!, {d0}\n\t"
         "subs r3, r3, 1\n\t"
         "bgt CustomNativeTools_normalize_loop_2\n\t"
 
         :
         : [SRC]"r" (a), [SIZE]"r" (total/8),
-          [ALPHA0]"r" (alpha0), [ALPHA1]"r" (alpha1), [ALPHA2]"r" (alpha2),
-          [BETA0]"r" (beta0), [BETA1]"r" (beta1), [BETA2]"r" (beta2)
+          [ALPHA]"r" (alpha), [BETA]"r" (beta)
         : "cc", "memory", "r0", "r3", "q0", "q1", "q2", "q3", "q4", "q5", "q6", "q7", "q8", "q9", "q10", "q11", "q12", "q13", "q14", "q15"
     );
 

@@ -1,17 +1,14 @@
 #include <jni.h>
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/features2d/features2d.hpp>
-#include <vector>
-#include <math.h>
+/*#include <vector>*/
+/*#include <math.h>*/
 #include <android/log.h>
+#include <string.h>
 
 #if HAVE_NEON == 1
 #include <arm_neon.h>
 #endif
 
 using namespace std;
-using namespace cv;
 
 extern "C" {
 
@@ -20,42 +17,36 @@ extern "C" {
 #define SOBEL_H_LIGHT_BOUND 150
 #define SOBEL_H_DARK_BOUND 100
 
-JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr)
+typedef unsigned char uchar;
+
+JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv* env, jobject, jobject srcBuffer, jobject dstBuffer, jint width, jint height)
 {
-    Mat& src = *(Mat*)srcAddr;
-    Mat& dst = *(Mat*)dstAddr;
+    uchar* src = (uchar*)(*env).GetDirectBufferAddress(srcBuffer);
+    uchar* dst = (uchar*)(*env).GetDirectBufferAddress(dstBuffer);
 
-    CV_DbgAssert(src.depth() == CV_8U);
-    CV_DbgAssert(dst.depth() == CV_8U);
-    CV_DbgAssert(src.rows == dst.rows);
-    CV_DbgAssert(src.cols == dst.cols);
-    CV_DbgAssert(src.cols == dst.cols);
-    CV_DbgAssert(src.channels() == dst.channels());
-    CV_DbgAssert(src.channels() == 1);
+    /*const int rows = src.rows;*//*height*/
+    /*const int cols = src.cols;*//*width*/
 
-    const int rows = src.rows;
-    const int cols = src.cols;
-
-    memset(dst.ptr<uchar>(0), 0, cols);
-    memset(dst.ptr<uchar>(rows-1), 0, cols);
+    memset(dst, 0, width);
+    memset(&dst[width*(height-1)], 0, width);
 
 
-    for (int i = 1 ; i < rows-1 ; i++) {
+    for (int i = 1 ; i < height-1 ; i++) {
 
 #if HAVE_NEON == 1
 
-        uint8x8_t* drow = dst.ptr<uint8x8_t>(i);
+        uint8x8_t* drow = (uint8x8_t*)&dst[i*width];
 
         int* idrow = (int*)drow;
         idrow[0] = 0;
         idrow[1] = 0;
-        idrow[cols-1] = 0;
-        idrow[cols-2] = 0;
+        idrow[width-1] = 0;
+        idrow[width-2] = 0;
 
 
-        uint8x8_t* prow = src.ptr<uint8x8_t>(i-1);
-        uint8x8_t* crow = src.ptr<uint8x8_t>(i);
-        uint8x8_t* nrow = src.ptr<uint8x8_t>(i+1);
+        uint8x8_t* prow = (uint8x8_t*)&src[(i-1)*width];
+        uint8x8_t* crow = (uint8x8_t*)&src[i*width];
+        uint8x8_t* nrow = (uint8x8_t*)&src[(i+1)*width];
 
 
         uint8x8_t p0 = prow[0];
@@ -77,7 +68,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
         uint8x8_t vlightmask = vdup_n_u8(0x20);
         uint8x8_t vdarkmask = vdup_n_u8(0x10);
 
-        for (int j = 2 ; j < cols/8; j++) {
+        for (int j = 2 ; j < width/8; j++) {
 
             uint8x8_t p2 = prow[j];
             uint8x8_t c2 = crow[j];
@@ -132,16 +123,16 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
 #else
 
 
-        uchar* prow = src.ptr<uchar>(i-1);
-        uchar* crow = src.ptr<uchar>(i);
-        uchar* nrow = src.ptr<uchar>(i+1);
+        uchar* prow = &src[(i-1)*width];
+        uchar* crow = &src[i*width];
+        uchar* nrow = &src[(i+1)*width];
 
-        uchar* drow = dst.ptr<uchar>(i);
+        uchar* drow = &dst[i*width];
 
         drow[0] = 0;
-        drow[cols-1] = 0;
+        drow[width-1] = 0;
 
-        for (int j = 1 ; j < cols-1; j++) {
+        for (int j = 1 ; j < width-1; j++) {
             int horizontal = (int)prow[j-1] + 2*(int)prow[j] + (int)prow[j+1] - (int)nrow[j-1] - 2*(int)nrow[j] - (int)nrow[j+1];
             int vertical = (int)prow[j-1] + 2*(int)crow[j-1] + (int)nrow[j-1] - (int)prow[j+1] - 2*(int)crow[j+1] - (int)nrow[j+1];
 
@@ -168,6 +159,8 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv*, job
     }
 
 }
+
+#ifdef FALSE
 
 struct Segment {
     short ymin;
@@ -868,5 +861,5 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_drawSobel(JNIEnv*,
 
     }
 }
-
+#endif
 }

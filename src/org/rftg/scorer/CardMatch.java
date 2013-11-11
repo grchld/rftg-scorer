@@ -1,7 +1,5 @@
 package org.rftg.scorer;
 
-import org.opencv.core.Point;
-
 import java.util.Comparator;
 
 /**
@@ -14,7 +12,7 @@ public class CardMatch {
     final int secondCardNumber;
     final int secondScore;
     final Point[] rect;
-    final double minx, maxx, miny, maxy;
+    final int minx, maxx, miny, maxy;
 
     CardMatch(int cardNumber, int score, int secondCardNumber, int secondScore, Point[] rect) {
         this.cardNumber = cardNumber;
@@ -31,7 +29,7 @@ public class CardMatch {
     final static Comparator<CardMatch> MATCH_SCORE_COMPARATOR = new Comparator<CardMatch>() {
         @Override
         public int compare(CardMatch match1, CardMatch match2) {
-            double r = match2.score - match1.score;
+            int r = match2.score - match1.score;
             if (r > 0) {
                 return 1;
             } else if (r < 0) {

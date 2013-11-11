@@ -18,14 +18,12 @@ extern "C" {
 #define SOBEL_H_DARK_BOUND 100
 
 typedef unsigned char uchar;
+typedef unsigned int uint;
 
-JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv* env, jobject, jobject srcBuffer, jobject dstBuffer, jint width, jint height)
+JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv* env, jclass, jobject srcBuffer, jobject dstBuffer, jint width, jint height)
 {
     uchar* src = (uchar*)(*env).GetDirectBufferAddress(srcBuffer);
     uchar* dst = (uchar*)(*env).GetDirectBufferAddress(dstBuffer);
-
-    /*const int rows = src.rows;*//*height*/
-    /*const int cols = src.cols;*//*width*/
 
     memset(dst, 0, width);
     memset(&dst[width*(height-1)], 0, width);
@@ -160,8 +158,6 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv* env,
 
 }
 
-#ifdef FALSE
-
 struct Segment {
     short ymin;
     short ymax;
@@ -195,9 +191,11 @@ int segmentCompare(void const *a1, void const* a2) {
     }
 }
 
+#ifdef FALSE
+
 jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint maxGap, jint minLength, jlong segmentsAddr);
 
-JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jlong imageAddr, jint bordermask, jint origin, jint maxGap, jint minLength, jlong segmentsAddr) {
+JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jobject image, jint bordermask, jint origin, jint maxGap, jint minLength, jlong segmentsAddr) {
     jint segmentNumber = houghVerticalUnsorted(imageAddr, bordermask, origin, maxGap, minLength, segmentsAddr);
     if (segmentNumber > 0) {
         Mat& segmentsMat = *(Mat*)segmentsAddr;
@@ -208,17 +206,8 @@ JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIE
 
 jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint maxGap, jint minLength, jlong segmentsAddr) {
 
-//    __android_log_print(ANDROID_LOG_ERROR, "rftg", "UINT sizeof is: %d", sizeof(uint));
-
     Mat& image = *(Mat*)imageAddr;
     Mat& segmentsMat = *(Mat*)segmentsAddr;
-
-    CV_DbgAssert(image.channels() == 1);
-    CV_DbgAssert(image.depth() == CV_8U);
-
-    CV_DbgAssert(segmentsMat.channels() == 4);
-    CV_DbgAssert(segmentsMat.depth() == CV_16S);
-    CV_DbgAssert(segmentsMat.rows == 1);
 
     int segmentNumber = 0;
     const int maxSegments = segmentsMat.cols;
@@ -229,7 +218,6 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
     const int rows = image.rows;
     const uchar mask = bordermask;
     const uint longmask = bordermask | (bordermask << 8) | (bordermask << 16) | (bordermask << 24);
-//    __android_log_print(ANDROID_LOG_ERROR, "rftg", "Long mask is: %x", bordermask);
 
     int totalStates = cols * SLOPE_COUNT;
 
@@ -239,7 +227,6 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
     for (int y = 0; y < rows; y++) {
         uint* row = image.ptr<uint>(y);
         int x = 0;
-//        for (int x = 0 ; x < cols ; x++) {
         for (int i = cols/sizeof(uint); i > 0 ; i--) {
             uint value = *(row++);
 
@@ -321,6 +308,8 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
 
     return segmentNumber;
 }
+
+
 
 JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr)
 {

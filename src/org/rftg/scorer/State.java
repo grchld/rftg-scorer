@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Base64;
-import android.util.Log;
 
 import java.io.*;
 
@@ -14,7 +13,7 @@ import java.io.*;
 class State {
 
     private final static String STATE = "state";
-    private final static int STATE_VERSION = 3;
+    private final static int STATE_VERSION = 4;
     Settings settings = new Settings();
     Player player = new Player();
 
@@ -31,7 +30,7 @@ class State {
                     ois.close();
                 }
             } catch (Throwable t) {
-                Log.e("rftg", "Can't load state", t);
+                Rftg.e("Can't load state", t);
             }
         }
         return null;
@@ -65,7 +64,7 @@ class State {
             editor.putString(key, Base64.encodeToString(bytes.toByteArray(), Base64.NO_CLOSE | Base64.NO_WRAP | Base64.NO_PADDING));
             editor.commit();
         } catch (Exception e) {
-            Log.e("rftg", "Can't save state", e);
+            Rftg.e("Can't save state", e);
         }
     }
 

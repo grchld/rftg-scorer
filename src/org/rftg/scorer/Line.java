@@ -1,7 +1,5 @@
 package org.rftg.scorer;
 
-import org.opencv.core.Point;
-
 import java.util.Comparator;
 
 /**
@@ -12,7 +10,7 @@ class Line {
     final static Comparator<Line> MX_COMPARATOR = new Comparator<Line>() {
         @Override
         public int compare(Line line1, Line line2) {
-            double r = line1.mx - line2.mx;
+            int r = line1.mx - line2.mx;
             if (r > 0) {
                 return 1;
             } else if (r < 0) {
@@ -55,10 +53,11 @@ class Line {
 
     Point intersect(Line line) {
 
-        double divisor = line.dx * dy - dx * line.dy;
+        int divisor = line.dx * dy - dx * line.dy;
+        int skew = divisor / 2;
 
-        double x = (line.cross * dx - cross * line.dx) / divisor;
-        double y = (line.cross * dy - cross * line.dy) / divisor;
+        int x = (line.cross * dx - cross * line.dx + skew) / divisor;
+        int y = (line.cross * dy - cross * line.dy + skew) / divisor;
 
         return new Point(x,y);
     }

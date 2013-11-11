@@ -3,23 +3,18 @@ package org.rftg.scorer;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.*;
-import org.opencv.android.BaseLoaderCallback;
-import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener;
-import org.opencv.android.LoaderCallbackInterface;
-import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Mat;
 
-public class MainActivity extends Activity implements CvCameraViewListener {
+public class MainActivity extends Activity {
 
-    private CameraBridgeViewBase openCvCameraView;
+//    private volatile RecognizerResources recognizerResources;
 
-    private volatile RecognizerResources recognizerResources;
+//    private volatile Recognizer recognizer;
 
-    private volatile Recognizer recognizer;
+    private FastCameraView fastCamera;
+    private UserInterfaceView userInterface;
 
     private State state;
-
+  /*
     private BaseLoaderCallback loaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -42,7 +37,7 @@ public class MainActivity extends Activity implements CvCameraViewListener {
             }
         }
     };
-
+    */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -51,6 +46,17 @@ public class MainActivity extends Activity implements CvCameraViewListener {
 
         setContentView(R.layout.main);
 
+        fastCamera = (FastCameraView) this.findViewById(R.id.fastCamera);
+        userInterface = (UserInterfaceView) this.findViewById(R.id.userInterface);
+        fastCamera.setInterfaceView(userInterface);
+
+        CardInfo cardInfo = new CardInfo(getAssets());
+        state = State.loadState(MainActivity.this, cardInfo);
+        if (state == null) {
+            state = new State();
+        }
+
+/*
         openCvCameraView = (CameraBridgeViewBase) findViewById(R.id.main);
         openCvCameraView.setCvCameraViewListener(this);
         openCvCameraView.setOnTouchListener(new View.OnTouchListener() {
@@ -62,7 +68,7 @@ public class MainActivity extends Activity implements CvCameraViewListener {
                     return false;
                 }
             }
-        });
+        });*/
     }
 
     @Override
@@ -96,51 +102,20 @@ public class MainActivity extends Activity implements CvCameraViewListener {
 
     @Override
     public void onPause() {
-        if (openCvCameraView != null) {
-            openCvCameraView.disableView();
+        try {
+            if (state != null) {
+                state.saveState(this);
+            }
+            fastCamera.releaseCamera();
+            Rftg.d("Pause");
+        } finally {
+            super.onPause();
         }
-        if (state != null) {
-            state.saveState(this);
-        }
-        super.onPause();
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_3, this, loaderCallback);
-    }
-
-    public void onDestroy() {
-        if (openCvCameraView != null) {
-            openCvCameraView.disableView();
-        }
-        if (recognizerResources != null) {
-            recognizerResources.release();
-            recognizerResources = null;
-        }
-        super.onDestroy();
-    }
-
-    @Override
-    public synchronized void onCameraViewStarted(int width, int height) {
-        recognizer = new Recognizer(recognizerResources, state, width, height);
-    }
-
-    @Override
-    public synchronized void onCameraViewStopped() {
-        if (recognizer != null) {
-            recognizer.release();
-            recognizer = null;
-        }
-    }
-
-    @Override
-    public synchronized Mat onCameraFrame(Mat inputFrame) {
-        if (recognizer != null) {
-            return recognizer.onFrame(inputFrame);
-        } else {
-            return inputFrame;
-        }
+        Rftg.d("Resume");
     }
 }

@@ -10,7 +10,6 @@ class RecognizerResources {
     final Context resourceContext;
     final Executor executor;
     CardPatterns cardPatterns;
-    final CustomNativeTools customNativeTools;
     final CardInfo cardInfo;
     UserControls userControls;
     final ScreenProperties screenProperties;
@@ -24,7 +23,6 @@ class RecognizerResources {
         this.cardInfo = cardInfo;
         this.resourceContext = resourceContext;
         this.executor = new Executor();
-        this.customNativeTools = new CustomNativeTools();
 
         // Loading is not completed!!! Check isLoaded
     }

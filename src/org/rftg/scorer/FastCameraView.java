@@ -75,7 +75,7 @@ public class FastCameraView extends SurfaceView implements SurfaceHolder.Callbac
         synchronized (bufferLock) {
             while (!bufferReady) {
                 try {
-                    bufferLock.wait(1000);
+                    bufferLock.wait(200);
                 } catch (InterruptedException e) {
                     Rftg.w(e.getMessage());
                     return null;
@@ -145,6 +145,20 @@ public class FastCameraView extends SurfaceView implements SurfaceHolder.Callbac
             camera.setParameters(params);
             params = camera.getParameters();
 
+            synchronized (bufferLock) {
+                this.actualSize = new Size(params.getPreviewSize().width, params.getPreviewSize().height);
+
+                int pictureSize = this.actualSize.width * this.actualSize.height;
+                int bufferSize = pictureSize * ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8;
+
+                if (buffer == null || buffer.length != bufferSize) {
+                    buffer = new byte[bufferSize];
+                }
+                Rftg.d("Set preview size to " + this.actualSize);
+
+                bufferReady = false;
+            }
+
             if (interfaceView != null) {
                 // Change holder size to maintain ratio if needed
                 Size interfaceSize = new Size(interfaceView.getWidth(), interfaceView.getHeight());
@@ -156,17 +170,6 @@ public class FastCameraView extends SurfaceView implements SurfaceHolder.Callbac
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
                 getHolder().setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-            }
-
-            int pictureSize = this.actualSize.width * this.actualSize.height;
-
-            synchronized (bufferLock) {
-                buffer = new byte[pictureSize * ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8];
-
-                this.actualSize = new Size(params.getPreviewSize().width, params.getPreviewSize().height);
-                Rftg.d("Set preview size to " + this.actualSize);
-
-                bufferReady = false;
             }
 
             camera.addCallbackBuffer(buffer);
@@ -202,8 +205,10 @@ public class FastCameraView extends SurfaceView implements SurfaceHolder.Callbac
     @Override
     public void onPreviewFrame(byte[] bytes, Camera camera) {
         synchronized (bufferLock) {
-            bufferReady = true;
-            bufferLock.notifyAll();
+            if (bytes == buffer) {
+                bufferReady = true;
+                bufferLock.notifyAll();
+            }
         }
     }
 

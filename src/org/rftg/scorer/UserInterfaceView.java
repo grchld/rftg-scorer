@@ -14,6 +14,8 @@ import java.nio.ByteBuffer;
  */
 public class UserInterfaceView extends View {
 
+    private State state;
+
     public UserInterfaceView(Context context) {
         super(context);
     }
@@ -24,6 +26,10 @@ public class UserInterfaceView extends View {
 
     public UserInterfaceView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
+    }
+
+    public void setState(State state) {
+        this.state = state;
     }
 
     @Override

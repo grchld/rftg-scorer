@@ -14,30 +14,7 @@ public class MainActivity extends Activity {
     private UserInterfaceView userInterface;
 
     private State state;
-  /*
-    private BaseLoaderCallback loaderCallback = new BaseLoaderCallback(this) {
-        @Override
-        public void onManagerConnected(int status) {
-            switch (status) {
-                case LoaderCallbackInterface.SUCCESS:
 
-                    if (recognizerResources == null) {
-                        CardInfo cardInfo = new CardInfo(getAssets());
-                        state = State.loadState(MainActivity.this, cardInfo);
-                        if (state == null) {
-                            state = new State();
-                        }
-                        recognizerResources = new RecognizerResources(MainActivity.this, cardInfo, state.settings, new ScreenProperties(openCvCameraView.getWidth(), openCvCameraView.getHeight()));
-                    }
-
-                    openCvCameraView.enableView();
-                    break;
-                default:
-                    super.onManagerConnected(status);
-            }
-        }
-    };
-    */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -48,7 +25,6 @@ public class MainActivity extends Activity {
 
         fastCamera = (FastCameraView) this.findViewById(R.id.fastCamera);
         userInterface = (UserInterfaceView) this.findViewById(R.id.userInterface);
-        fastCamera.setInterfaceView(userInterface);
 
         CardInfo cardInfo = new CardInfo(getAssets());
         state = State.loadState(MainActivity.this, cardInfo);
@@ -56,19 +32,8 @@ public class MainActivity extends Activity {
             state = new State();
         }
 
-/*
-        openCvCameraView = (CameraBridgeViewBase) findViewById(R.id.main);
-        openCvCameraView.setCvCameraViewListener(this);
-        openCvCameraView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                if (recognizerResources != null && state != null && recognizer != null && recognizerResources.isLoaded()) {
-                    return recognizerResources.userControls.onTouch(view, motionEvent, recognizer, state);
-                } else {
-                    return false;
-                }
-            }
-        });*/
+        fastCamera.setInterfaceView(userInterface);
+        userInterface.setState(state);
     }
 
     @Override

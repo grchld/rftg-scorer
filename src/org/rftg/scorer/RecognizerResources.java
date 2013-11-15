@@ -9,24 +9,24 @@ class RecognizerResources {
 
     final Context resourceContext;
     final Executor executor;
-    CardPatterns cardPatterns;
+//    CardPatterns cardPatterns;
     final CardInfo cardInfo;
-    UserControls userControls;
-    final ScreenProperties screenProperties;
+//    UserControls userControls;
+//    final ScreenProperties screenProperties;
 
+    /*
     private volatile boolean loaded;
     private volatile boolean loadingStarted;
     private int startCount;
+    */
 
-    RecognizerResources(Context resourceContext, CardInfo cardInfo, Settings settings, ScreenProperties screenProperties) {
-        this.screenProperties = screenProperties;
+    RecognizerResources(Context resourceContext, Executor executor, CardInfo cardInfo) {
         this.cardInfo = cardInfo;
         this.resourceContext = resourceContext;
-        this.executor = new Executor();
-
-        // Loading is not completed!!! Check isLoaded
+        this.executor = executor;
     }
 
+    /*
     private void startLoading() {
         this.userControls = new UserControls(this);
         this.cardPatterns = new CardPatterns(this);
@@ -54,8 +54,13 @@ class RecognizerResources {
         }
         return loaded;
     }
+*/
 
+    /**
+     * @return value between 0 and 100 if in loading phase, or -1 if resources are ready
+     */
     public int getLoadingPercent() {
+    /*
         int waitSize = this.executor.getWaitSize();
         if (startCount == 0 || waitSize == 0 ) {
             loaded = true;
@@ -63,7 +68,8 @@ class RecognizerResources {
         } else {
             return (startCount - waitSize) * 100 / startCount;
         }
+        */
+        return -1;
     }
-
 
 }

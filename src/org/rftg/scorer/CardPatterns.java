@@ -1,9 +1,8 @@
 package org.rftg.scorer;
 
-import org.opencv.android.Utils;
-import org.opencv.core.*;
-import org.opencv.imgproc.Imgproc;
+import android.content.Context;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.Callable;
 
 /**
@@ -14,19 +13,22 @@ class CardPatterns {
     public final static int ORIGINAL_SAMPLE_HEIGHT = 520;
     public final static int ORIGINAL_SAMPLE_WIDTH = 372;
     public final static int ORIGINAL_SAMPLE_BORDER = 23;
-
+/*
     public final static double CARD_HORIZONTAL_BORDER = ((double)ORIGINAL_SAMPLE_BORDER)/ORIGINAL_SAMPLE_HEIGHT;
     public final static double CARD_VERTICAL_BORDER = ((double)ORIGINAL_SAMPLE_BORDER)/ORIGINAL_SAMPLE_WIDTH;
-
+  */
     public final static int SAMPLE_HEIGHT = 64;
     public final static int SAMPLE_WIDTH = 64;
     public final static int MATCHER_MINIMAL_BOUND = 5000;
     public final static int MATCHER_MINIMAL_GAP = 1000;
     public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
-    public final static MatOfPoint2f SAMPLE_RECT = new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(SAMPLE_WIDTH, SAMPLE_HEIGHT), new Point(0, SAMPLE_HEIGHT));
+//    public final static MatOfPoint2f SAMPLE_RECT = new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(SAMPLE_WIDTH, SAMPLE_HEIGHT), new Point(0, SAMPLE_HEIGHT));
 
-    public final static int SAMPLE_INTER = Imgproc.INTER_LINEAR;
+//    public final static int SAMPLE_INTER = Imgproc.INTER_LINEAR;
 
+    private final ByteBuffer samples = ByteBuffer.allocateDirect(SAMPLE_WIDTH * SAMPLE_HEIGHT * (Card.GameType.EXP3.maxCardNum + 1));
+
+/*
     private final Mat[] samples;
     private final Mat samplesFused;
 
@@ -34,9 +36,9 @@ class CardPatterns {
     public final Sprite[] previews;
 
     private final Mat sampleScaleDown;
-
-    public CardPatterns(final RecognizerResources recognizerResources) {
-
+*/
+    public CardPatterns(Context resourceContext, Executor executor) {
+/*
         this.recognizerResources = recognizerResources;
 
         samplesFused = new Mat((Card.GameType.EXP3.maxCardNum + 1)*SAMPLE_HEIGHT, SAMPLE_WIDTH, CvType.CV_8UC1);
@@ -49,7 +51,7 @@ class CardPatterns {
                         new Point(ORIGINAL_SAMPLE_WIDTH-ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_BORDER),
                         new Point(ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_HEIGHT-ORIGINAL_SAMPLE_BORDER)),
                 new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(0, SAMPLE_HEIGHT)));
-
+*/
         class Task implements Callable<Void> {
 
             int num;
@@ -60,6 +62,7 @@ class CardPatterns {
 
             @Override
             public Void call() throws Exception {
+                /*
                 int id = recognizerResources.resourceContext.getResources().getIdentifier("card_" + num, "drawable", "org.rftg.scorer");
 
                 Mat origBGR = Utils.loadResource(recognizerResources.resourceContext, id);
@@ -88,19 +91,19 @@ class CardPatterns {
 
                 orig.release();
                 origGray.release();
-
+                  */
                 return null;
             }
 
         }
 
         for (int num = 0; num <= Card.GameType.EXP3.maxCardNum; num++) {
-            recognizerResources.executor.submit(new Task(num));
+            //executor.submit(new Task(num));
         }
 
         // Loading is not complete yet!!! check loaded flag before use!
     }
-
+  /*
     public void release() {
         sampleScaleDown.release();
         for (Mat sample : samples) {
@@ -144,5 +147,12 @@ class CardPatterns {
 
         });
     }
+    */
 
+    /**
+     * @return value between 0 and 100 if in loading phase, or -1 if resources are ready
+     */
+    public int getLoadingPercent() {
+        return -1;
+    }
 }

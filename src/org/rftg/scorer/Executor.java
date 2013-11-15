@@ -1,30 +1,54 @@
 package org.rftg.scorer;
 
-import android.util.Log;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author gc
  */
 public class Executor {
 
-    private final ExecutorService executorService;
+    private ExecutorService executorService;
+    private boolean running;
+    private final Object stateLock = new Object();
 
+/*
     private final List<Future> addedFutures = new ArrayList<Future>();
     private final List<Future> synchronizingFutures = new ArrayList<Future>();
     private final List<Future> tmpFutures = new ArrayList<Future>();
 
     private AtomicInteger waitSize = new AtomicInteger(0);
+*/
 
-    public Executor() {
-        int availableProcessors = Runtime.getRuntime().availableProcessors();
-        this.executorService = Executors.newFixedThreadPool(availableProcessors);
+    public void start() {
+        synchronized (stateLock) {
+            if (!running) {
+                int availableProcessors = Runtime.getRuntime().availableProcessors();
+                this.executorService = Executors.newFixedThreadPool(availableProcessors);
+                running = true;
+            }
+        }
     }
 
+    public void stop() {
+        synchronized (stateLock) {
+            if (running) {
+                this.executorService.shutdown();
+                boolean terminated = false;
+                try {
+                    terminated = this.executorService.awaitTermination(200, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    Rftg.w("Unexpected interrupt request");
+                }
+                if (!terminated) {
+                    this.executorService.shutdownNow();
+                }
+                running = false;
+            }
+        }
+    }
+
+/*
     public void sync() {
         synchronized (synchronizingFutures) {
             while (true) {
@@ -104,4 +128,5 @@ public class Executor {
     public void shutdown() {
         this.executorService.shutdown();
     }
+    */
 }

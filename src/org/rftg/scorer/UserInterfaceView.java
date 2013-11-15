@@ -16,6 +16,8 @@ public class UserInterfaceView extends View {
 
     private State state;
 
+    private RecognizerResources recognizerResources;
+
     public UserInterfaceView(Context context) {
         super(context);
     }
@@ -30,6 +32,10 @@ public class UserInterfaceView extends View {
 
     public void setState(State state) {
         this.state = state;
+    }
+
+    public void setRecognizerResources(RecognizerResources recognizerResources) {
+        this.recognizerResources = recognizerResources;
     }
 
     @Override

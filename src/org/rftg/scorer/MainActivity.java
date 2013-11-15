@@ -14,6 +14,8 @@ public class MainActivity extends Activity {
     private UserInterfaceView userInterface;
 
     private State state;
+    private Executor executor = new Executor();
+    private RecognizerResources recognizerResources;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -33,7 +35,11 @@ public class MainActivity extends Activity {
         }
 
         fastCamera.setInterfaceView(userInterface);
+
+        recognizerResources = new RecognizerResources(this, executor, cardInfo);
+
         userInterface.setState(state);
+        userInterface.setRecognizerResources(recognizerResources);
     }
 
     @Override
@@ -72,6 +78,7 @@ public class MainActivity extends Activity {
                 state.saveState(this);
             }
             fastCamera.releaseCamera();
+            executor.stop();
             Rftg.d("Pause");
         } finally {
             super.onPause();
@@ -81,6 +88,7 @@ public class MainActivity extends Activity {
     @Override
     public void onResume() {
         super.onResume();
+        executor.start();
         Rftg.d("Resume");
     }
 }

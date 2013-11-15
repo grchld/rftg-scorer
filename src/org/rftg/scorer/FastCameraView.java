@@ -117,7 +117,7 @@ public class FastCameraView extends SurfaceView implements SurfaceHolder.Callbac
                 if (foundPreferred) {
                     continue;
                 }
-                // If no user defined preferred size we will try to find the one with height close to AUTO_CAMERA_HEIGHT_BOUND
+                // If no user-defined preferred size we will try to find the one with height close to AUTO_CAMERA_HEIGHT_BOUND
                 if (s.equals(preferredSize)) {
                     selectedCameraSize = s;
                     Rftg.d("Selecting preferred size: " + s);

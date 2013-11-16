@@ -7,10 +7,8 @@ import android.content.Context;
  */
 class RecognizerResources {
 
-    final Context resourceContext;
-    final Executor executor;
-//    CardPatterns cardPatterns;
-    final CardInfo cardInfo;
+    final MainContext mainContext;
+
 //    UserControls userControls;
 //    final ScreenProperties screenProperties;
 
@@ -20,10 +18,8 @@ class RecognizerResources {
     private int startCount;
     */
 
-    RecognizerResources(Context resourceContext, Executor executor, CardInfo cardInfo) {
-        this.cardInfo = cardInfo;
-        this.resourceContext = resourceContext;
-        this.executor = executor;
+    RecognizerResources(MainContext mainContext) {
+        this.mainContext = mainContext;
     }
 
     /*

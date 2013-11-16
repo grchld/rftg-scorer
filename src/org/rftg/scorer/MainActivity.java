@@ -6,16 +6,7 @@ import android.view.*;
 
 public class MainActivity extends Activity {
 
-//    private volatile RecognizerResources recognizerResources;
-
-//    private volatile Recognizer recognizer;
-
-    private FastCameraView fastCamera;
-    private UserInterfaceView userInterface;
-
-    private State state;
-    private Executor executor = new Executor();
-    private RecognizerResources recognizerResources;
+    private MainContext mainContext;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -25,21 +16,20 @@ public class MainActivity extends Activity {
 
         setContentView(R.layout.main);
 
-        fastCamera = (FastCameraView) this.findViewById(R.id.fastCamera);
-        userInterface = (UserInterfaceView) this.findViewById(R.id.userInterface);
+        FastCameraView fastCamera = (FastCameraView) this.findViewById(R.id.fastCamera);
+        UserInterfaceView userInterface = (UserInterfaceView) this.findViewById(R.id.userInterface);
 
         CardInfo cardInfo = new CardInfo(getAssets());
-        state = State.loadState(MainActivity.this, cardInfo);
+        State state = State.loadState(MainActivity.this, cardInfo);
         if (state == null) {
             state = new State();
         }
 
+        mainContext = new MainContext(this, fastCamera, userInterface, cardInfo, state);
+
         fastCamera.setInterfaceView(userInterface);
 
-        recognizerResources = new RecognizerResources(this, executor, cardInfo);
-
-        userInterface.setState(state);
-        userInterface.setRecognizerResources(recognizerResources);
+        userInterface.setMainContext(mainContext);
     }
 
     @Override
@@ -52,12 +42,13 @@ public class MainActivity extends Activity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.prestige:
-                state.settings.usePrestige = !state.settings.usePrestige;
-                if (!state.settings.usePrestige) {
-                    state.player.prestige = 0;
+                mainContext.state.settings.usePrestige = !mainContext.state.settings.usePrestige;
+                if (!mainContext.state.settings.usePrestige) {
+                    mainContext.state.player.prestige = 0;
                 }
                 item.setTitle(getResources().getString(
-                        state.settings.usePrestige ? R.string.prestige_disable : R.string.prestige_enable));
+                        mainContext.state.settings.usePrestige ? R.string.prestige_disable : R.string.prestige_enable));
+                mainContext.userInterface.postInvalidate();
                 return true;
             default:
                 return super.onContextItemSelected(item);
@@ -67,18 +58,18 @@ public class MainActivity extends Activity {
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         menu.findItem(R.id.prestige).setTitle(getResources().getString(
-                state.settings.usePrestige ? R.string.prestige_disable : R.string.prestige_enable));
+                mainContext.state.settings.usePrestige ? R.string.prestige_disable : R.string.prestige_enable));
         return true;
     }
 
     @Override
     public void onPause() {
         try {
-            if (state != null) {
-                state.saveState(this);
+            if (mainContext.state != null) {
+                mainContext.state.saveState(this);
             }
-            fastCamera.releaseCamera();
-            executor.stop();
+            mainContext.fastCamera.releaseCamera();
+            mainContext.executor.stop();
             Rftg.d("Pause");
         } finally {
             super.onPause();
@@ -88,7 +79,8 @@ public class MainActivity extends Activity {
     @Override
     public void onResume() {
         super.onResume();
-        executor.start();
+        mainContext.executor.start();
+        mainContext.recognizer.startFrameRecognition();
         Rftg.d("Resume");
     }
 }

@@ -1,22 +1,24 @@
 package org.rftg.scorer;
 
 import android.content.Context;
-import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.View;
-
-import java.nio.ByteBuffer;
 
 /**
  * @author gc
  */
 public class UserInterfaceView extends View {
 
-    private State state;
+    final static Paint PAINT_LOADING_PERCENT = new Paint();
+    {
+        PAINT_LOADING_PERCENT.setARGB(255, 255, 255, 255);
+        PAINT_LOADING_PERCENT.setTextSize(50);
+        PAINT_LOADING_PERCENT.setTextAlign(Paint.Align.CENTER);
+    }
 
-    private RecognizerResources recognizerResources;
+    private MainContext mainContext;
 
     public UserInterfaceView(Context context) {
         super(context);
@@ -30,21 +32,27 @@ public class UserInterfaceView extends View {
         super(context, attrs, defStyle);
     }
 
-    public void setState(State state) {
-        this.state = state;
-    }
-
-    public void setRecognizerResources(RecognizerResources recognizerResources) {
-        this.recognizerResources = recognizerResources;
+    public void setMainContext(MainContext mainContext) {
+        this.mainContext = mainContext;
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
 
+        if (mainContext == null) {
+            return;
+        }
+
+        int loadingPercent = mainContext.cardPatterns.getLoadingPercent();
+
+        canvas.drawText("Loading: " + loadingPercent + "%", canvas.getWidth()/2, canvas.getHeight()/2, PAINT_LOADING_PERCENT);
+
+/*
         Paint paint = new Paint();
         paint.setTextSize(50);
         paint.setStrokeWidth(3);
+        */
 /*
         ByteBuffer buffer = fastCamera.getBuffer();
         if (buffer == null) {

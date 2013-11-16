@@ -6,7 +6,7 @@ import java.util.concurrent.*;
 /**
  * @author gc
  */
-public class Executor {
+class Executor {
 
     private ExecutorService executorService;
     private boolean running;
@@ -20,7 +20,7 @@ public class Executor {
     private AtomicInteger waitSize = new AtomicInteger(0);
 */
 
-    public void start() {
+    void start() {
         synchronized (stateLock) {
             if (!running) {
                 int availableProcessors = Runtime.getRuntime().availableProcessors();
@@ -30,7 +30,7 @@ public class Executor {
         }
     }
 
-    public void stop() {
+    void stop() {
         synchronized (stateLock) {
             if (running) {
                 this.executorService.shutdown();
@@ -108,25 +108,62 @@ public class Executor {
         checkWait();
         return waitSize.get();
     }
-
-    public void submit(Runnable task) {
-        Future future = this.executorService.submit(task);
-        synchronized (addedFutures) {
-            addedFutures.add(future);
-            waitSize.incrementAndGet();
+                                      */
+    Future submit(Runnable task) {
+        synchronized (stateLock) {
+            return running ? this.executorService.submit(task) : null;
         }
     }
 
-    public void submit(Callable<?> task) {
-        Future future = this.executorService.submit(task);
-        synchronized (addedFutures) {
-            addedFutures.add(future);
-            waitSize.incrementAndGet();
+    <T> Future<T> submit(Callable<T> task) {
+        synchronized (stateLock) {
+            return running ? this.executorService.submit(task) : null;
         }
     }
 
-    public void shutdown() {
-        this.executorService.shutdown();
+    @SuppressWarnings("unchecked")
+    CheckedTask submitChecked(Runnable task) {
+        synchronized (stateLock) {
+            Future future = submit(task);
+            return future == null ? null : new CheckedTask(this.executorService, future);
+        }
     }
-    */
+
+    <T> CheckedTask<T> submitChecked(Callable<T> task) {
+        synchronized (stateLock) {
+            Future<T> future = submit(task);
+            return future == null ? null : new CheckedTask<T>(this.executorService, future);
+        }
+    }
+
+    static class CheckedTask<T> {
+
+        final ExecutorService executorService;
+        final Future<T> future;
+
+        CheckedTask(ExecutorService executorService, Future<T> future) {
+            this.executorService = executorService;
+            this.future = future;
+        }
+
+        /**
+         * @return true if this task either is done, or is still working, or is scheduled
+         * false if this task was interrupted or if its executorService is already terminated
+         */
+        boolean isTrusty() {
+            if (future.isDone()) {
+                try {
+                    future.get();
+                    return true;
+                } catch (InterruptedException e) {
+                    return false;
+                } catch (ExecutionException e) {
+                    return !(e.getCause() instanceof InterruptedException);
+                }
+            } else {
+                return !executorService.isShutdown();
+            }
+        }
+    }
+
 }

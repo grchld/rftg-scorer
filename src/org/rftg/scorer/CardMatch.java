@@ -5,7 +5,7 @@ import java.util.Comparator;
 /**
 * @author gc
 */
-public class CardMatch {
+class CardMatch {
 
     final int cardNumber;
     final int score;

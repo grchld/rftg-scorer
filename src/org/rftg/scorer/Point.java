@@ -3,11 +3,11 @@ package org.rftg.scorer;
 /**
  * @author gc
  */
-public class Point {
-    public final int x;
-    public final int y;
+class Point {
+    final int x;
+    final int y;
 
-    public Point(int x, int y) {
+    Point(int x, int y) {
         this.x = x;
         this.y = y;
     }

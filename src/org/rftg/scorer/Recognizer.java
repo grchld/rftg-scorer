@@ -1,20 +1,16 @@
 package org.rftg.scorer;
 
-import android.util.Log;
-import org.opencv.android.Utils;
-import org.opencv.core.*;
-import org.opencv.imgproc.Imgproc;
-
-import java.io.IOException;
-import java.util.*;
-
-import static org.rftg.scorer.Scoring.CardScore;
-import static org.rftg.scorer.ScreenProperties.Position;
+import java.nio.ByteBuffer;
+import java.util.concurrent.Callable;
 
 /**
  * @author gc
  */
 class Recognizer {
+
+
+
+/*
 
     private static final boolean DEBUG_SHOW_SOBEL = false;
     private static final boolean DEBUG_SHOW_ALL_RECTANGLES = false;
@@ -85,9 +81,17 @@ class Recognizer {
 
     final int width;
     final int height;
+*/
 
+    private final MainContext mainContext;
 
-    Recognizer(RecognizerResources recognizerResources, State state, int width, int height) {
+    private Size frameSize;
+    private ByteBuffer frame;
+
+    Recognizer(MainContext mainContext) {
+        this.mainContext = mainContext;
+
+        /*
         this.width = width;
         this.height = height;
         this.state = state;
@@ -123,8 +127,46 @@ class Recognizer {
 
         maxY = height / 1.1;
         maxX = maxY / RECT_ASPECT;
+        */
     }
 
+    private Callable<Void> copyFrame = new Callable<Void>() {
+        @Override
+        public Void call() throws Exception {
+
+            if (mainContext.cardPatterns.getSamples() == null) {
+                // Resources are not ready yet
+                // Wait a little and retry
+                Thread.sleep(100);
+                mainContext.executor.submit(this);
+                return null;
+            }
+
+            if (mainContext.fastCamera.copyFrame(frame, frameSize)) {
+
+            } else {
+                Size cameraActualSize = mainContext.fastCamera.getActualSize();
+                if (cameraActualSize == null || cameraActualSize.equals(frameSize)) {
+                    // Camera is not ready to give us a frame
+                    // Wait a little and retry
+                    Thread.sleep(100);
+                } else {
+                    // Our frame buffer has the wrong size, recreate frame buffer and retry
+                    frameSize = cameraActualSize;
+                    frame = ByteBuffer.allocateDirect(frameSize.width * frameSize.height);
+                }
+                mainContext.executor.submit(this);
+            }
+            return null;
+        }
+    };
+
+
+    void startFrameRecognition() {
+        mainContext.executor.submit(copyFrame);
+    }
+
+/*
     void release() {
         rgb.release();
         gray.release();
@@ -518,4 +560,5 @@ class Recognizer {
             text.release();
         }
     }
+    */
 }

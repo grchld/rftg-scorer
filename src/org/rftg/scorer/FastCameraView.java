@@ -68,9 +68,9 @@ public class FastCameraView extends SurfaceView implements SurfaceHolder.Callbac
         this.interfaceView = interfaceView;
     }
 
-    public ByteBuffer getBuffer(ByteBuffer byteBuffer, Size size) {
+    public boolean copyFrame(ByteBuffer byteBuffer, Size size) {
         if (camera == null) {
-            return null;
+            return false;
         }
         synchronized (bufferLock) {
             while (!bufferReady) {
@@ -78,16 +78,16 @@ public class FastCameraView extends SurfaceView implements SurfaceHolder.Callbac
                     bufferLock.wait(200);
                 } catch (InterruptedException e) {
                     Rftg.w(e.getMessage());
-                    return null;
+                    return false;
                 }
             }
-            if (!this.actualSize.equals(size)) {
-                return null;
+            if (this.actualSize == null || !this.actualSize.equals(size)) {
+                return false;
             }
             byteBuffer.position(0);
             byteBuffer.put(buffer, 0, byteBuffer.capacity());
             camera.addCallbackBuffer(buffer);
-            return byteBuffer;
+            return true;
         }
     }
 

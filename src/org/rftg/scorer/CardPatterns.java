@@ -1,7 +1,5 @@
 package org.rftg.scorer;
 
-import android.content.Context;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.Callable;
 
@@ -22,83 +20,28 @@ class CardPatterns {
     public final static int MATCHER_MINIMAL_BOUND = 5000;
     public final static int MATCHER_MINIMAL_GAP = 1000;
     public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
+
+    public final static int SAMPLE_COUNT = Card.GameType.EXP3.maxCardNum + 1;
+
 //    public final static MatOfPoint2f SAMPLE_RECT = new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(SAMPLE_WIDTH, SAMPLE_HEIGHT), new Point(0, SAMPLE_HEIGHT));
 
 //    public final static int SAMPLE_INTER = Imgproc.INTER_LINEAR;
 
-    private final ByteBuffer samples = ByteBuffer.allocateDirect(SAMPLE_WIDTH * SAMPLE_HEIGHT * (Card.GameType.EXP3.maxCardNum + 1));
+    // number of samples to be loaded
+    private volatile int sampleLoaderLeft = SAMPLE_COUNT;
+    private final boolean[] samplesReady = new boolean[SAMPLE_COUNT];
+    private final Executor.CheckedTask[] sampleLoaderTasks = new Executor.CheckedTask[SAMPLE_COUNT];
+    private final ByteBuffer samples = ByteBuffer.allocateDirect(SAMPLE_WIDTH * SAMPLE_HEIGHT * SAMPLE_COUNT);
 
-/*
-    private final Mat[] samples;
-    private final Mat samplesFused;
+    private final MainContext mainContext;
 
-    private final RecognizerResources recognizerResources;
-    public final Sprite[] previews;
+    CardPatterns(final MainContext mainContext) {
+        this.mainContext = mainContext;
 
-    private final Mat sampleScaleDown;
-*/
-    public CardPatterns(Context resourceContext, Executor executor) {
-/*
-        this.recognizerResources = recognizerResources;
-
-        samplesFused = new Mat((Card.GameType.EXP3.maxCardNum + 1)*SAMPLE_HEIGHT, SAMPLE_WIDTH, CvType.CV_8UC1);
-        samples = new Mat[Card.GameType.EXP3.maxCardNum + 1];
-        previews = new Sprite[Card.GameType.EXP3.maxCardNum + 1];
-
-        sampleScaleDown = Imgproc.getAffineTransform(
-                new MatOfPoint2f(
-                        new Point(ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_BORDER),
-                        new Point(ORIGINAL_SAMPLE_WIDTH-ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_BORDER),
-                        new Point(ORIGINAL_SAMPLE_BORDER, ORIGINAL_SAMPLE_HEIGHT-ORIGINAL_SAMPLE_BORDER)),
-                new MatOfPoint2f(new Point(0, 0), new Point(SAMPLE_WIDTH, 0), new Point(0, SAMPLE_HEIGHT)));
-*/
-        class Task implements Callable<Void> {
-
-            int num;
-
-            Task(int num) {
-                this.num = num;
+        synchronized (samplesReady) {
+            for (int num = 0; num < SAMPLE_COUNT; num++) {
+                sampleLoaderTasks[num] = mainContext.executor.submitChecked(new LoadingTask(num));
             }
-
-            @Override
-            public Void call() throws Exception {
-                /*
-                int id = recognizerResources.resourceContext.getResources().getIdentifier("card_" + num, "drawable", "org.rftg.scorer");
-
-                Mat origBGR = Utils.loadResource(recognizerResources.resourceContext, id);
-
-                Mat orig = new Mat();
-                Mat origGray = new Mat();
-
-                Imgproc.cvtColor(origBGR, orig, Imgproc.COLOR_BGR2RGB);
-                Imgproc.cvtColor(origBGR, origGray, Imgproc.COLOR_BGR2GRAY);
-
-                origBGR.release();
-
-                Mat scaledSample = samplesFused.submat(num*SAMPLE_HEIGHT, (num+1)*SAMPLE_HEIGHT, 0, SAMPLE_WIDTH);
-                Imgproc.warpAffine(origGray, scaledSample, sampleScaleDown, SAMPLE_SIZE, SAMPLE_INTER);
-
-                recognizerResources.customNativeTools.normalize(scaledSample);
-
-                samples[num] = scaledSample;
-
-                ScreenProperties screen = recognizerResources.screenProperties;
-
-                Mat scaledPreview = new Mat(screen.previewHeight, screen.previewWidth, CvType.CV_8UC3);
-                Imgproc.resize(orig, scaledPreview, screen.previewSize);
-
-                previews[num] = new Sprite(scaledPreview);
-
-                orig.release();
-                origGray.release();
-                  */
-                return null;
-            }
-
-        }
-
-        for (int num = 0; num <= Card.GameType.EXP3.maxCardNum; num++) {
-            //executor.submit(new Task(num));
         }
 
         // Loading is not complete yet!!! check loaded flag before use!
@@ -150,9 +93,96 @@ class CardPatterns {
     */
 
     /**
+     * Check if loading Futures are ok
+     */
+    private void checkLoading() {
+        synchronized (samplesReady) {
+            for (int i = 0 ; i < SAMPLE_COUNT ; i++) {
+                Executor.CheckedTask t = sampleLoaderTasks[i];
+                if (t == null || !t.isTrusty()) {
+                    // Reschedule loading
+                    sampleLoaderTasks[i] = mainContext.executor.submitChecked(new LoadingTask(i));
+                }
+            }
+        }
+    }
+
+    /**
+     * @return DirectByteBuffer with samples or null if it is not loaded yet
+     */
+    public ByteBuffer getSamples() {
+        if (sampleLoaderLeft == 0) {
+            return samples;
+        } else {
+            synchronized (samplesReady) {
+                checkLoading();
+                return null;
+            }
+        }
+    }
+
+    /**
      * @return value between 0 and 100 if in loading phase, or -1 if resources are ready
      */
     public int getLoadingPercent() {
-        return -1;
+        return sampleLoaderLeft == 0 ? -1 : (SAMPLE_COUNT - sampleLoaderLeft) * 100 / SAMPLE_COUNT;
+    }
+
+    class LoadingTask implements Callable<Void> {
+
+        int num;
+
+        LoadingTask(int num) {
+            this.num = num;
+        }
+
+        @Override
+        public Void call() throws Exception {
+
+            int id = mainContext.resourceContext.getResources().getIdentifier("card_" + num, "drawable", "org.rftg.scorer");
+                /*
+                Mat origBGR = Utils.loadResource(recognizerResources.resourceContext, id);
+
+                Mat orig = new Mat();
+                Mat origGray = new Mat();
+
+                Imgproc.cvtColor(origBGR, orig, Imgproc.COLOR_BGR2RGB);
+                Imgproc.cvtColor(origBGR, origGray, Imgproc.COLOR_BGR2GRAY);
+
+                origBGR.release();
+
+                Mat scaledSample = samplesFused.submat(num*SAMPLE_HEIGHT, (num+1)*SAMPLE_HEIGHT, 0, SAMPLE_WIDTH);
+                Imgproc.warpAffine(origGray, scaledSample, sampleScaleDown, SAMPLE_SIZE, SAMPLE_INTER);
+
+                recognizerResources.customNativeTools.normalize(scaledSample);
+
+                samples[num] = scaledSample;
+
+                ScreenProperties screen = recognizerResources.screenProperties;
+
+                Mat scaledPreview = new Mat(screen.previewHeight, screen.previewWidth, CvType.CV_8UC3);
+                Imgproc.resize(orig, scaledPreview, screen.previewSize);
+
+                previews[num] = new Sprite(scaledPreview);
+
+                orig.release();
+                origGray.release();
+                  */
+
+            Thread.sleep(1000);
+
+            synchronized (samplesReady) {
+                if (!samplesReady[num]) {
+                    samplesReady[num] = true;
+                    sampleLoaderLeft--;
+                    mainContext.userInterface.postInvalidate();
+                } else {
+                    Rftg.w("Superfluous sample loading: " + num);
+                }
+            }
+
+            return null;
+        }
+
     }
 }

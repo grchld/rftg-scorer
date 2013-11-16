@@ -11,7 +11,7 @@ class NativeTools {
         System.loadLibrary("rftg_scorer");
     }
 
-    public static native void sobel(ByteBuffer src, ByteBuffer dst, int width, int height);
+    static native void sobel(ByteBuffer src, ByteBuffer dst, int width, int height);
 
     // segments: short miny, short maxy, short x, short angle
     /*
@@ -21,11 +21,11 @@ class NativeTools {
 
     private native int houghVertical(long imageAddr, int bordermask, int origin, int maxGap, int minLength, long segmentsAddr);
      */
-    public static native void transpose(ByteBuffer src, ByteBuffer dst, int width, int height);
+    static native void transpose(ByteBuffer src, ByteBuffer dst, int width, int height);
 
-    public static native long match(ByteBuffer selection, ByteBuffer patterns, int patternSize, int patternsCount);
+    static native long match(ByteBuffer selection, ByteBuffer patterns, int patternSize, int patternsCount);
 
-    public static native void normalize(ByteBuffer image, int size);
+    static native void normalize(ByteBuffer image, int size);
     /*
     public void drawSobel(Mat sobel, Mat flame) {
         drawSobel(sobel.getNativeObjAddr(), flame.getNativeObjAddr());

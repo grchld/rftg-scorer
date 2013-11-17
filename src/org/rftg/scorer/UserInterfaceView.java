@@ -1,6 +1,7 @@
 package org.rftg.scorer;
 
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.AttributeSet;
@@ -36,6 +37,8 @@ public class UserInterfaceView extends View {
         this.mainContext = mainContext;
     }
 
+    private Bitmap bitmap;
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -43,34 +46,40 @@ public class UserInterfaceView extends View {
         if (mainContext == null) {
             return;
         }
-
+       /*
         int loadingPercent = mainContext.cardPatterns.getLoadingPercent();
 
-        canvas.drawText("Loading: " + loadingPercent + "%", canvas.getWidth()/2, canvas.getHeight()/2, PAINT_LOADING_PERCENT);
+        if (loadingPercent >= 0) {
+            canvas.drawText("Loading: " + loadingPercent + "%", canvas.getWidth()/2, canvas.getHeight()/2, PAINT_LOADING_PERCENT);
+            return;
+        }
+         */
 
-/*
+
+
+
         Paint paint = new Paint();
         paint.setTextSize(50);
         paint.setStrokeWidth(3);
-        */
+
 /*
         ByteBuffer buffer = fastCamera.getBuffer();
         if (buffer == null) {
             return;
         }
-
+*/
         paint.setARGB(255, 0, 0, 0);
-        canvas.drawRect(0, 0, fastCamera.getActualSize().width, fastCamera.getActualSize().height, paint);
+//        canvas.drawRect(0, 0, fastCamera.getActualSize().width, fastCamera.getActualSize().height, paint);
 
-        if (bitmap == null || bitmap.getWidth() != fastCamera.getActualSize().width || bitmap.getHeight() != fastCamera.getActualSize().height) {
-            bitmap = Bitmap.createBitmap(fastCamera.getActualSize().width, fastCamera.getActualSize().height, Bitmap.Config.ALPHA_8);
+        if (bitmap == null || bitmap.getWidth() != 64 || bitmap.getHeight() != 640) {
+            bitmap = Bitmap.createBitmap(64, 640, Bitmap.Config.ALPHA_8);
         }
         paint.setARGB(255, 255, 255, 255);
-        buffer.position(0);
-        bitmap.copyPixelsFromBuffer(buffer);
+        mainContext.cardPatterns.samples.position(0);
+        bitmap.copyPixelsFromBuffer(mainContext.cardPatterns.samples);
 
         canvas.drawBitmap(bitmap, 0, 0, paint);
-
+        /*
         paint.setARGB(255, 255, 0, 0);
         canvas.drawLines(new float[]{
                 fastCamera.getLeft() + 10, fastCamera.getTop() + 10, fastCamera.getRight() - 10, fastCamera.getTop() + 10,

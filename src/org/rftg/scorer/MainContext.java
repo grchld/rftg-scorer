@@ -13,9 +13,9 @@ class MainContext {
     final FastCameraView fastCamera;
     final UserInterfaceView userInterface;
     final State state;
-    final CardPatterns cardPatterns = new CardPatterns(this);
+    final CardPatterns cardPatterns;
 //    final RecognizerResources recognizerResources = new RecognizerResources(this);
-    final Recognizer recognizer = new Recognizer(this);
+    final Recognizer recognizer;
 
 
     MainContext(Context resourceContext, FastCameraView fastCamera, UserInterfaceView userInterface, CardInfo cardInfo, State state) {
@@ -24,6 +24,8 @@ class MainContext {
         this.userInterface = userInterface;
         this.cardInfo = cardInfo;
         this.state = state;
+        cardPatterns = new CardPatterns(this);
+        recognizer = new Recognizer(this);
     }
 
 }

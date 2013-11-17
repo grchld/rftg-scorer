@@ -133,7 +133,7 @@ class Recognizer {
     private Callable<Void> copyFrame = new Callable<Void>() {
         @Override
         public Void call() throws Exception {
-
+          /*
             if (mainContext.cardPatterns.getSamples() == null) {
                 // Resources are not ready yet
                 // Wait a little and retry
@@ -141,7 +141,7 @@ class Recognizer {
                 mainContext.executor.submit(this);
                 return null;
             }
-
+            */
             if (mainContext.fastCamera.copyFrame(frame, frameSize)) {
 
             } else {

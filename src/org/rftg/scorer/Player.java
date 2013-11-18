@@ -14,6 +14,10 @@ class Player {
     List<Card> cards = new ArrayList<Card>();
     int chips;
     int prestige;
+    Scoring scoring;
+    {
+        resetScoring();
+    }
 
     void load(ObjectInputStream ois, CardInfo cardInfo) throws IOException, ClassNotFoundException {
         chips = ois.readInt();
@@ -22,6 +26,7 @@ class Player {
         for (int id : cardIds) {
             cards.add(cardInfo.cards[id]);
         }
+        resetScoring();
     }
 
     void save(ObjectOutputStream oos) throws IOException {
@@ -33,5 +38,9 @@ class Player {
             cardIds[i++] = card.id;
         }
         oos.writeObject(cardIds);
+    }
+
+    void resetScoring() {
+        scoring = new Scoring(cards, chips, prestige);
     }
 }

@@ -34,10 +34,10 @@ class Scoring {
         }
     }
 
-    Scoring(Player player) {
-        cards = player.cards;
-        chips = player.chips;
-        prestige = player.prestige;
+    Scoring(List<Card> cards, int chips, int prestige) {
+        this.cards = cards;
+        this.chips = chips;
+        this.prestige = prestige;
 
         calcGoodTypes();
         calcMilitary();

@@ -1,127 +1,28 @@
 package org.rftg.scorer;
 
-import org.opencv.core.*;
-import org.opencv.imgproc.Imgproc;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
 
 /**
  * @author gc
  */
 class Sprite {
 
-    private Mat image;
-    private Mat mask;
-    public final int width;
-    public final int height;
+    final Bitmap bitmap;
+    final Rect rect;
+    final Paint paint;
 
-    public Sprite(Mat image) {
-        this(image, null);
+    Sprite(Bitmap bitmap, Rect rect, Paint paint) {
+        this.bitmap = bitmap;
+        this.rect = rect;
+        this.paint = paint;
     }
 
-    public Sprite(Mat image, Mat mask) {
-        this.image = image;
-        this.width = image.width();
-        this.height = image.height();
-        this.mask = mask;
-        if (mask != null && (mask.width() != width || mask.height() != height)) {
-            throw new IllegalArgumentException("Bad mask dimensions");
+    void draw(Canvas canvas, String text) {
+        canvas.drawBitmap(bitmap, rect.origin.x, rect.origin.y, paint);
+        if (text != null) {
+            canvas.drawText(text, rect.text.x, rect.text.y, paint);
         }
-    }
-
-    public void draw(Mat frame, int x, int y) {
-        int colStart = x;
-        int colEnd = x + width;
-        int rowStart = y;
-        int rowEnd = y + height;
-
-        int xStart = 0;
-        int xEnd = width;
-        int yStart = 0;
-        int yEnd = height;
-
-        if (colStart < 0) {
-            xStart -= colStart;
-            colStart = 0;
-        }
-        if (colEnd > frame.cols()) {
-            xEnd -= colEnd - frame.cols();
-            colEnd = frame.cols();
-        }
-        if (xStart >= xEnd) {
-            return;
-        }
-
-        if (rowStart < 0) {
-            yStart -= rowStart;
-            rowStart = 0;
-        }
-        if (rowEnd > frame.rows()) {
-            yEnd -= rowEnd - frame.rows();
-            rowEnd = frame.rows();
-        }
-        if (yStart >= yEnd) {
-            return;
-        }
-
-
-        Mat clippedImage = null;
-        Mat clippedMask = null;
-
-        if (xStart != 0 || xEnd != width || yStart != 0 || yEnd != height) {
-            clippedImage = image.submat(yStart, yEnd, xStart, xEnd);
-            if (mask != null) {
-                clippedMask = mask.submat(yStart, yEnd, xStart, xEnd);
-            }
-        }
-
-        Mat destination = frame.submat(rowStart, rowEnd, colStart, colEnd);
-
-        Mat actualImage = clippedImage == null ? image : clippedImage;
-        if (mask == null) {
-            actualImage.copyTo(destination);
-        } else {
-            actualImage.copyTo(destination, clippedMask == null ? mask : clippedMask);
-        }
-
-        if (clippedImage != null) {
-            clippedImage.release();
-        }
-        if (clippedMask != null) {
-            clippedMask.release();
-        }
-
-        destination.release();
-    }
-
-    public void release() {
-        image.release();
-        if (mask != null) {
-            mask.release();
-        }
-    }
-
-    private final static Scalar MASK_TRANSPARENT = new Scalar(0);
-    private final static Scalar MASK_OPAQUE = new Scalar(255);
-
-    private final static Mat DILATE_KERNEL = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(3, 3));
-    private final static Point DILATE_ANCHOR = new Point(-1,-1);
-
-    public static Sprite textSpriteWithDilate(String text, Scalar textColor, Scalar textShadow, int fontFace, double fontScale, int thickness, int dilateSize) {
-        int[] baseLine = new int[1];
-
-        Size textSize = Core.getTextSize(text, fontFace, fontScale, thickness, baseLine);
-
-        Mat image = new Mat((int)textSize.height + 2 * baseLine[0] + 2 * dilateSize + 1, (int)textSize.width + 2 * dilateSize + 1, CvType.CV_8UC3, textShadow);
-        Point textOrigin = new Point(dilateSize + 1, image.height() - baseLine[0] - dilateSize);
-
-        Core.putText(image, text, textOrigin, fontFace, fontScale, textColor, thickness);
-
-        Mat mask = new Mat(image.rows(), image.cols(), CvType.CV_8U, MASK_TRANSPARENT);
-        Core.putText(mask, text, textOrigin, fontFace, fontScale, MASK_OPAQUE, thickness);
-
-        if (dilateSize > 0) {
-            Imgproc.dilate(mask, mask, DILATE_KERNEL, DILATE_ANCHOR, dilateSize);
-        }
-
-        return new Sprite(image, mask);
     }
 }

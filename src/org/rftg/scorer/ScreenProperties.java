@@ -1,67 +1,99 @@
 package org.rftg.scorer;
 
-import org.opencv.core.Size;
-
 /**
  * @author gc
  */
 class ScreenProperties {
 
-    final int width;
-    final int height;
+    final Size screenSize;
 
-    double cardTextFontScale = 1.2;
-    int cardTextThickness = 1;
-    int cardTextBorder = 2;
+    final Size cardsIconSize;
+    final Size chipsIconSize;
+    final Size prestigeIconSize;
 
-    private Dimensions cardsIconSize = new Dimensions(120, 120);
-    private Dimensions chipsIconSize = new Dimensions(125, 125);
-    private Dimensions prestigeIconSize = new Dimensions(125, 125);
+    final Size militaryIconSize;
+    final Size resetIconSize;
+    final Size totalIconSize;
 
-    private Dimensions militaryIconSize = new Dimensions(100, 100);
-    private Dimensions resetIconSize = new Dimensions(125, 125);
-    private Dimensions totalIconSize = new Dimensions(125, 125);
+    final Rect cardsIconRect;
+    final Rect chipsIconRect;
+    final Rect prestigeIconRect;
+    final Rect militaryIconRect;
+    final Rect resetIconRect;
+    final Rect totalIconRect;
 
-    Position cardsIconPosition;
-    Position chipsIconPosition;
-    Position prestigeIconPosition;
-    Position militaryIconPosition;
-    Position resetIconPosition;
-    Position totalIconPosition;
+    final Size previewSize;
 
-    int previewHeight = 119;
-    int previewWidth = 85;
-    Size previewSize = new Size(previewWidth, previewHeight);
+    final int previewGap;
+    final int previewStep;
 
-    int previewGap = 10;
-    int previewStep = previewWidth + previewGap;
+    final float cardTextScale;
+    final float previewTextScale;
+    final float chipsTextScale;
+    final float prestigeTextScale;
+    final float militaryTextScale;
+    final float cardCountTextScale;
+    final float totalTextScale;
+//    final float totalTextScaleShrink;
 
-    double previewTextScale = 3;
-    double chipsTextScale = 4;
-    double prestigeTextScale = 4;
-    double militaryTextScale = 3;
-    double cardCountTextScale = 4;
-    double totalTextScale = 4;
-    double totalTextScaleShrink = 3;
+    final int cardNameOffsetX;
+    final int cardNameOffsetY;
 
-    int cardNameOffsetX = 10;
-    int cardNameOffsetY = 50;
+    private float scaleFloat(double length) {
+        return (float)(length*screenSize.height/720.);
+    }
 
-    ScreenProperties(int width, int height) {
-        this.width = width;
-        this.height = height;
+    private int scale(int length) {
+        return (int)scaleFloat(length);
+    }
 
+    private Size scale(int width, int height) {
+        return new Size(scale(width), scale(height));
+    }
+
+    ScreenProperties(Size screenSize) {
+
+        this.screenSize = screenSize;
+
+        cardsIconSize = scale(120, 120);
+        chipsIconSize = scale(125, 125);
+        prestigeIconSize = scale(125, 125);
+
+        militaryIconSize = scale(100, 100);
+        resetIconSize = scale(125, 125);
+        totalIconSize = scale(125, 125);
+
+        previewSize = scale(85, 119);
+
+        previewGap = scale(10);
+        previewStep = previewSize.width + previewGap;
+
+        cardTextScale = scaleFloat(25);
+        previewTextScale = scaleFloat(60);
+        chipsTextScale = scaleFloat(70);
+        prestigeTextScale = scaleFloat(70);
+        militaryTextScale = scaleFloat(60);
+        cardCountTextScale = scaleFloat(70);
+        totalTextScale = scaleFloat(70);
+
+
+//        totalTextScaleShrink = scaleFloat(3);
+
+        cardNameOffsetX = scale(10);
+        cardNameOffsetY = scale(50);
+
+          /*
         // Adjustment for small screens
         if (height < 600) {
             cardTextFontScale = 1;
 
-            cardsIconSize = new Dimensions(100, 100);
-            chipsIconSize = new Dimensions(100, 100);
-            prestigeIconSize = new Dimensions(100, 100);
+            cardsIconSize = new Size(100, 100);
+            chipsIconSize = new Size(100, 100);
+            prestigeIconSize = new Size(100, 100);
 
-            militaryIconSize = new Dimensions(90, 90);
-            resetIconSize = new Dimensions(100, 100);
-            totalIconSize = new Dimensions(110, 110);
+            militaryIconSize = new Size(90, 90);
+            resetIconSize = new Size(100, 100);
+            totalIconSize = new Size(110, 110);
 
             int previewHeight = 105;
             int previewWidth = 75;
@@ -81,38 +113,16 @@ class ScreenProperties {
             cardNameOffsetX = 8;
             cardNameOffsetY = 40;
         }
+        */
 
-        resetIconPosition = new Position(previewGap, previewGap, resetIconSize);
-        cardsIconPosition = new Position(previewGap, - cardsIconSize.height - previewHeight - 2*previewGap, cardsIconSize);
-        chipsIconPosition = new Position(- chipsIconSize.width - previewGap, previewGap, chipsIconSize);
-        prestigeIconPosition = new Position(chipsIconPosition.x - prestigeIconSize.width - previewGap, previewGap, prestigeIconSize);
-        militaryIconPosition = new Position(chipsIconPosition.x + (chipsIconSize.width - militaryIconSize.width) / 2,
-                prestigeIconPosition.y + prestigeIconSize.height + previewGap, militaryIconSize);
-        totalIconPosition = new Position(- totalIconSize.width - previewGap, - totalIconSize.height - previewHeight - 2*previewGap, totalIconSize);
+        resetIconRect = new Rect(new Point(previewGap, previewGap), resetIconSize);
+        cardsIconRect = new Rect(new Point(previewGap, screenSize.height - previewSize.height - cardsIconSize.height - 2*previewGap), cardsIconSize);
+        chipsIconRect = new Rect(new Point(screenSize.width - chipsIconSize.width - previewGap, previewGap), chipsIconSize);
+        prestigeIconRect = new Rect(new Point(chipsIconRect.origin.x - prestigeIconSize.width - previewGap, previewGap), prestigeIconSize);
+        militaryIconRect = new Rect(new Point(chipsIconRect.origin.x + (chipsIconSize.width - militaryIconSize.width) / 2,
+                prestigeIconRect.origin.y + prestigeIconSize.height + previewGap), militaryIconSize);
+        totalIconRect = new Rect(new Point(screenSize.width - totalIconSize.width - previewGap, screenSize.height - totalIconSize.height - previewSize.height - 2*previewGap), totalIconSize);
 
-    }
-
-    // Negative values mean offsets from opposite edges
-    static class Position {
-        final int x;
-        final int y;
-        final Dimensions dimensions;
-
-        Position(int x, int y, Dimensions dimensions) {
-            this.x = x;
-            this.y = y;
-            this.dimensions = dimensions;
-        }
-    }
-
-    static class Dimensions {
-        final int width;
-        final int height;
-
-        Dimensions(int width, int height) {
-            this.width = width;
-            this.height = height;
-        }
     }
 
 }

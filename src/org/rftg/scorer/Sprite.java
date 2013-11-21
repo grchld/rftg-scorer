@@ -19,10 +19,7 @@ class Sprite {
         this.paint = paint;
     }
 
-    void draw(Canvas canvas, String text) {
+    void draw(Canvas canvas, Rect rect) {
         canvas.drawBitmap(bitmap, rect.origin.x, rect.origin.y, paint);
-        if (text != null) {
-            canvas.drawText(text, rect.text.x, rect.text.y, paint);
-        }
     }
 }

@@ -2,6 +2,7 @@ package org.rftg.scorer;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Paint;
 
 /**
@@ -16,9 +17,9 @@ class UserInterfaceResources {
     private final Paint PAINT_MILITARY = new Paint();
     private final Paint PAINT_RESET = new Paint();
     private final Paint PAINT_TOTAL = new Paint();
+    private final Paint PAINT_MAGNIFIED = new Paint();
 
     final MainContext mainContext;
-    final Size screenSize;
 
     final ScreenProperties screenProperties;
 
@@ -30,43 +31,43 @@ class UserInterfaceResources {
     private Sprite totalIcon;
     private Sprite[] cards = new Sprite[Card.GameType.EXP3.maxCardNum + 1];
 
+    private int magnifiedCardId;
+    private Bitmap magnifiedCardBitmap;
+
     UserInterfaceResources(MainContext mainContext, Size screenSize) {
         this.mainContext = mainContext;
-        this.screenSize = screenSize;
 
         this.screenProperties = new ScreenProperties(screenSize);
 
         PAINT_PREVIEW.setARGB(255, 255, 255, 255);
         PAINT_PREVIEW.setTextAlign(Paint.Align.CENTER);
         PAINT_PREVIEW.setTextSize(screenProperties.previewTextScale);
-//        PAINT_PREVIEW.setStrokeWidth(screenProperties.previewTextScale/3);
+
+        PAINT_MAGNIFIED.setARGB(255, 255, 255, 255);
+        PAINT_MAGNIFIED.setTextAlign(Paint.Align.CENTER);
+        PAINT_MAGNIFIED.setTextSize(screenProperties.magnifiedTextScale);
 
         PAINT_CARDS.setARGB(255, 128, 255, 128);
         PAINT_CARDS.setTextAlign(Paint.Align.CENTER);
         PAINT_CARDS.setTextSize(screenProperties.cardCountTextScale);
-//        PAINT_CARDS.setStrokeWidth(screenProperties.cardCountTextScale/3);
 
         PAINT_CHIPS.setARGB(255, 255, 255, 0);
         PAINT_CHIPS.setTextAlign(Paint.Align.CENTER);
         PAINT_CHIPS.setTextSize(screenProperties.chipsTextScale);
-//        PAINT_CHIPS.setStrokeWidth(screenProperties.chipsTextScale/3);
 
         PAINT_PRESTIGE.setARGB(255, 0, 255, 0);
         PAINT_PRESTIGE.setTextAlign(Paint.Align.CENTER);
         PAINT_PRESTIGE.setTextSize(screenProperties.prestigeTextScale);
-//        PAINT_PRESTIGE.setStrokeWidth(screenProperties.prestigeTextScale/3);
 
         PAINT_MILITARY.setARGB(255, 255, 0, 0);
         PAINT_MILITARY.setTextAlign(Paint.Align.CENTER);
         PAINT_MILITARY.setTextSize(screenProperties.militaryTextScale);
-//        PAINT_MILITARY.setStrokeWidth(screenProperties.militaryTextScale/3);
 
         PAINT_RESET.setTextAlign(Paint.Align.CENTER);
 
         PAINT_TOTAL.setARGB(255, 0, 0, 0);
         PAINT_TOTAL.setTextAlign(Paint.Align.CENTER);
         PAINT_TOTAL.setTextSize(screenProperties.totalTextScale);
-//        PAINT_TOTAL.setStrokeWidth(screenProperties.totalTextScale/3);
 
         cardsIcon = loadSprite("cards", screenProperties.cardsIconRect, PAINT_CARDS);
         chipsIcon = loadSprite("chip", screenProperties.chipsIconRect, PAINT_CHIPS);
@@ -113,6 +114,23 @@ class UserInterfaceResources {
         return mainContext.resourceContext.getResources().getIdentifier(name, "drawable", "org.rftg.scorer");
     }
 
+    public Sprite getMagnifiedCard(int num) {
+        int id = getDrawableId("card_" + num);
+        if (magnifiedCardBitmap == null || magnifiedCardId != num) {
+            if (magnifiedCardBitmap != null) {
+                magnifiedCardBitmap.recycle();
+            }
+            magnifiedCardBitmap = BitmapFactory.decodeResource(mainContext.resourceContext.getResources(), id, null);
+            magnifiedCardId = num;
+        }
+        return new Sprite(magnifiedCardBitmap, screenProperties.magnifiedRect, PAINT_MAGNIFIED){
+            @Override
+            void draw(Canvas canvas, Rect rect) {
+                canvas.drawBitmap(magnifiedCardBitmap, null, rect.toAndroidRect(), paint);
+            }
+        };
+    }
+
     private Sprite loadSprite(String name, Rect rect, Paint paint) {
         Size size = rect.size;
         int id = getDrawableId(name);
@@ -148,6 +166,10 @@ class UserInterfaceResources {
         disposeSprite(totalIcon);
         for (Sprite sprite : cards) {
             disposeSprite(sprite);
+        }
+
+        if (magnifiedCardBitmap != null) {
+            magnifiedCardBitmap.recycle();
         }
     }
 }

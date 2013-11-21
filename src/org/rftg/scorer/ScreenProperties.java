@@ -1,5 +1,9 @@
 package org.rftg.scorer;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * @author gc
  */
@@ -21,6 +25,7 @@ class ScreenProperties {
     final Rect militaryIconRect;
     final Rect resetIconRect;
     final Rect totalIconRect;
+    final Rect magnifiedRect;
 
     final Size previewSize;
 
@@ -29,6 +34,7 @@ class ScreenProperties {
 
     final float cardTextScale;
     final float previewTextScale;
+    final float magnifiedTextScale;
     final float chipsTextScale;
     final float prestigeTextScale;
     final float militaryTextScale;
@@ -70,6 +76,7 @@ class ScreenProperties {
 
         cardTextScale = scaleFloat(25);
         previewTextScale = scaleFloat(60);
+        magnifiedTextScale = scaleFloat(200);
         chipsTextScale = scaleFloat(70);
         prestigeTextScale = scaleFloat(70);
         militaryTextScale = scaleFloat(60);
@@ -123,6 +130,32 @@ class ScreenProperties {
                 prestigeIconRect.origin.y + prestigeIconSize.height + previewGap), militaryIconSize);
         totalIconRect = new Rect(new Point(screenSize.width - totalIconSize.width - previewGap, screenSize.height - totalIconSize.height - previewSize.height - 2*previewGap), totalIconSize);
 
+        int magnifiedHeight = screenSize.height - previewSize.height - 3 * previewGap;
+        int magnifiedWidth = magnifiedHeight * 5 / 7;
+        magnifiedRect = new Rect(new Point((screenSize.width - magnifiedWidth) / 2, previewGap), new Size(magnifiedWidth, magnifiedHeight));
+    }
+
+    List<Point> getPreviewPositions(int n) {
+        if (n == 0) {
+            return Collections.emptyList();
+        }
+        int y = screenSize.height - previewSize.height - previewGap;
+        if (n == 1) {
+            return Collections.singletonList(new Point(previewGap, y));
+        }
+        List<Point> result = new ArrayList<Point>(n);
+
+        float step = ((float)(screenSize.width - previewGap - previewStep)) / (n - 1);
+            if (step > previewStep) {
+                step = previewStep;
+            }
+
+        float x = previewGap;
+        for (int i = 0 ; i < n ; i++, x+=step) {
+            result.add(new Point((int)x, y));
+        }
+
+        return result;
     }
 
 }

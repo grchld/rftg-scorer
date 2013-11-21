@@ -42,7 +42,7 @@ class Scoring {
         calcGoodTypes();
         calcMilitary();
 
-        score = chips;
+        score = chips + prestige;
         cardScores = new ArrayList<CardScore>(cards.size());
         for (Card card : cards) {
             int cardScore = calcScore(card);

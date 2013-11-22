@@ -44,12 +44,13 @@ public class UserInterfaceView extends View {
 
             private Widget findWidget(MotionEvent motionEvent) {
                 Point point = new Point((int)motionEvent.getX(), (int)motionEvent.getY());
+                Widget result = null;
                 for (Widget widget : widgets) {
                     if (widget.rect.contains(point)) {
-                        return widget;
+                        result = widget;
                     }
                 }
-                return null;
+                return result;
             }
 
             @Override

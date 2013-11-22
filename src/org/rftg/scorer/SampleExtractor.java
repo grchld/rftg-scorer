@@ -1,14 +1,10 @@
 package org.rftg.scorer;
 
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfPoint2f;
-import org.opencv.core.Point;
-import org.opencv.imgproc.Imgproc;
-
 /**
 * @author gc
 */
-class SampleExtractor implements Runnable {
+class SampleExtractor /*implements Runnable*/ {
+    /*
     private Mat image;
     private int maxCardNum;
     private Point[] rect;
@@ -36,5 +32,5 @@ class SampleExtractor implements Runnable {
         recognizerResources.cardPatterns.invokeAnalyse(destination, cardMatches, rect, maxCardNum);
 
     }
-
+      */
 }

@@ -1,8 +1,6 @@
 package org.rftg.scorer;
 
 import android.util.Log;
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
 
 import java.util.Collections;
 import java.util.List;
@@ -10,8 +8,8 @@ import java.util.List;
 /**
 * @author gc
 */
-class Hough implements Runnable {
-
+class Hough /*implements Runnable*/ {
+/*
     private static final int MAX_LINES = 1000;
     private static final int MAX_BASE_GAP = 2;
 
@@ -128,5 +126,5 @@ class Hough implements Runnable {
         Collections.sort(lines, Line.MX_COMPARATOR);
     }
 
-
+  */
 }

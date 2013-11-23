@@ -1,8 +1,9 @@
 #include <jni.h>
-/*#include <vector>*/
-/*#include <math.h>*/
-#include <android/log.h>
+//#include <vector>
+//#include <math.h>
 #include <string.h>
+#include <stdlib.h>
+#include <android/log.h>
 
 #if HAVE_NEON == 1
 #include <arm_neon.h>
@@ -190,43 +191,37 @@ int segmentCompare(void const *a1, void const* a2) {
     }
 }
 
-#ifdef FALSE
+jint houghVerticalUnsorted(uchar* image, jint width, jint height, jint bordermask, jint origin, jint maxGap, jint minLength, Segment* segments, jint maxSegments, SegmentState* segmentStates);
 
-jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint maxGap, jint minLength, jlong segmentsAddr);
+JNIEXPORT jint JNICALL Java_org_rftg_scorer_NativeTools_houghVertical(JNIEnv* env, jclass, jobject imageBuffer, jint width, jint height, jint bordermask, jint origin, jint maxGap, jint minLength, jobject segmentsBuffer, jint maxSegments, jobject segmentStatesBuffer) {
+    uchar* image = (uchar*)(*env).GetDirectBufferAddress(imageBuffer);
+    Segment* segments = (Segment*)(*env).GetDirectBufferAddress(segmentsBuffer);
+    SegmentState* segmentStates = (SegmentState*)(*env).GetDirectBufferAddress(segmentStatesBuffer);
 
-JNIEXPORT jint JNICALL Java_org_rftg_scorer_NativeTools_houghVertical(JNIEnv*, jobject, jobject image, jint bordermask, jint origin, jint maxGap, jint minLength, jlong segmentsAddr) {
-    jint segmentNumber = houghVerticalUnsorted(imageAddr, bordermask, origin, maxGap, minLength, segmentsAddr);
+    jint segmentNumber = houghVerticalUnsorted(image, width, height, bordermask, origin, maxGap, minLength, segments, maxSegments, segmentStates);
     if (segmentNumber > 0) {
-        Mat& segmentsMat = *(Mat*)segmentsAddr;
-        qsort(segmentsMat.ptr<Segment>(0), segmentNumber, sizeof(Segment), segmentCompare);
+        qsort(segments, segmentNumber, sizeof(Segment), segmentCompare);
     }
     return segmentNumber;
 }
 
-jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint maxGap, jint minLength, jlong segmentsAddr) {
-
-    Mat& image = *(Mat*)imageAddr;
-    Mat& segmentsMat = *(Mat*)segmentsAddr;
+jint houghVerticalUnsorted(uchar* image, jint width, jint height, jint bordermask, jint origin, jint maxGap, jint minLength, Segment* segments, jint maxSegments, SegmentState* states) {
 
     int segmentNumber = 0;
-    const int maxSegments = segmentsMat.cols;
 
-    Segment* segments = segmentsMat.ptr<Segment>(0);
-
-    const int cols = image.cols;
-    const int rows = image.rows;
     const uchar mask = bordermask;
     const uint longmask = bordermask | (bordermask << 8) | (bordermask << 16) | (bordermask << 24);
 
-    int totalStates = cols * SLOPE_COUNT;
+    int totalStates = width * SLOPE_COUNT;
 
-    cv::AutoBuffer<SegmentState, 32> states(totalStates);
     memset(states, 0, sizeof(SegmentState) * totalStates);
 
-    for (int y = 0; y < rows; y++) {
-        uint* row = image.ptr<uint>(y);
+    uint* row = (uint*)image;
+    
+    for (int y = 0; y < height; y++) {
+//        uint* row = (uint*)(&image[width * y]);
         int x = 0;
-        for (int i = cols/sizeof(uint); i > 0 ; i--) {
+        for (int i = width/sizeof(uint); i > 0 ; i--) {
             uint value = *(row++);
 
             if ((value & longmask) == 0) {
@@ -239,7 +234,7 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
                     for (int slope = MIN_SLOPE ; slope <= MAX_SLOPE ; slope++) {
                         int xbase = x + slope * (origin - y) / DIVISOR;
 
-                        if (xbase < 0 || xbase >= cols) {
+                        if (xbase < 0 || xbase >= width) {
                             continue;
                         }
 
@@ -286,7 +281,7 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
 
     // force line endings
     SegmentState* state = states;
-    for (int xbase = 0 ; xbase < cols; xbase++) {
+    for (int xbase = 0 ; xbase < width; xbase++) {
         for (int slope = MIN_SLOPE ; slope <= MAX_SLOPE ; slope++) {
             if (state->count > minLength) {
                 // save line
@@ -308,7 +303,6 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
     return segmentNumber;
 }
 
-#endif
 
 JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_transpose(JNIEnv* env, jclass, jobject srcBuffer, jobject dstBuffer, jint width, jint height)
 {

@@ -10,14 +10,29 @@ import android.graphics.Paint;
  */
 class UserInterfaceResources {
 
-    private final Paint PAINT_PREVIEW = new Paint();
-    private final Paint PAINT_CARDS = new Paint();
-    private final Paint PAINT_CHIPS = new Paint();
-    private final Paint PAINT_PRESTIGE = new Paint();
-    private final Paint PAINT_MILITARY = new Paint();
-    private final Paint PAINT_RESET = new Paint();
-    private final Paint PAINT_TOTAL = new Paint();
-    private final Paint PAINT_MAGNIFIED = new Paint();
+    private final Paint PAINT_PREVIEW = paint(255, 255, 255);
+    private final Paint PAINT_CARDS = paint(128, 255, 128);
+    private final Paint PAINT_CHIPS = paint(255, 255, 0);
+    private final Paint PAINT_PRESTIGE = paint(0, 255, 0);
+    private final Paint PAINT_MILITARY = paint(255, 0, 0);
+    private final Paint PAINT_RESET = paint(0, 0, 0);
+    private final Paint PAINT_TOTAL = paint(0, 0, 0);
+    private final Paint PAINT_MAGNIFIED = paint(255, 255, 255);
+
+    final Paint PAINT_BLACK = paint(0, 0, 0);
+    final Paint PAINT_WHITE = paint(255, 255, 255);
+    final Paint PAINT_GREEN = paint(0, 255, 0);
+    final Paint PAINT_RED = paint(255, 0, 0);
+    final Paint PAINT_MAGENTA = paint(255, 0, 255);
+    final Paint PAINT_YELLOW = paint(255, 255, 0);
+
+    private static Paint paint(int r, int g, int b) {
+        Paint paint = new Paint();
+        paint.setARGB(255, r, g, b);
+        paint.setTextAlign(Paint.Align.CENTER);
+        return paint;
+    }
+
 
     final MainContext mainContext;
 
@@ -39,34 +54,12 @@ class UserInterfaceResources {
 
         this.screenProperties = new ScreenProperties(screenSize);
 
-        PAINT_PREVIEW.setARGB(255, 255, 255, 255);
-        PAINT_PREVIEW.setTextAlign(Paint.Align.CENTER);
         PAINT_PREVIEW.setTextSize(screenProperties.previewTextScale);
-
-        PAINT_MAGNIFIED.setARGB(255, 255, 255, 255);
-        PAINT_MAGNIFIED.setTextAlign(Paint.Align.CENTER);
         PAINT_MAGNIFIED.setTextSize(screenProperties.magnifiedTextScale);
-
-        PAINT_CARDS.setARGB(255, 128, 255, 128);
-        PAINT_CARDS.setTextAlign(Paint.Align.CENTER);
         PAINT_CARDS.setTextSize(screenProperties.cardCountTextScale);
-
-        PAINT_CHIPS.setARGB(255, 255, 255, 0);
-        PAINT_CHIPS.setTextAlign(Paint.Align.CENTER);
         PAINT_CHIPS.setTextSize(screenProperties.chipsTextScale);
-
-        PAINT_PRESTIGE.setARGB(255, 0, 255, 0);
-        PAINT_PRESTIGE.setTextAlign(Paint.Align.CENTER);
         PAINT_PRESTIGE.setTextSize(screenProperties.prestigeTextScale);
-
-        PAINT_MILITARY.setARGB(255, 255, 0, 0);
-        PAINT_MILITARY.setTextAlign(Paint.Align.CENTER);
         PAINT_MILITARY.setTextSize(screenProperties.militaryTextScale);
-
-        PAINT_RESET.setTextAlign(Paint.Align.CENTER);
-
-        PAINT_TOTAL.setARGB(255, 0, 0, 0);
-        PAINT_TOTAL.setTextAlign(Paint.Align.CENTER);
         PAINT_TOTAL.setTextSize(screenProperties.totalTextScale);
 
         cardsIcon = loadSprite("cards", screenProperties.cardsIconRect, PAINT_CARDS);

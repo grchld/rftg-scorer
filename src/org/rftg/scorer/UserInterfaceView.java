@@ -111,7 +111,7 @@ public class UserInterfaceView extends View {
             }
             userInterfaceResources = new UserInterfaceResources(mainContext, new Size(canvas.getWidth(), canvas.getHeight()));
         }
-
+        /*
         if (mainContext.recognizer.debugPicture != null) {
             Paint p = new Paint();
             p.setARGB(255, 0, 0, 0);
@@ -129,7 +129,28 @@ public class UserInterfaceView extends View {
 
             p.setARGB(255, 255, 255, 255);
             canvas.drawBitmap(bitmap, 0, 0, p);
+        }
+        */
 
+        if (mainContext.recognizer.calcHoughLeft != null) {
+            for (Line line : mainContext.recognizer.calcHoughLeft.lines) {
+                canvas.drawLine(line.x1, line.y1, line.x2, line.y2, userInterfaceResources.PAINT_RED);
+            }
+        }
+        if (mainContext.recognizer.calcHoughRight != null) {
+            for (Line line : mainContext.recognizer.calcHoughRight.lines) {
+                canvas.drawLine(line.x1, line.y1, line.x2, line.y2, userInterfaceResources.PAINT_GREEN);
+            }
+        }
+        if (mainContext.recognizer.calcHoughTop != null) {
+            for (Line line : mainContext.recognizer.calcHoughTop.lines) {
+                canvas.drawLine(line.x1, line.y1, line.x2, line.y2, userInterfaceResources.PAINT_YELLOW);
+            }
+        }
+        if (mainContext.recognizer.calcHoughBottom != null) {
+            for (Line line : mainContext.recognizer.calcHoughBottom.lines) {
+                canvas.drawLine(line.x1, line.y1, line.x2, line.y2, userInterfaceResources.PAINT_MAGENTA);
+            }
         }
 
         updateWidgets();

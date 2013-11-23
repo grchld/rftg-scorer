@@ -1,6 +1,6 @@
 package org.rftg.scorer;
 
-import java.nio.ByteBuffer;
+import java.nio.Buffer;
 
 /**
  * @author gc
@@ -11,21 +11,17 @@ class NativeTools {
         System.loadLibrary("rftg_scorer");
     }
 
-    static native void sobel(ByteBuffer src, ByteBuffer dst, int width, int height);
+    static native void sobel(Buffer src, Buffer dst, int width, int height);
 
     // segments: short miny, short maxy, short x, short angle
-    /*
-    public int houghVertical(Mat image, int bordermask, int origin,  int maxGap, int minLength, Mat segments) {
-        return houghVertical(image.getNativeObjAddr(), bordermask, origin, maxGap, minLength, segments.getNativeObjAddr());
-    }
+    // returns actual segment count
+    static native int houghVertical(Buffer image, int width, int height, int bordermask, int origin, int maxGap, int minLength, Buffer segments, int maxSegments, Buffer segmentStates);
 
-    private native int houghVertical(long imageAddr, int bordermask, int origin, int maxGap, int minLength, long segmentsAddr);
-     */
-    static native void transpose(ByteBuffer src, ByteBuffer dst, int width, int height);
+    static native void transpose(Buffer src, Buffer dst, int width, int height);
 
-    static native long match(ByteBuffer selection, ByteBuffer patterns, int patternSize, int patternsCount);
+    static native long match(Buffer selection, Buffer patterns, int patternSize, int patternsCount);
 
-    static native void normalize(ByteBuffer image, int size);
+    static native void normalize(Buffer image, int size);
     /*
     public void drawSobel(Mat sobel, Mat flame) {
         drawSobel(sobel.getNativeObjAddr(), flame.getNativeObjAddr());

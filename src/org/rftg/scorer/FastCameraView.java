@@ -72,7 +72,7 @@ public class FastCameraView extends SurfaceView implements SurfaceHolder.Callbac
                 try {
                     bufferLock.wait(200);
                 } catch (InterruptedException e) {
-                    Rftg.w(e.getMessage());
+//                    Rftg.w(e.getMessage());
                     return false;
                 }
             }

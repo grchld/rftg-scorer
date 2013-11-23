@@ -1,14 +1,15 @@
 package org.rftg.scorer;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author gc
  */
 class Recognizer {
-
-
 
 /*
 
@@ -17,7 +18,7 @@ class Recognizer {
     private static final boolean DEBUG_SHOW_SEGMENTS = false;
     private static final boolean DEBUG_SHOW_RECTANGLE_COUNTER = false;
     private static final boolean DEBUG_SHOW_CARD_SCORES = false;
-
+*/
     private static final int MAX_RECTANGLES = 400;
     private static final int MAX_RECTANGLES_TO_USE_OUTERS = 100;
 
@@ -39,6 +40,7 @@ class Recognizer {
     private static final int MASK_TOP = 0x80;
     private static final int MASK_BOTTOM = 0x40;
 
+/*
     private static final Scalar COLOR_SHADOW = new Scalar(0, 0, 0);
     private static final Scalar COLOR_SCORE = new Scalar(255, 255, 255);
     private static final Scalar COLOR_TOTAL = new Scalar(0, 0, 0);
@@ -88,7 +90,7 @@ class Recognizer {
     Size frameSize;
     private ByteBuffer frame;
     private ByteBuffer sobel;
-    private ByteBuffer transpose;
+    private ByteBuffer sobelTransposed;
 
     volatile ByteBuffer debugPicture;
 
@@ -166,8 +168,9 @@ class Recognizer {
                     int frameBufferSize = frameSize.width * frameSize.height;
                     frame = ByteBuffer.allocateDirect(frameBufferSize);
                     sobel = ByteBuffer.allocateDirect(frameBufferSize);
-                    transpose = ByteBuffer.allocateDirect(frameBufferSize);
+                    sobelTransposed = ByteBuffer.allocateDirect(frameBufferSize);
                     debugPicture = ByteBuffer.allocateDirect(frameBufferSize);
+                    initHoughTasks();
                 }
                 startFrameRecognition();
             }
@@ -179,7 +182,7 @@ class Recognizer {
         void execute() throws Exception {
             long time = System.currentTimeMillis();
             NativeTools.sobel(frame, sobel, frameSize.width, frameSize.height);
-            Rftg.e("Calc sobel: " + (System.currentTimeMillis() - time) + "ms");
+            Rftg.e("Sobel: " + (System.currentTimeMillis() - time) + "ms");
 
             if (!houghSync.compareAndSet(0, 4)) {
                 Rftg.e("Hough sync counter has bad value");
@@ -188,6 +191,8 @@ class Recognizer {
                 startFrameRecognition();
             } else {
                 calcTranspose.execute();
+                calcHoughLeft.execute();
+                calcHoughRight.execute();
             }
         }
     };
@@ -196,19 +201,18 @@ class Recognizer {
         @Override
         void execute() throws Exception {
             long time = System.currentTimeMillis();
-            try {
-                NativeTools.transpose(frame, transpose, frameSize.width, frameSize.height);
-            } catch (Throwable e) {
-                Rftg.e(e);
-            }
-            Rftg.e("Calc transpose: " + (System.currentTimeMillis() - time) + "ms");
+            NativeTools.transpose(sobel, sobelTransposed, frameSize.width, frameSize.height);
+            Rftg.e("Transpose: " + (System.currentTimeMillis() - time) + "ms");
 
             synchronized (debugPicture) {
                 debugPicture.position(0);
-                debugPicture.put(transpose);
-                transpose.position(0);
+                debugPicture.put(sobelTransposed);
+                sobelTransposed.position(0);
             }
 
+            calcHoughTop.execute();
+            calcHoughBottom.execute();
+/*
             houghSync.decrementAndGet();
             houghSync.decrementAndGet();
             houghSync.decrementAndGet();
@@ -216,8 +220,39 @@ class Recognizer {
 
             mainContext.userInterface.postInvalidate();
             startFrameRecognition();
+            */
         }
     };
+
+    HoughTask calcHoughLeft;
+    HoughTask calcHoughRight;
+    HoughTask calcHoughTop;
+    HoughTask calcHoughBottom;
+
+    class HoughTask extends Hough {
+        private HoughTask(ByteBuffer sobel, int width, int height, boolean transposed, int mask, int origin, int maxGap, int minLength) {
+            super(sobel, width, height, transposed, mask, origin, maxGap, minLength);
+        }
+
+        @Override
+        void execute() throws Exception {
+            super.execute();
+            if (houghSync.decrementAndGet() == 0) {
+                mainContext.userInterface.postInvalidate();
+                startFrameRecognition();
+            }
+        }
+    }
+
+    private void initHoughTasks() {
+        int xOrigin = frameSize.width / 2;
+        int yOrigin = frameSize.height / 2;
+
+        calcHoughLeft = new HoughTask(sobel, frameSize.width, frameSize.height, false, MASK_LEFT, yOrigin, MAX_GAP_LEFT, MIN_LENGTH_LEFT);
+        calcHoughRight = new HoughTask(sobel, frameSize.width, frameSize.height, false, MASK_RIGHT, yOrigin, MAX_GAP, MIN_LENGTH);
+        calcHoughTop = new HoughTask(sobelTransposed, frameSize.height, frameSize.width, true, MASK_TOP, xOrigin, MAX_GAP, MIN_LENGTH);
+        calcHoughBottom = new HoughTask(sobelTransposed, frameSize.height, frameSize.width, true, MASK_BOTTOM, xOrigin, MAX_GAP, MIN_LENGTH);
+    }
 
     void startFrameRecognition() {
         mainContext.executor.submit(copyFrame);

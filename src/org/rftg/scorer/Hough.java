@@ -1,5 +1,13 @@
 package org.rftg.scorer;
 
+import java.nio.Buffer;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
 * @author gc
 */
@@ -8,20 +16,45 @@ class Hough extends RecognizerTask {
     private static final int MAX_LINES = 1000;
     private static final int MAX_BASE_GAP = 2;
 
+    private static final int SEGMENT_STRUCT_SIZE = 8;
+    private static final int SEGMENT_STATUS_STRUCT_SIZE = 4;
+    // #define SLOPE_COUNT (MAX_SLOPE - MIN_SLOPE + 1)
+    private static final int SEGMENT_STATUSES_PER_COLUMN = 32;
+
     /*
     private RecognizerResources recognizerResources;
-    private Mat sobel;
-    private boolean transposed;
-    private int mask;
-    private int origin;
-    private int maxGap;
-    private int minLength;
-    private Mat segmentsStack;
-    private List<Line> lines;
-    private short[] segmentData = new short[4];
-    private Segment[] segmentsBuffer = new Segment[MAX_LINES];
+    */
+    private final ByteBuffer sobel;
+    private final int width;
+    private final int height;
+    private final Buffer segmentStates;
+    private final ShortBuffer segments = ByteBuffer.allocateDirect(MAX_LINES * SEGMENT_STRUCT_SIZE).order(ByteOrder.nativeOrder()).asShortBuffer();
+    private final boolean transposed;
+    private final int mask;
+    private final int origin;
+    private final int maxGap;
+    private final int minLength;
 
-    Hough(RecognizerResources recognizerResources, Mat sobel, boolean transposed, int mask, int origin, int maxGap, int minLength, List<Line> lines) {
+//    private Mat segmentsStack;
+    final List<Line> lines = new ArrayList<Line>(MAX_LINES);
+    private final Segment[] segmentsBuffer = new Segment[MAX_LINES];
+
+    Hough(ByteBuffer sobel, int width, int height, boolean transposed, int mask, int origin, int maxGap, int minLength) {
+        this.sobel = sobel;
+        this.width = width;
+        this.height = height;
+        this.segmentStates = ByteBuffer.allocateDirect(SEGMENT_STATUS_STRUCT_SIZE * SEGMENT_STATUSES_PER_COLUMN * width);
+        this.transposed = transposed;
+        this.mask = mask;
+        this.origin = origin;
+        this.maxGap = maxGap;
+        this.minLength = minLength;
+    }
+/*    Hough(ByteBuffer sobel, ByteBuffer segmentStates, boolean transposed, int mask, int origin, int maxGap, int minLength) {
+
+    }
+
+    /*RecognizerResources recognizerResources, Mat sobel, boolean transposed, int mask, int origin, int maxGap, int minLength, List<Line> lines) {
         this.recognizerResources = recognizerResources;
         this.sobel = sobel;
         this.transposed = transposed;
@@ -32,22 +65,29 @@ class Hough extends RecognizerTask {
         this.lines = lines;
         this.segmentsStack = new Mat(1, MAX_LINES, CvType.CV_16SC4);
     }
+*/
 
-    void release() {
-        segmentsStack.release();
-    }
+    /*
+    // segments: short miny, short maxy, short x, short angle
+    // returns actual segment count
+    static native int houghVertical(ByteBuffer image, int width, int height, int bordermask, int origin, int maxGap, int minLength, ByteBuffer segments, int maxSegments, ByteBuffer segmentStates);
+    */
 
     @Override
-    public void run() {
+    void execute() throws Exception {
+        long time = System.currentTimeMillis();
+        int segmentCount = NativeTools.houghVertical(sobel, width, height, mask, origin, maxGap, minLength, segments, MAX_LINES, segmentStates);
 
-        int segmentCount = recognizerResources.customNativeTools.houghVertical(sobel, mask, origin, maxGap, minLength, segmentsStack);
+        Rftg.e("Hough (" + (transposed ? "V" : "H") + segmentCount + "): " + (System.currentTimeMillis() - time) + " ms");
 
+        time = System.currentTimeMillis();
+        segments.position(0);
         for (int i = 0 ; i < segmentCount ; i++) {
-            segmentsStack.get(0, i, segmentData);
-            segmentsBuffer[i] = new Segment(origin, segmentData[0], segmentData[1], segmentData[2], segmentData[3], 0);
+            segmentsBuffer[i] = new Segment(origin, segments.get(), segments.get(), segments.get(), segments.get(), 0);
         }
 
         group(segmentCount);
+        Rftg.e("Hough group: " + (System.currentTimeMillis() - time) + " ms");
     }
 
     private void group(int size) {
@@ -120,12 +160,6 @@ class Hough extends RecognizerTask {
         }
 
         Collections.sort(lines, Line.MX_COMPARATOR);
-    }
-
-  */
-    @Override
-    void execute() throws Exception {
-        //To change body of implemented methods use File | Settings | File Templates.
     }
 
 }

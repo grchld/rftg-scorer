@@ -1,18 +1,14 @@
 package org.rftg.scorer;
 
-import android.util.Log;
-
-import java.util.Collections;
-import java.util.List;
-
 /**
 * @author gc
 */
-class Hough /*implements Runnable*/ {
-/*
+class Hough extends RecognizerTask {
+
     private static final int MAX_LINES = 1000;
     private static final int MAX_BASE_GAP = 2;
 
+    /*
     private RecognizerResources recognizerResources;
     private Mat sobel;
     private boolean transposed;
@@ -127,4 +123,9 @@ class Hough /*implements Runnable*/ {
     }
 
   */
+    @Override
+    void execute() throws Exception {
+        //To change body of implemented methods use File | Settings | File Templates.
+    }
+
 }

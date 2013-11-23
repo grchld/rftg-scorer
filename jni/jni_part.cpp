@@ -20,14 +20,13 @@ extern "C" {
 typedef unsigned char uchar;
 typedef unsigned int uint;
 
-JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_sobel(JNIEnv* env, jclass, jobject srcBuffer, jobject dstBuffer, jint width, jint height)
+JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_sobel(JNIEnv* env, jclass, jobject srcBuffer, jobject dstBuffer, jint width, jint height)
 {
     uchar* src = (uchar*)(*env).GetDirectBufferAddress(srcBuffer);
     uchar* dst = (uchar*)(*env).GetDirectBufferAddress(dstBuffer);
 
     memset(dst, 0, width);
     memset(&dst[width*(height-1)], 0, width);
-
 
     for (int i = 1 ; i < height-1 ; i++) {
 
@@ -195,7 +194,7 @@ int segmentCompare(void const *a1, void const* a2) {
 
 jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint maxGap, jint minLength, jlong segmentsAddr);
 
-JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_houghVertical(JNIEnv*, jobject, jobject image, jint bordermask, jint origin, jint maxGap, jint minLength, jlong segmentsAddr) {
+JNIEXPORT jint JNICALL Java_org_rftg_scorer_NativeTools_houghVertical(JNIEnv*, jobject, jobject image, jint bordermask, jint origin, jint maxGap, jint minLength, jlong segmentsAddr) {
     jint segmentNumber = houghVerticalUnsorted(imageAddr, bordermask, origin, maxGap, minLength, segmentsAddr);
     if (segmentNumber > 0) {
         Mat& segmentsMat = *(Mat*)segmentsAddr;
@@ -309,33 +308,24 @@ jint houghVerticalUnsorted(jlong imageAddr, jint bordermask, jint origin, jint m
     return segmentNumber;
 }
 
+#endif
 
-
-JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*, jobject, jlong srcAddr, jlong dstAddr)
+JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_transpose(JNIEnv* env, jclass, jobject srcBuffer, jobject dstBuffer, jint width, jint height)
 {
-    Mat& src = *(Mat*)srcAddr;
-    Mat& dst = *(Mat*)dstAddr;
 
-    CV_DbgAssert(src.depth() == CV_8U);
-    CV_DbgAssert(dst.depth() == CV_8U);
-    CV_DbgAssert(src.rows == dst.cols);
-    CV_DbgAssert(src.cols == dst.rows);
-    CV_DbgAssert(src.channels() == 1);
-    CV_DbgAssert(dst.channels() == 1);
-
-    int cols = src.cols;
-    int rows = src.rows;
+    uchar* src = (uchar*)(*env).GetDirectBufferAddress(srcBuffer);
+    uchar* dst = (uchar*)(*env).GetDirectBufferAddress(dstBuffer);
 
     #if HAVE_NEON == 1
 
-    const uchar* su = &src.ptr<uchar>(0)[0];
-    const uchar* du = &dst.ptr<uchar>(0)[0];
+    const uchar* su = src;
+    const uchar* du = dst;
 
-    const int sa = src.ptr<uchar>(1) - src.ptr<uchar>(0);
-    const int da = dst.ptr<uchar>(1) - dst.ptr<uchar>(0);
+    const int sa = width;
+    const int da = height;
 
-    for (int y = 0 ; y < rows; y+=16) {
-        for (int x = 0 ; x < cols; x+=16) {
+    for (int y = 0 ; y < height; y+=16) {
+        for (int x = 0 ; x < width; x+=16) {
 
             const uchar* s = su + sa * y + x;
             const uchar* d = du + da * x + y;
@@ -481,15 +471,17 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
 
     #else
 
-    for (int y = 0 ; y < rows; y++) {
-        for (int x = 0 ; x < cols; x++) {
-            dst.ptr<uchar>(x)[y] = src.ptr<uchar>(y)[x];
+    for (int y = 0 ; y < height; y++) {
+        for (int x = 0 ; x < width; x++) {
+            dst[x * height + y] = src[y * width + x];
         }
     }
 
     #endif
 
 }
+
+#ifdef FALSE
 
 #define COMPARE_BOUND_1 15
 #define COMPARE_BOUND_2 30
@@ -500,7 +492,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_transpose(JNIEnv*,
 #define FIRST_GAMBLING_WORLD 86
 #define SECOND_GAMBLING_WORLD 144
 
-JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jobject, jlong selectionAddr, jlong patternsAddr, jint patternSize, jint patternsCount)
+JNIEXPORT jlong JNICALL Java_org_rftg_scorer_NativeTools_match(JNIEnv*, jobject, jlong selectionAddr, jlong patternsAddr, jint patternSize, jint patternsCount)
 {
     Mat& selection = *(Mat*)selectionAddr;
     Mat& pattern = *(Mat*)patternsAddr;
@@ -528,12 +520,12 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jo
 
         "mov r2, #0\n\t"
 
-        "CustomNativeTools_match_loop_1:\n\t"
+        "NativeTools_match_loop_1:\n\t"
         "mov r3, %[SIZE]\n\t"
 
         "vmov.i8 q10, #0\n\t" /* q10: scorer */
 
-        "CustomNativeTools_match_loop_2:\n\t"
+        "NativeTools_match_loop_2:\n\t"
         "vldmia r0!, {q0}\n\t"
         "vldmia r1!, {q1}\n\t"
         "vabd.u8 q8, q0, q1\n\t"
@@ -544,7 +536,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jo
         "vadd.i8 q9, q9, q8\n\t"
         "vpadal.u8 q10, q9\n\t"
         "subs r3, 1\n\t"
-        "bgt CustomNativeTools_match_loop_2\n\t"
+        "bgt NativeTools_match_loop_2\n\t"
 
         "mov r0, %[SELECTION]\n\t"
 
@@ -557,9 +549,9 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jo
         "orr r4, r2, r4, lsl #16\n\t"
 
         "cmp r2, %[_SECOND_GAMBLING_WORLD]\n\t"
-        "beq CustomNativeTools_match_loop_3\n\t"
+        "beq NativeTools_match_loop_3\n\t"
 
-        "CustomNativeTools_match_loop_5:\n\t"
+        "NativeTools_match_loop_5:\n\t"
 
         "cmp %[SECOND_BEST], r4\n\t"
         "itttt le\n\t"
@@ -570,20 +562,20 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jo
 
         "add r2, 1\n\t"
         "cmp %[COUNT], r2\n\t"
-        "bgt CustomNativeTools_match_loop_1\n\t"
-        "bal CustomNativeTools_match_loop_4\n\t"
+        "bgt NativeTools_match_loop_1\n\t"
+        "bal NativeTools_match_loop_4\n\t"
 
-        "CustomNativeTools_match_loop_3:\n\t"
+        "NativeTools_match_loop_3:\n\t"
 
         "and r3, %[BEST], #0xff\n\t"
         "cmp r3, %[_FIRST_GAMBLING_WORLD]\n\t"
-        "bne CustomNativeTools_match_loop_5\n\t"
+        "bne NativeTools_match_loop_5\n\t"
         "cmp %[BEST], r4\n\t"
         "it le\n\t"
         "movle %[BEST], r4\n\t"
         "add r2, 1\n\t"
-        "bal CustomNativeTools_match_loop_1\n\t"
-        "CustomNativeTools_match_loop_4:\n\t"
+        "bal NativeTools_match_loop_1\n\t"
+        "NativeTools_match_loop_4:\n\t"
 
         : [BEST]"=&r" (best), [SECOND_BEST]"=&r" (second_best)
         : [SELECTION]"r" (selection.ptr<uchar>(0)), [PATTERN]"r" (pattern.ptr<uchar>(0)), [SIZE]"r" (patternSize/16), [COUNT]"r" (patternsCount),
@@ -646,7 +638,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_CustomNativeTools_match(JNIEnv*, jo
 #define NORMAL_DISPERSION 70.*70.
 #define NORMAL_MEDIAN 127.5
 
-JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*, jobject, jlong imageAddr)
+JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_normalize(JNIEnv*, jobject, jlong imageAddr)
 {
     Mat& image = *(Mat*)imageAddr;
 
@@ -672,7 +664,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
         "vmov.i8 q7, 0\n\t" // sum
         "vmov.i8 q13, 0\n\t" // sq
 
-        "CustomNativeTools_normalize_loop_1:\n\t"
+        "NativeTools_normalize_loop_1:\n\t"
 
         "vldmia r0!, {q0} \n\t"
 
@@ -687,7 +679,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
         "vpadal.u16 q7, q0\n\t"
 
         "subs r3, r3, 1\n\t"
-        "bgt CustomNativeTools_normalize_loop_1\n\t"
+        "bgt NativeTools_normalize_loop_1\n\t"
 
         "vpaddl.u32 q7, q7\n\t"
         "vadd.i32 d14, d14, d15\n\t"
@@ -739,7 +731,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
         "vdup.32 q10, %[ALPHA]\n\t"
         "vdup.32 q13, %[BETA]\n\t"
 
-        "CustomNativeTools_normalize_loop_2:\n\t"
+        "NativeTools_normalize_loop_2:\n\t"
         "vldmia r0, {d0}\n\t"
 
         "vmovl.u8 q4, d0\n\t"
@@ -762,7 +754,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
 
         "vstmia r0!, {d0}\n\t"
         "subs r3, r3, 1\n\t"
-        "bgt CustomNativeTools_normalize_loop_2\n\t"
+        "bgt NativeTools_normalize_loop_2\n\t"
 
         :
         : [SRC]"r" (a), [SIZE]"r" (total/8),
@@ -790,7 +782,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_CustomNativeTools_normalize(JNIEnv*,
 
 }
 
-JNIEXPORT jint JNICALL Java_org_rftg_scorer_CustomNativeTools_drawSobel(JNIEnv*, jobject, jlong sobelAddr, jlong frameAddr)
+JNIEXPORT jint JNICALL Java_org_rftg_scorer_NativeTools_drawSobel(JNIEnv*, jobject, jlong sobelAddr, jlong frameAddr)
 {
     Mat& sobel = *(Mat*)sobelAddr;
     Mat& frame = *(Mat*)frameAddr;

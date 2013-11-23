@@ -1,7 +1,7 @@
 package org.rftg.scorer;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author gc
@@ -85,8 +85,14 @@ class Recognizer {
 
     private final MainContext mainContext;
 
-    private Size frameSize;
+    Size frameSize;
     private ByteBuffer frame;
+    private ByteBuffer sobel;
+    private ByteBuffer transpose;
+
+    volatile ByteBuffer debugPicture;
+
+    private AtomicInteger houghSync = new AtomicInteger(0);
 
     Recognizer(MainContext mainContext) {
         this.mainContext = mainContext;
@@ -130,10 +136,10 @@ class Recognizer {
         */
     }
 
-    private Callable<Void> copyFrame = new Callable<Void>() {
+    private RecognizerTask copyFrame = new RecognizerTask() {
         @Override
-        public Void call() throws Exception {
-          /*
+        void execute() throws Exception {
+            /*
             if (mainContext.cardPatterns.getSamples() == null) {
                 // Resources are not ready yet
                 // Wait a little and retry
@@ -142,25 +148,76 @@ class Recognizer {
                 return null;
             }
             */
+            long time = System.currentTimeMillis();
             if (mainContext.fastCamera.copyFrame(frame, frameSize)) {
-
+                frame.position(0);
+                Rftg.e("Copy frame: " + (System.currentTimeMillis() - time) + "ms");
+                calcSobel.execute();
             } else {
                 Size cameraActualSize = mainContext.fastCamera.getActualSize();
                 if (cameraActualSize == null || cameraActualSize.equals(frameSize)) {
                     // Camera is not ready to give us a frame
                     // Wait a little and retry
+                    Rftg.w("Camera frame is not ready yet");
                     Thread.sleep(100);
                 } else {
                     // Our frame buffer has the wrong size, recreate frame buffer and retry
                     frameSize = cameraActualSize;
-                    frame = ByteBuffer.allocateDirect(frameSize.width * frameSize.height);
+                    int frameBufferSize = frameSize.width * frameSize.height;
+                    frame = ByteBuffer.allocateDirect(frameBufferSize);
+                    sobel = ByteBuffer.allocateDirect(frameBufferSize);
+                    transpose = ByteBuffer.allocateDirect(frameBufferSize);
+                    debugPicture = ByteBuffer.allocateDirect(frameBufferSize);
                 }
-                mainContext.executor.submit(this);
+                startFrameRecognition();
             }
-            return null;
         }
     };
 
+    private RecognizerTask calcSobel = new RecognizerTask() {
+        @Override
+        void execute() throws Exception {
+            long time = System.currentTimeMillis();
+            NativeTools.sobel(frame, sobel, frameSize.width, frameSize.height);
+            Rftg.e("Calc sobel: " + (System.currentTimeMillis() - time) + "ms");
+
+            if (!houghSync.compareAndSet(0, 4)) {
+                Rftg.e("Hough sync counter has bad value");
+                Thread.sleep(100);
+                houghSync.set(0);
+                startFrameRecognition();
+            } else {
+                calcTranspose.execute();
+            }
+        }
+    };
+
+    private RecognizerTask calcTranspose = new RecognizerTask() {
+        @Override
+        void execute() throws Exception {
+            long time = System.currentTimeMillis();
+            try {
+                NativeTools.transpose(frame, transpose, frameSize.width, frameSize.height);
+            } catch (Throwable e) {
+                Rftg.e(e);
+            }
+            Rftg.e("Calc transpose: " + (System.currentTimeMillis() - time) + "ms");
+
+            synchronized (debugPicture) {
+                debugPicture.position(0);
+                debugPicture.put(transpose);
+                transpose.position(0);
+            }
+
+            houghSync.decrementAndGet();
+            houghSync.decrementAndGet();
+            houghSync.decrementAndGet();
+            houghSync.decrementAndGet();
+
+            mainContext.userInterface.postInvalidate();
+            startFrameRecognition();
+        }
+    };
 
     void startFrameRecognition() {
         mainContext.executor.submit(copyFrame);

@@ -1,7 +1,10 @@
 package org.rftg.scorer;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -90,6 +93,8 @@ public class UserInterfaceView extends View {
         });
     }
 
+    private Bitmap bitmap;
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
@@ -105,6 +110,26 @@ public class UserInterfaceView extends View {
                 userInterfaceResources.dispose();
             }
             userInterfaceResources = new UserInterfaceResources(mainContext, new Size(canvas.getWidth(), canvas.getHeight()));
+        }
+
+        if (mainContext.recognizer.debugPicture != null) {
+            Paint p = new Paint();
+            p.setARGB(255, 0, 0, 0);
+            canvas.drawRect(0, 0, mainContext.recognizer.frameSize.width, mainContext.recognizer.frameSize.height, p);
+            if (bitmap == null) {
+                bitmap = Bitmap.createBitmap(mainContext.recognizer.frameSize.width, mainContext.recognizer.frameSize.height, Bitmap.Config.ALPHA_8);
+            }
+
+            if (mainContext.recognizer.debugPicture != null) {
+                synchronized (mainContext.recognizer.debugPicture) {
+                     mainContext.recognizer.debugPicture.position(0);
+                    bitmap.copyPixelsFromBuffer(mainContext.recognizer.debugPicture);
+                }
+            }
+
+            p.setARGB(255, 255, 255, 255);
+            canvas.drawBitmap(bitmap, 0, 0, p);
+
         }
 
         updateWidgets();

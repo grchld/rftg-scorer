@@ -79,6 +79,7 @@ public class FastCameraView extends SurfaceView implements SurfaceHolder.Callbac
             if (this.actualSize == null || !this.actualSize.equals(size)) {
                 return false;
             }
+            bufferReady = false;
             byteBuffer.position(0);
             byteBuffer.put(buffer, 0, byteBuffer.capacity());
             camera.addCallbackBuffer(buffer);

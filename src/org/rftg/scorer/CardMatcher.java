@@ -16,6 +16,10 @@ abstract class CardMatcher extends RecognizerTask {
     private final Point[] rect;
     private final CardMatch[] cardMatches;
 
+    long timingWarpTime;
+    long timingNormalizeTime;
+    long timingMatchTime;
+
     CardMatcher(Buffer frame, Size frameSize, Buffer samples, Point[] rect, CardMatch[] cardMatches) {
         this.frame = frame;
         this.frameSize = frameSize;
@@ -32,11 +36,17 @@ abstract class CardMatcher extends RecognizerTask {
     void execute() throws Exception {
         Buffer buffer = createBuffer();
         try {
+            long time = System.nanoTime();
             NativeTools.warp(frame, frameSize.width, frameSize.height, buffer, rect[0].x, rect[0].y, rect[1].x, rect[1].y, rect[2].x, rect[2].y, rect[3].x, rect[3].y);
+            timingWarpTime = System.nanoTime() - time;
 
+            time += timingWarpTime;
             NativeTools.normalize(buffer, CardPatterns.SAMPLE_WIDTH * CardPatterns.SAMPLE_HEIGHT);
+            timingNormalizeTime = System.nanoTime() - time;
 
+            time += timingNormalizeTime;
             long matchResult = NativeTools.match(buffer, samples, CardPatterns.SAMPLE_WIDTH * CardPatterns.SAMPLE_HEIGHT, CardPatterns.SAMPLE_COUNT);
+            timingMatchTime = System.nanoTime() - time;
 
 
 

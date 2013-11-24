@@ -35,6 +35,9 @@ class Hough extends RecognizerTask {
     private final int minLength;
     private final List<Line> lines;
 
+    long timingHoughTime;
+    long timingGroupTime;
+
 //    private Mat segmentsStack;
     private final Segment[] segmentsBuffer = new Segment[MAX_LINES];
 
@@ -75,19 +78,19 @@ class Hough extends RecognizerTask {
 
     @Override
     void execute() throws Exception {
-        long time = System.currentTimeMillis();
+        long time = System.nanoTime();
         int segmentCount = NativeTools.houghVertical(sobel, width, height, mask, origin, maxGap, minLength, segments, MAX_LINES, segmentStates);
 
-        Rftg.e("Hough (" + (transposed ? "V" : "H") + segmentCount + "): " + (System.currentTimeMillis() - time) + " ms");
+        timingHoughTime = System.nanoTime() - time;
 
-        time = System.currentTimeMillis();
+        time = System.nanoTime();
         segments.position(0);
         for (int i = 0 ; i < segmentCount ; i++) {
             segmentsBuffer[i] = new Segment(origin, segments.get(), segments.get(), segments.get(), segments.get(), 0);
         }
 
         group(segmentCount);
-        Rftg.e("Hough group: " + (System.currentTimeMillis() - time) + " ms");
+        timingGroupTime = System.nanoTime() - time;
     }
 
     private void group(int size) {

@@ -13,15 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 class Recognizer {
 
-/*
-
-    private static final boolean DEBUG_SHOW_SOBEL = false;
-    private static final boolean DEBUG_SHOW_ALL_RECTANGLES = false;
-    private static final boolean DEBUG_SHOW_SEGMENTS = false;
-    private static final boolean DEBUG_SHOW_RECTANGLE_COUNTER = false;
-    private static final boolean DEBUG_SHOW_CARD_SCORES = false;
-*/
-
     private static final int MAX_GAP_LEFT = 10;
     private static final int MAX_GAP = 2;
     private static final int MIN_LENGTH_LEFT = 120;
@@ -58,64 +49,44 @@ class Recognizer {
     private AtomicInteger houghSync = new AtomicInteger(0);
     private AtomicInteger matchSync = new AtomicInteger(0);
 
+
+    private long timingStartFrame;
+    private long timingCopyTime;
+    private long timingSobelTime;
+    private long timingTransposeTime;
+    private long timingTotalHoughTime;
+    private long timingTotalGroupTime;
+    private long timingExtractRectTime;
+    private int timingRectCount;
+    private long timingTotalWarpTime;
+    private long timingTotalNormalizeTime;
+    private long timingTotalMatchTime;
+
     Recognizer(MainContext mainContext) {
         this.mainContext = mainContext;
-
-        /*
-        this.width = width;
-        this.height = height;
-        this.state = state;
-        this.recognizerResources = recognizerResources;
-        this.screen = recognizerResources.screenProperties;
-
-        cardMatches = new CardMatch[Card.GameType.EXP3.maxCardNum + 1];
-
-        int xOrigin = width/2;
-        int yOrigin = height/2;
-
-        rgb = new Mat(height, width, CvType.CV_8UC3);
-
-        gray = new Mat(height, width, CvType.CV_8UC1);
-
-        canny = new Mat(height, width, CvType.CV_8UC1);
-
-        sobel = new Mat(height, width, CvType.CV_8U);
-        sobelTransposed = new Mat(width, height, CvType.CV_8U);
-
-        houghLeft = new Hough(recognizerResources, sobel, false, MASK_LEFT, yOrigin, MAX_GAP_LEFT, MIN_LENGTH_LEFT, linesLeft);
-        houghRight = new Hough(recognizerResources, sobel, false, MASK_RIGHT, yOrigin, MAX_GAP, MIN_LENGTH, linesRight);
-        houghTop = new Hough(recognizerResources, sobelTransposed, true, MASK_TOP, xOrigin, MAX_GAP, MIN_LENGTH, linesTop);
-        houghBottom = new Hough(recognizerResources, sobelTransposed, true, MASK_BOTTOM, xOrigin, MAX_GAP, MIN_LENGTH, linesBottom);
-
-        selectionFused = new Mat(CardPatterns.SAMPLE_HEIGHT*MAX_RECTANGLES, CardPatterns.SAMPLE_WIDTH, CvType.CV_8UC1);
-        for (int i = 0 ; i < MAX_RECTANGLES ; i++) {
-            selection[i] = selectionFused.submat(i*CardPatterns.SAMPLE_HEIGHT , (i+1)*CardPatterns.SAMPLE_HEIGHT, 0, CardPatterns.SAMPLE_WIDTH);
-        }
-
-        minX = 50;
-        minY = minX * RECT_ASPECT;
-
-        maxY = height / 1.1;
-        maxX = maxY / RECT_ASPECT;
-        */
     }
 
     private RecognizerTask copyFrame = new RecognizerTask() {
         @Override
         void execute() throws Exception {
-            /*
-            if (mainContext.cardPatterns.getSamples() == null) {
-                // Resources are not ready yet
-                // Wait a little and retry
-                Thread.sleep(100);
-                mainContext.executor.submit(this);
-                return null;
+            if (timingStartFrame != 0) {
+                Rftg.i("Frame: "+((System.nanoTime() - timingStartFrame)/1000000) +
+                        ", copy: " + (timingCopyTime / 1000000) +
+                        ", sobel: " + (timingSobelTime / 1000000) +
+                        ", trans: " + (timingTransposeTime / 1000000) +
+                        ", hough: " + (timingTotalHoughTime / 1000000) + "=4*" + (timingTotalHoughTime / 1000000 / 4) +
+                        ", group: " + (timingTotalGroupTime / 1000000) + "=4*" + (timingTotalGroupTime / 1000000 / 4) +
+                        ", rect: " + (timingExtractRectTime / 1000000) +
+                        ", warp: " + (timingTotalWarpTime / 1000000) + "=" + timingRectCount + "*" + (timingRectCount == 0 ? "?" : "" + (timingTotalWarpTime / 1000000 / timingRectCount)) +
+                        ", norm: " + (timingTotalNormalizeTime / 1000000) + "=" + timingRectCount + "*" + (timingRectCount == 0 ? "?" : "" + (timingTotalNormalizeTime / 1000000 / timingRectCount)) +
+                        ", match: " + (timingTotalMatchTime / 1000000) + "=" + timingRectCount + "*" + (timingRectCount == 0 ? "?" : "" + (timingTotalMatchTime / 1000000 / timingRectCount))
+                );
             }
-            */
-            long time = System.currentTimeMillis();
+
+            timingStartFrame = System.nanoTime();
             if (mainContext.fastCamera.copyFrame(frame, frameSize)) {
                 frame.position(0);
-                Rftg.e("Copy frame: " + (System.currentTimeMillis() - time) + "ms");
+                timingCopyTime = System.nanoTime() - timingStartFrame;
                 calcSobel.execute();
             } else {
                 Size cameraActualSize = mainContext.fastCamera.getActualSize();
@@ -142,9 +113,11 @@ class Recognizer {
     private RecognizerTask calcSobel = new RecognizerTask() {
         @Override
         void execute() throws Exception {
-            long time = System.currentTimeMillis();
+            long time = System.nanoTime();
             NativeTools.sobel(frame, sobel, frameSize.width, frameSize.height);
-            Rftg.e("Sobel: " + (System.currentTimeMillis() - time) + "ms");
+            timingSobelTime = System.nanoTime() - time;
+            timingTotalHoughTime = 0;
+            timingTotalGroupTime = 0;
 
             if (!houghSync.compareAndSet(0, 4)) {
                 Rftg.e("Hough sync counter has bad value");
@@ -162,9 +135,9 @@ class Recognizer {
     private RecognizerTask calcTranspose = new RecognizerTask() {
         @Override
         void execute() throws Exception {
-            long time = System.currentTimeMillis();
+            long time = System.nanoTime();
             NativeTools.transpose(sobel, sobelTransposed, frameSize.width, frameSize.height);
-            Rftg.e("Transpose: " + (System.currentTimeMillis() - time) + "ms");
+            timingTransposeTime = System.nanoTime() - time;
 
             mainContext.executor.submit(calcHoughTop);
             mainContext.executor.submit(calcHoughBottom);
@@ -184,6 +157,8 @@ class Recognizer {
         @Override
         void execute() throws Exception {
             super.execute();
+            timingTotalHoughTime += timingHoughTime;
+            timingTotalGroupTime += timingGroupTime;
             if (houghSync.decrementAndGet() == 0) {
                 extractRect.execute();
             }
@@ -200,14 +175,20 @@ class Recognizer {
 
         @Override
         void execute() throws Exception {
-            long time = System.currentTimeMillis();
+            long time = System.nanoTime();
             super.execute();
-            Rftg.e("Extract rect: " + (System.currentTimeMillis() - time) + "ms");
-
+            timingExtractRectTime = System.nanoTime() - time;
+/*
             for (Point[] p : rectangles) {
                 debugRectangles = Collections.singletonList(p);
                 NativeTools.warp(frame, frameSize.width, frameSize.height, debugPicture, p[0].x, p[0].y, p[1].x, p[1].y, p[2].x, p[2].y, p[3].x, p[3].y);
+                break;
             }
+*/
+            timingRectCount = rectangles.size();
+            timingTotalWarpTime = 0;
+            timingTotalNormalizeTime = 0;
+            timingTotalMatchTime = 0;
 
             if (rectangles.isEmpty()) {
                 synchronized (collectedCardMatches) {
@@ -251,6 +232,9 @@ class Recognizer {
         @Override
         void execute() throws Exception {
             super.execute();
+            timingTotalWarpTime += timingWarpTime;
+            timingTotalNormalizeTime += timingNormalizeTime;
+            timingTotalMatchTime += timingMatchTime;
             if (matchSync.decrementAndGet() == 0) {
 
                 startFrameRecognition();

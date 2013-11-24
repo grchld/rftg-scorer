@@ -178,8 +178,8 @@ public class UserInterfaceView extends View {
 
     private Point translate(Point point) {
         return new Point(
-                (int)(mainContext.fastCamera.getX() + point.x * mainContext.recognizer.frameSize.width / mainContext.fastCamera.getWidth()),
-                (int)(mainContext.fastCamera.getY() + point.y * mainContext.recognizer.frameSize.height / mainContext.fastCamera.getHeight()));
+                mainContext.fastCamera.getLeft() + point.x * mainContext.fastCamera.getWidth() / mainContext.recognizer.frameSize.width,
+                mainContext.fastCamera.getTop() + point.y * mainContext.fastCamera.getHeight() / mainContext.recognizer.frameSize.height);
     }
 
     private void updateWidgets() {

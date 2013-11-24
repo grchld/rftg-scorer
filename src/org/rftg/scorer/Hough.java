@@ -4,7 +4,6 @@ import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.ShortBuffer;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -13,7 +12,7 @@ import java.util.List;
 */
 class Hough extends RecognizerTask {
 
-    private static final int MAX_LINES = 1000;
+    static final int MAX_LINES = 1000;
     private static final int MAX_BASE_GAP = 2;
 
     private static final int SEGMENT_STRUCT_SIZE = 8;
@@ -34,12 +33,12 @@ class Hough extends RecognizerTask {
     private final int origin;
     private final int maxGap;
     private final int minLength;
+    private final List<Line> lines;
 
 //    private Mat segmentsStack;
-    final List<Line> lines = new ArrayList<Line>(MAX_LINES);
     private final Segment[] segmentsBuffer = new Segment[MAX_LINES];
 
-    Hough(ByteBuffer sobel, int width, int height, boolean transposed, int mask, int origin, int maxGap, int minLength) {
+    Hough(ByteBuffer sobel, int width, int height, boolean transposed, int mask, int origin, int maxGap, int minLength, List<Line> lines) {
         this.sobel = sobel;
         this.width = width;
         this.height = height;
@@ -49,6 +48,7 @@ class Hough extends RecognizerTask {
         this.origin = origin;
         this.maxGap = maxGap;
         this.minLength = minLength;
+        this.lines = lines;
     }
 /*    Hough(ByteBuffer sobel, ByteBuffer segmentStates, boolean transposed, int mask, int origin, int maxGap, int minLength) {
 

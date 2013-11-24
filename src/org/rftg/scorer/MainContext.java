@@ -14,7 +14,6 @@ class MainContext {
     final UserInterfaceView userInterface;
     final State state;
     final CardPatterns cardPatterns;
-//    final RecognizerResources recognizerResources = new RecognizerResources(this);
     final Recognizer recognizer;
 
 

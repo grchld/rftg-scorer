@@ -1,6 +1,5 @@
 package org.rftg.scorer;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -60,12 +59,15 @@ class Recognizer {
     private Mat canny;
     private Mat sobel;
     private Mat sobelTransposed;
-
+*/
     private List<Line> linesLeft = new ArrayList<Line>();
     private List<Line> linesRight = new ArrayList<Line>();
     private List<Line> linesTop = new ArrayList<Line>();
     private List<Line> linesBottom = new ArrayList<Line>();
 
+    List<Point[]> rectangles = new ArrayList<Point[]>(MAX_RECTANGLES);
+
+    /*
     private Mat selectionFused;
     private Mat[] selection = new Mat[MAX_RECTANGLES];
 
@@ -75,12 +77,12 @@ class Recognizer {
     private Hough houghRight;
     private Hough houghTop;
     private Hough houghBottom;
-
-    private double minX;
-    private double minY;
-    private double maxX;
-    private double maxY;
-
+*/
+    private int minX;
+    private int minY;
+    private int maxX;
+    private int maxY;
+/*
     final int width;
     final int height;
 */
@@ -93,6 +95,7 @@ class Recognizer {
     private ByteBuffer sobelTransposed;
 
     volatile ByteBuffer debugPicture;
+    volatile List<Point[]> debugRectangles;
 
     private AtomicInteger houghSync = new AtomicInteger(0);
 
@@ -170,7 +173,7 @@ class Recognizer {
                     sobel = ByteBuffer.allocateDirect(frameBufferSize);
                     sobelTransposed = ByteBuffer.allocateDirect(frameBufferSize);
                     debugPicture = ByteBuffer.allocateDirect(frameBufferSize);
-                    initHoughTasks();
+                    initTasks();
                 }
                 startFrameRecognition();
             }
@@ -212,15 +215,6 @@ class Recognizer {
 
             calcHoughTop.execute();
             calcHoughBottom.execute();
-/*
-            houghSync.decrementAndGet();
-            houghSync.decrementAndGet();
-            houghSync.decrementAndGet();
-            houghSync.decrementAndGet();
-
-            mainContext.userInterface.postInvalidate();
-            startFrameRecognition();
-            */
         }
     };
 
@@ -230,29 +224,54 @@ class Recognizer {
     HoughTask calcHoughBottom;
 
     class HoughTask extends Hough {
-        private HoughTask(ByteBuffer sobel, int width, int height, boolean transposed, int mask, int origin, int maxGap, int minLength) {
-            super(sobel, width, height, transposed, mask, origin, maxGap, minLength);
+        private HoughTask(ByteBuffer sobel, int width, int height, boolean transposed, int mask, int origin, int maxGap, int minLength, List<Line> lines) {
+            super(sobel, width, height, transposed, mask, origin, maxGap, minLength, lines);
         }
 
         @Override
         void execute() throws Exception {
             super.execute();
             if (houghSync.decrementAndGet() == 0) {
-                mainContext.userInterface.postInvalidate();
-                startFrameRecognition();
+                extractRect.execute();
             }
         }
     }
 
-    private void initHoughTasks() {
+    private RecognizerTask extractRect = new RecognizerTask() {
+        @Override
+        void execute() throws Exception {
+            long time = System.currentTimeMillis();
+            rectangles.clear();
+            extractRectangles(rectangles, false);
+            if (rectangles.size() <= MAX_RECTANGLES_TO_USE_OUTERS) {
+                extractRectangles(rectangles, true);
+            }
+            Rftg.e("Extract rect: " + (System.currentTimeMillis() - time) + "ms");
+
+            debugRectangles = new ArrayList<Point[]>(rectangles);
+
+            mainContext.userInterface.postInvalidate();
+            startFrameRecognition();
+        }
+    };
+
+
+    private void initTasks() {
+        minX = 50;
+        minY = (int)(minX * RECT_ASPECT);
+
+        maxY = (int)(frameSize.height / 1.1);
+        maxX = (int)(maxY / RECT_ASPECT);
+
         int xOrigin = frameSize.width / 2;
         int yOrigin = frameSize.height / 2;
 
-        calcHoughLeft = new HoughTask(sobel, frameSize.width, frameSize.height, false, MASK_LEFT, yOrigin, MAX_GAP_LEFT, MIN_LENGTH_LEFT);
-        calcHoughRight = new HoughTask(sobel, frameSize.width, frameSize.height, false, MASK_RIGHT, yOrigin, MAX_GAP, MIN_LENGTH);
-        calcHoughTop = new HoughTask(sobelTransposed, frameSize.height, frameSize.width, true, MASK_TOP, xOrigin, MAX_GAP, MIN_LENGTH);
-        calcHoughBottom = new HoughTask(sobelTransposed, frameSize.height, frameSize.width, true, MASK_BOTTOM, xOrigin, MAX_GAP, MIN_LENGTH);
+        calcHoughLeft = new HoughTask(sobel, frameSize.width, frameSize.height, false, MASK_LEFT, yOrigin, MAX_GAP_LEFT, MIN_LENGTH_LEFT, linesLeft);
+        calcHoughRight = new HoughTask(sobel, frameSize.width, frameSize.height, false, MASK_RIGHT, yOrigin, MAX_GAP, MIN_LENGTH, linesRight);
+        calcHoughTop = new HoughTask(sobelTransposed, frameSize.height, frameSize.width, true, MASK_TOP, xOrigin, MAX_GAP, MIN_LENGTH, linesTop);
+        calcHoughBottom = new HoughTask(sobelTransposed, frameSize.height, frameSize.width, true, MASK_BOTTOM, xOrigin, MAX_GAP, MIN_LENGTH, linesBottom);
     }
+
 
     void startFrameRecognition() {
         mainContext.executor.submit(copyFrame);
@@ -513,7 +532,7 @@ class Recognizer {
 
         return frame;
     }
-
+*/
     private void extractRectangles(List<Point[]> rectangles, boolean outer) {
 
         List<Line> linesLeft;
@@ -610,10 +629,10 @@ class Recognizer {
                         Point p4 = left.intersect(bottom);
 
                         if (outer) {
-                            Point np1 = new Point(p1.x + (p2.x - p1.x) * CardPatterns.CARD_VERTICAL_BORDER, p1.y + (p4.y - p1.y) * CardPatterns.CARD_HORIZONTAL_BORDER);
-                            Point np2 = new Point(p2.x - (p2.x - p1.x) * CardPatterns.CARD_VERTICAL_BORDER, p2.y + (p3.y - p2.y) * CardPatterns.CARD_HORIZONTAL_BORDER);
-                            Point np3 = new Point(p3.x - (p3.x - p4.x) * CardPatterns.CARD_VERTICAL_BORDER, p3.y - (p3.y - p2.y) * CardPatterns.CARD_HORIZONTAL_BORDER);
-                            Point np4 = new Point(p4.x + (p3.x - p4.x) * CardPatterns.CARD_VERTICAL_BORDER, p4.y - (p4.y - p1.y) * CardPatterns.CARD_HORIZONTAL_BORDER);
+                            Point np1 = new Point((int)(p1.x + (p2.x - p1.x) * CardPatterns.CARD_VERTICAL_BORDER), (int)(p1.y + (p4.y - p1.y) * CardPatterns.CARD_HORIZONTAL_BORDER));
+                            Point np2 = new Point((int)(p2.x - (p2.x - p1.x) * CardPatterns.CARD_VERTICAL_BORDER), (int)(p2.y + (p3.y - p2.y) * CardPatterns.CARD_HORIZONTAL_BORDER));
+                            Point np3 = new Point((int)(p3.x - (p3.x - p4.x) * CardPatterns.CARD_VERTICAL_BORDER), (int)(p3.y - (p3.y - p2.y) * CardPatterns.CARD_HORIZONTAL_BORDER));
+                            Point np4 = new Point((int)(p4.x + (p3.x - p4.x) * CardPatterns.CARD_VERTICAL_BORDER), (int)(p4.y - (p4.y - p1.y) * CardPatterns.CARD_HORIZONTAL_BORDER));
 
                             p1 = np1;
                             p2 = np2;
@@ -630,27 +649,4 @@ class Recognizer {
             }
         }
     }
-
-    private void draw(Mat frame, Sprite background, Sprite text, Position position) {
-        draw(frame, background, text, position.x, position.y);
-    }
-
-    private void draw(Mat frame, Sprite background, Sprite text, int x, int y) {
-        if (x < 0) {
-            x += frame.cols();
-        }
-        if (y < 0) {
-            y += frame.rows();
-        }
-
-        background.draw(frame, x, y);
-
-        if (text != null) {
-            text.draw(frame,
-                    x + background.width / 2 - text.width / 2,
-                    y + background.height / 2 - text.height / 2);
-            text.release();
-        }
-    }
-    */
 }

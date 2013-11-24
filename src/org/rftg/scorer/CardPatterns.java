@@ -8,20 +8,20 @@ import java.nio.ByteBuffer;
  */
 class CardPatterns {
 
-    public final static int ORIGINAL_SAMPLE_HEIGHT = 520;
-    public final static int ORIGINAL_SAMPLE_WIDTH = 372;
-    public final static int ORIGINAL_SAMPLE_BORDER = 23;
-/*
-    public final static double CARD_HORIZONTAL_BORDER = ((double)ORIGINAL_SAMPLE_BORDER)/ORIGINAL_SAMPLE_HEIGHT;
-    public final static double CARD_VERTICAL_BORDER = ((double)ORIGINAL_SAMPLE_BORDER)/ORIGINAL_SAMPLE_WIDTH;
-  */
-    public final static int SAMPLE_HEIGHT = 64;
-    public final static int SAMPLE_WIDTH = 64;
-    public final static int MATCHER_MINIMAL_BOUND = 5000;
-    public final static int MATCHER_MINIMAL_GAP = 1000;
-    public final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
+    final static int ORIGINAL_SAMPLE_HEIGHT = 520;
+    final static int ORIGINAL_SAMPLE_WIDTH = 372;
+    final static int ORIGINAL_SAMPLE_BORDER = 23;
 
-    public final static int SAMPLE_COUNT = Card.GameType.EXP3.maxCardNum + 1;
+    final static float CARD_HORIZONTAL_BORDER = ((float)ORIGINAL_SAMPLE_BORDER)/ORIGINAL_SAMPLE_HEIGHT;
+    final static float CARD_VERTICAL_BORDER = ((float)ORIGINAL_SAMPLE_BORDER)/ORIGINAL_SAMPLE_WIDTH;
+
+    final static int SAMPLE_HEIGHT = 64;
+    final static int SAMPLE_WIDTH = 64;
+    final static int MATCHER_MINIMAL_BOUND = 5000;
+    final static int MATCHER_MINIMAL_GAP = 1000;
+    final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
+
+    final static int SAMPLE_COUNT = Card.GameType.EXP3.maxCardNum + 1;
 
     final ByteBuffer samples = ByteBuffer.allocateDirect(SAMPLE_WIDTH * SAMPLE_HEIGHT * SAMPLE_COUNT);
 

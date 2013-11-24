@@ -132,6 +132,7 @@ public class UserInterfaceView extends View {
         }
         */
 
+        /*
         if (mainContext.recognizer.calcHoughLeft != null) {
             for (Line line : mainContext.recognizer.calcHoughLeft.lines) {
                 canvas.drawLine(line.x1, line.y1, line.x2, line.y2, userInterfaceResources.PAINT_RED);
@@ -150,6 +151,16 @@ public class UserInterfaceView extends View {
         if (mainContext.recognizer.calcHoughBottom != null) {
             for (Line line : mainContext.recognizer.calcHoughBottom.lines) {
                 canvas.drawLine(line.x1, line.y1, line.x2, line.y2, userInterfaceResources.PAINT_MAGENTA);
+            }
+        }
+        */
+
+        if (mainContext.recognizer.debugRectangles != null) {
+            for (Point[] points : mainContext.recognizer.debugRectangles) {
+                canvas.drawLine(points[0].x, points[0].y, points[1].x, points[1].y, userInterfaceResources.PAINT_GREEN);
+                canvas.drawLine(points[1].x, points[1].y, points[2].x, points[2].y, userInterfaceResources.PAINT_GREEN);
+                canvas.drawLine(points[2].x, points[2].y, points[3].x, points[3].y, userInterfaceResources.PAINT_GREEN);
+                canvas.drawLine(points[3].x, points[3].y, points[0].x, points[0].y, userInterfaceResources.PAINT_GREEN);
             }
         }
 

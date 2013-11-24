@@ -647,18 +647,22 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_warp(JNIEnv* env, jclass
     uchar* image = (uchar*)(*env).GetDirectBufferAddress(imageBuffer);
     uchar* warp = (uchar*)(*env).GetDirectBufferAddress(warpBuffer);
 
-    jint ax = x2 + x3;
-    jint bx = x1 + x4 - ax;
-    ax <<= 15;
+    jint cx = x4 - x1;
+    jint ax = x3 - x2 - cx;
+    jint bx = x2 - x1;
     
-    jint ay = y3 + y4;
-    jint by = y1 + y2 - ay;
-    bx <<= 15;
+    jint cy = y4 - y1;
+    jint ay = y3 - y2 - cy;
+    jint by = y2 - y1;
     
     for (int y = 0 ; y < 64 ; y++) {
+        jint beta = warpMap[y];
         for (int x = 0 ; x < 64 ; x++) {
-            jint px = (ax + bx * warpMap[x]) >> 17;
-            jint py = (ay + by * warpMap[y]) >> 17;
+            jint alpha = warpMap[x];
+            jint gamma = alpha * beta >> 15;
+            
+            jint px = ((gamma * ax + beta * cx + alpha * bx) >> 15) + x1;
+            jint py = ((gamma * ay + beta * cy + alpha * by) >> 15) + y1;
             *(warp++) = image[py*width + px];
         }
     }

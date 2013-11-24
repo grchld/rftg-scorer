@@ -111,27 +111,26 @@ public class UserInterfaceView extends View {
             }
             userInterfaceResources = new UserInterfaceResources(mainContext, new Size(canvas.getWidth(), canvas.getHeight()));
         }
-        /*
+         /*
         if (mainContext.recognizer.debugPicture != null) {
             Paint p = new Paint();
             p.setARGB(255, 0, 0, 0);
-            canvas.drawRect(0, 0, mainContext.recognizer.frameSize.width, mainContext.recognizer.frameSize.height, p);
+            canvas.drawRect(600, 0, 800, 200, p);
             if (bitmap == null) {
-                bitmap = Bitmap.createBitmap(mainContext.recognizer.frameSize.width, mainContext.recognizer.frameSize.height, Bitmap.Config.ALPHA_8);
+                bitmap = Bitmap.createBitmap(64, 64, Bitmap.Config.ALPHA_8);
             }
 
             if (mainContext.recognizer.debugPicture != null) {
                 synchronized (mainContext.recognizer.debugPicture) {
-                     mainContext.recognizer.debugPicture.position(0);
+                    mainContext.recognizer.debugPicture.position(0);
                     bitmap.copyPixelsFromBuffer(mainContext.recognizer.debugPicture);
                 }
             }
 
             p.setARGB(255, 255, 255, 255);
-            canvas.drawBitmap(bitmap, 0, 0, p);
+            canvas.drawBitmap(bitmap, new android.graphics.Rect(0, 0, 64, 64), new android.graphics.Rect(600, 0, 800, 200), p);
         }
-        */
-
+           */
         /*
         if (mainContext.recognizer.calcHoughLeft != null) {
             for (Line line : mainContext.recognizer.calcHoughLeft.lines) {
@@ -154,7 +153,7 @@ public class UserInterfaceView extends View {
             }
         }
         */
-        /*
+/*
         if (mainContext.recognizer.debugRectangles != null) {
             for (Point[] points : mainContext.recognizer.debugRectangles) {
                 Point p0 = translate(points[0]);
@@ -181,6 +180,16 @@ public class UserInterfaceView extends View {
                 canvas.drawLine(p1.x, p1.y, p2.x, p2.y, userInterfaceResources.PAINT_BORDER_NEW);
                 canvas.drawLine(p2.x, p2.y, p3.x, p3.y, userInterfaceResources.PAINT_BORDER_NEW);
                 canvas.drawLine(p3.x, p3.y, p0.x, p0.y, userInterfaceResources.PAINT_BORDER_NEW);
+            }
+
+            for (CardMatch match : mainContext.recognizer.collectedCardMatches) {
+                Point[] points = match.rect;
+                Point p0 = translate(points[0]);
+
+                canvas.drawText(mainContext.cardInfo.cards[match.cardNumber].name,
+                        p0.x + userInterfaceResources.screenProperties.cardNameOffsetX,
+                        p0.y + userInterfaceResources.screenProperties.cardNameOffsetY,
+                        userInterfaceResources.PAINT_CARD_NAME);
             }
         }
 

@@ -131,7 +131,7 @@ class Recognizer {
                     frame = ByteBuffer.allocateDirect(frameBufferSize);
                     sobel = ByteBuffer.allocateDirect(frameBufferSize);
                     sobelTransposed = ByteBuffer.allocateDirect(frameBufferSize);
-                    debugPicture = ByteBuffer.allocateDirect(frameBufferSize);
+                    debugPicture = ByteBuffer.allocateDirect(64*64);
                     initTasks();
                 }
                 startFrameRecognition();
@@ -165,12 +165,6 @@ class Recognizer {
             long time = System.currentTimeMillis();
             NativeTools.transpose(sobel, sobelTransposed, frameSize.width, frameSize.height);
             Rftg.e("Transpose: " + (System.currentTimeMillis() - time) + "ms");
-
-            synchronized (debugPicture) {
-                debugPicture.position(0);
-                debugPicture.put(sobelTransposed);
-                sobelTransposed.position(0);
-            }
 
             mainContext.executor.submit(calcHoughTop);
             mainContext.executor.submit(calcHoughBottom);
@@ -210,7 +204,10 @@ class Recognizer {
             super.execute();
             Rftg.e("Extract rect: " + (System.currentTimeMillis() - time) + "ms");
 
-            debugRectangles = new ArrayList<Point[]>(rectangles);
+            for (Point[] p : rectangles) {
+                debugRectangles = Collections.singletonList(p);
+                NativeTools.warp(frame, frameSize.width, frameSize.height, debugPicture, p[0].x, p[0].y, p[1].x, p[1].y, p[2].x, p[2].y, p[3].x, p[3].y);
+            }
 
             if (rectangles.isEmpty()) {
                 synchronized (collectedCardMatches) {

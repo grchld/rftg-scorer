@@ -21,6 +21,7 @@ class UserInterfaceResources {
 
     final Paint PAINT_BORDER_NEW = paint(0, 255, 0);
     final Paint PAINT_BORDER_OLD = paint(255, 0, 0);
+    final Paint PAINT_CARD_NAME = paint(255, 255, 255);
 
     final Paint PAINT_BLACK = paint(0, 0, 0);
     final Paint PAINT_WHITE = paint(255, 255, 255);
@@ -66,7 +67,12 @@ class UserInterfaceResources {
         PAINT_TOTAL.setTextSize(screenProperties.totalTextScale);
 
         PAINT_BORDER_NEW.setStrokeWidth(screenProperties.borderNewStrokeWidth);
+        PAINT_BORDER_NEW.setStrokeCap(Paint.Cap.BUTT);
         PAINT_BORDER_OLD.setStrokeWidth(screenProperties.borderOldStrokeWidth);
+        PAINT_BORDER_OLD.setStrokeCap(Paint.Cap.BUTT);
+
+        PAINT_CARD_NAME.setTextAlign(Paint.Align.LEFT);
+        PAINT_CARD_NAME.setTextSize(screenProperties.cardTextScale);
 
         cardsIcon = loadSprite("cards", screenProperties.cardsIconRect, PAINT_CARDS);
         chipsIcon = loadSprite("chip", screenProperties.chipsIconRect, PAINT_CHIPS);

@@ -4,6 +4,10 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.view.*;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 public class MainActivity extends Activity {
 
     private MainContext mainContext;
@@ -51,7 +55,34 @@ public class MainActivity extends Activity {
                         mainContext.state.settings.usePrestige ? R.string.prestige_disable : R.string.prestige_enable));
                 mainContext.userInterface.postInvalidate();
                 return true;
+            case R.id.cameraResolution:
+                List<Size> sizes = new ArrayList<Size>(mainContext.fastCamera.getCameraSizes());
+                Collections.sort(sizes);
+
+                Size preferredCameraSize = mainContext.state.settings.preferredCameraSize;
+
+                Menu menu = item.getSubMenu();
+                menu.clear();
+                menu.add("Auto")./*setCheckable(true).setChecked(preferredCameraSize == null).*/setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                    @Override
+                    public boolean onMenuItemClick(MenuItem menuItem) {
+                        changeCameraPreferredSize(null);
+                        return true;
+                    }
+                });
+
+                for (final Size size : sizes) {
+                    menu.add(size.toString())./*setCheckable(true).setChecked(size.equals(preferredCameraSize)).*/setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+                        @Override
+                        public boolean onMenuItemClick(MenuItem menuItem) {
+                            changeCameraPreferredSize(size);
+                            return true;
+                        }
+                    });
+                }
+                return true;
             default:
+
                 return super.onContextItemSelected(item);
         }
     }
@@ -69,8 +100,8 @@ public class MainActivity extends Activity {
             if (mainContext.state != null) {
                 mainContext.state.saveState(this);
             }
-            mainContext.fastCamera.releaseCamera();
             mainContext.executor.stop();
+            mainContext.fastCamera.releaseCamera();
             Rftg.d("Pause");
         } finally {
             super.onPause();
@@ -83,5 +114,13 @@ public class MainActivity extends Activity {
         mainContext.executor.start();
         mainContext.recognizer.startFrameRecognition();
         Rftg.d("Resume");
+    }
+
+    private void changeCameraPreferredSize(Size size) {
+        mainContext.state.settings.preferredCameraSize = size;
+        mainContext.fastCamera.setPreferredSize(size);
+        mainContext.fastCamera.getHolder().setFixedSize(
+                size == null ? mainContext.userInterface.getWidth() : size.width,
+                size == null ? mainContext.userInterface.getHeight() : size.height);
     }
 }

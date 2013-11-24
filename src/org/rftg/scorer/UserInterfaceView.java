@@ -157,10 +157,15 @@ public class UserInterfaceView extends View {
 
         if (mainContext.recognizer.debugRectangles != null) {
             for (Point[] points : mainContext.recognizer.debugRectangles) {
-                canvas.drawLine(points[0].x, points[0].y, points[1].x, points[1].y, userInterfaceResources.PAINT_GREEN);
-                canvas.drawLine(points[1].x, points[1].y, points[2].x, points[2].y, userInterfaceResources.PAINT_GREEN);
-                canvas.drawLine(points[2].x, points[2].y, points[3].x, points[3].y, userInterfaceResources.PAINT_GREEN);
-                canvas.drawLine(points[3].x, points[3].y, points[0].x, points[0].y, userInterfaceResources.PAINT_GREEN);
+                Point p0 = translate(points[0]);
+                Point p1 = translate(points[1]);
+                Point p2 = translate(points[2]);
+                Point p3 = translate(points[3]);
+
+                canvas.drawLine(p0.x, p0.y, p1.x, p1.y, userInterfaceResources.PAINT_GREEN);
+                canvas.drawLine(p1.x, p1.y, p2.x, p2.y, userInterfaceResources.PAINT_GREEN);
+                canvas.drawLine(p2.x, p2.y, p3.x, p3.y, userInterfaceResources.PAINT_GREEN);
+                canvas.drawLine(p3.x, p3.y, p0.x, p0.y, userInterfaceResources.PAINT_GREEN);
             }
         }
 
@@ -169,6 +174,12 @@ public class UserInterfaceView extends View {
         for (Widget widget : widgets) {
             widget.draw(canvas);
         }
+    }
+
+    private Point translate(Point point) {
+        return new Point(
+                (int)(mainContext.fastCamera.getX() + point.x * mainContext.recognizer.frameSize.width / mainContext.fastCamera.getWidth()),
+                (int)(mainContext.fastCamera.getY() + point.y * mainContext.recognizer.frameSize.height / mainContext.fastCamera.getHeight()));
     }
 
     private void updateWidgets() {

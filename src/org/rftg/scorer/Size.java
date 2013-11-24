@@ -3,7 +3,7 @@ package org.rftg.scorer;
 /**
  * @author gc
  */
-public class Size {
+public class Size implements Comparable<Size> {
     public final int width;
     public final int height;
 
@@ -48,6 +48,11 @@ public class Size {
         int result = width;
         result = 31 * result + height;
         return result;
+    }
+
+    @Override
+    public int compareTo(Size size) {
+        return (size.width == width) ? (size.width - width) : (size.height - height);
     }
 
     @Override

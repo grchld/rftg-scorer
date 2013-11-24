@@ -55,6 +55,7 @@ class Recognizer {
     private long timingSobelTime;
     private long timingTransposeTime;
     private long timingTotalHoughTime;
+    private long timingTotalSegmentTime;
     private long timingTotalGroupTime;
     private long timingExtractRectTime;
     private int timingRectCount;
@@ -75,11 +76,12 @@ class Recognizer {
                         ", sobel: " + (timingSobelTime / 1000000) +
                         ", trans: " + (timingTransposeTime / 1000000) +
                         ", hough: " + (timingTotalHoughTime / 1000000) + "=4*" + (timingTotalHoughTime / 1000000 / 4) +
+                        ", segment: " + (timingTotalSegmentTime / 1000000) + "=4*" + (timingTotalSegmentTime / 1000000 / 4) +
                         ", group: " + (timingTotalGroupTime / 1000000) + "=4*" + (timingTotalGroupTime / 1000000 / 4) +
                         ", rect: " + (timingExtractRectTime / 1000000) +
-                        ", warp: " + (timingTotalWarpTime / 1000000) + "=" + timingRectCount + "*" + (timingRectCount == 0 ? "?" : "" + (timingTotalWarpTime / 1000000 / timingRectCount)) +
-                        ", norm: " + (timingTotalNormalizeTime / 1000000) + "=" + timingRectCount + "*" + (timingRectCount == 0 ? "?" : "" + (timingTotalNormalizeTime / 1000000 / timingRectCount)) +
-                        ", match: " + (timingTotalMatchTime / 1000000) + "=" + timingRectCount + "*" + (timingRectCount == 0 ? "?" : "" + (timingTotalMatchTime / 1000000 / timingRectCount))
+                        ", warp: " + (timingTotalWarpTime / 1000000) + "=" + timingRectCount + "*" + (timingRectCount == 0 ? "?" : "" + (timingTotalWarpTime / 1000 / timingRectCount) + "/1000") +
+                        ", norm: " + (timingTotalNormalizeTime / 1000000) + "=" + timingRectCount + "*" + (timingRectCount == 0 ? "?" : "" + (timingTotalNormalizeTime / 1000 / timingRectCount) + "/1000") +
+                        ", match: " + (timingTotalMatchTime / 1000000) + "=" + timingRectCount + "*" + (timingRectCount == 0 ? "?" : "" + (timingTotalMatchTime / 1000 / timingRectCount) + "/1000")
                 );
             }
 
@@ -117,6 +119,7 @@ class Recognizer {
             NativeTools.sobel(frame, sobel, frameSize.width, frameSize.height);
             timingSobelTime = System.nanoTime() - time;
             timingTotalHoughTime = 0;
+            timingTotalSegmentTime = 0;
             timingTotalGroupTime = 0;
 
             if (!houghSync.compareAndSet(0, 4)) {
@@ -158,6 +161,7 @@ class Recognizer {
         void execute() throws Exception {
             super.execute();
             timingTotalHoughTime += timingHoughTime;
+            timingTotalSegmentTime += timingSegmentTime;
             timingTotalGroupTime += timingGroupTime;
             if (houghSync.decrementAndGet() == 0) {
                 extractRect.execute();

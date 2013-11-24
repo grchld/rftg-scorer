@@ -27,7 +27,10 @@ class Hough extends RecognizerTask {
     private final int width;
     private final int height;
     private final Buffer segmentStates;
-    private final ShortBuffer segments = ByteBuffer.allocateDirect(MAX_LINES * SEGMENT_STRUCT_SIZE).order(ByteOrder.nativeOrder()).asShortBuffer();
+    private final ByteBuffer segments = ByteBuffer.allocateDirect(MAX_LINES * SEGMENT_STRUCT_SIZE);
+    private final byte[] segmentsBytes = new byte[MAX_LINES * SEGMENT_STRUCT_SIZE];
+/*    private final ByteBuffer segmentsBytes = ByteBuffer.allocate(MAX_LINES * SEGMENT_STRUCT_SIZE);
+    private final ShortBuffer segments = segmentsBytes.order(ByteOrder.nativeOrder()).asShortBuffer();*/
     private final boolean transposed;
     private final int mask;
     private final int origin;
@@ -37,6 +40,7 @@ class Hough extends RecognizerTask {
 
     long timingHoughTime;
     long timingGroupTime;
+    long timingSegmentTime;
 
 //    private Mat segmentsStack;
     private final Segment[] segmentsBuffer = new Segment[MAX_LINES];
@@ -83,12 +87,20 @@ class Hough extends RecognizerTask {
 
         timingHoughTime = System.nanoTime() - time;
 
-        time = System.nanoTime();
         segments.position(0);
+        segments.get(segmentsBytes);
+        time = System.nanoTime();
+        int j = 0;
         for (int i = 0 ; i < segmentCount ; i++) {
-            segmentsBuffer[i] = new Segment(origin, segments.get(), segments.get(), segments.get(), segments.get(), 0);
+            segmentsBuffer[i] = new Segment(origin,
+                    ((int)segmentsBytes[j++]) & 0xff | ((int)segmentsBytes[j++]) << 8,
+                    ((int)segmentsBytes[j++]) & 0xff | ((int)segmentsBytes[j++]) << 8,
+                    ((int)segmentsBytes[j++]) & 0xff | ((int)segmentsBytes[j++]) << 8,
+                    ((int)segmentsBytes[j++]) & 0xff | ((int)segmentsBytes[j++]) << 8, 0);
         }
+        timingSegmentTime = System.nanoTime() - time;
 
+        time = System.nanoTime();
         group(segmentCount);
         timingGroupTime = System.nanoTime() - time;
     }

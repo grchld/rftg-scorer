@@ -23,16 +23,18 @@ public class RectExtractor extends RecognizerTask {
 
     private static final double RECT_MIN_LINE_LENGTH_PERCENT = 35;
 
-    private List<Point[]> rectangles;
-    private List<Line> linesLeft;
-    private List<Line> linesRight;
-    private List<Line> linesTop;
-    private List<Line> linesBottom;
+    private final List<Point[]> rectangles;
+    private final List<Line> linesLeft;
+    private final List<Line> linesRight;
+    private final List<Line> linesTop;
+    private final List<Line> linesBottom;
 
-    private int minX;
-    private int minY;
-    private int maxX;
-    private int maxY;
+    private final Size frameSize;
+
+    private final int minX;
+    private final int minY;
+    private final int maxX;
+    private final int maxY;
 
     public RectExtractor(List<Point[]> rectangles, List<Line> linesLeft, List<Line> linesRight, List<Line> linesTop, List<Line> linesBottom, Size frameSize) {
         this.rectangles = rectangles;
@@ -40,6 +42,7 @@ public class RectExtractor extends RecognizerTask {
         this.linesRight = linesRight;
         this.linesTop = linesTop;
         this.linesBottom = linesBottom;
+        this.frameSize = frameSize;
 
         minX = 50;
         minY = (int)(minX * RECT_ASPECT);
@@ -165,9 +168,13 @@ public class RectExtractor extends RecognizerTask {
                             p4 = np4;
                         }
 
-                        rectangles.add(new Point[]{p1, p2, p3, p4});
-                        if (rectangles.size() >= MAX_RECTANGLES) {
-                            return;
+
+                        if (frameSize.contains(p1) && frameSize.contains(p2) && frameSize.contains(p3) && frameSize.contains(p4))
+                        {
+                            rectangles.add(new Point[]{p1, p2, p3, p4});
+                            if (rectangles.size() >= MAX_RECTANGLES) {
+                                return;
+                            }
                         }
                     }
                 }

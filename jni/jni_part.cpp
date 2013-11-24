@@ -1,6 +1,6 @@
 #include <jni.h>
 //#include <vector>
-//#include <math.h>
+#include <math.h>
 #include <string.h>
 #include <stdlib.h>
 #include <android/log.h>
@@ -19,6 +19,7 @@ extern "C" {
 #define SOBEL_H_DARK_BOUND 100
 
 typedef unsigned char uchar;
+typedef unsigned short ushort;
 typedef unsigned int uint;
 
 JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_sobel(JNIEnv* env, jclass, jobject srcBuffer, jobject dstBuffer, jint width, jint height)
@@ -475,8 +476,6 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_transpose(JNIEnv* env, j
 
 }
 
-#ifdef FALSE
-
 #define COMPARE_BOUND_1 15
 #define COMPARE_BOUND_2 30
 
@@ -486,10 +485,10 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_transpose(JNIEnv* env, j
 #define FIRST_GAMBLING_WORLD 86
 #define SECOND_GAMBLING_WORLD 144
 
-JNIEXPORT jlong JNICALL Java_org_rftg_scorer_NativeTools_match(JNIEnv*, jobject, jlong selectionAddr, jlong patternsAddr, jint patternSize, jint patternsCount)
+JNIEXPORT jlong JNICALL Java_org_rftg_scorer_NativeTools_match(JNIEnv* env, jclass, jobject selectionBuffer, jobject patternsBuffer, jint patternSize, jint patternsCount)
 {
-    Mat& selection = *(Mat*)selectionAddr;
-    Mat& pattern = *(Mat*)patternsAddr;
+    uchar* selection = (uchar*)(*env).GetDirectBufferAddress(selectionBuffer);
+    uchar* pattern = (uchar*)(*env).GetDirectBufferAddress(patternsBuffer);
 
     #if HAVE_NEON == 1
 
@@ -572,7 +571,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_NativeTools_match(JNIEnv*, jobject,
         "NativeTools_match_loop_4:\n\t"
 
         : [BEST]"=&r" (best), [SECOND_BEST]"=&r" (second_best)
-        : [SELECTION]"r" (selection.ptr<uchar>(0)), [PATTERN]"r" (pattern.ptr<uchar>(0)), [SIZE]"r" (patternSize/16), [COUNT]"r" (patternsCount),
+        : [SELECTION]"r" (selection), [PATTERN]"r" (pattern), [SIZE]"r" (patternSize/16), [COUNT]"r" (patternsCount),
           [COMPARE_BOUND_A]"i" (COMPARE_BOUND_1), [COMPARE_BOUND_B]"i" (COMPARE_BOUND_2),
           [COMPARE_SCORE_DIFF_A]"i" (COMPARE_SCORE_1 - COMPARE_SCORE_2), [COMPARE_SCORE_B]"i" (COMPARE_SCORE_2),
           [_FIRST_GAMBLING_WORLD]"i" (FIRST_GAMBLING_WORLD), [_SECOND_GAMBLING_WORLD]"i" (SECOND_GAMBLING_WORLD)
@@ -584,7 +583,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_NativeTools_match(JNIEnv*, jobject,
 
     #else
 
-    uchar* p = pattern.ptr<uchar>(0);
+    uchar* p = pattern;
 
     int bestCardNumber = 0;
     int bestScore = 0;
@@ -593,7 +592,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_NativeTools_match(JNIEnv*, jobject,
 
     for (int cardNumber = 0 ; cardNumber < patternsCount ; cardNumber++) {
 
-        uchar* s = selection.ptr<uchar>(0);
+        uchar* s = selection;
 
         int score = 0;
 
@@ -632,20 +631,44 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_NativeTools_match(JNIEnv*, jobject,
 #define NORMAL_DISPERSION 70.*70.
 #define NORMAL_MEDIAN 127.5
 
-JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_normalize(JNIEnv*, jobject, jlong imageAddr)
+// x1,y1 => 0,0
+// x2,y2 => 63,0
+// x3,y3 => 63,63
+// x4,y4 => 0,63
+
+ushort warpMap[64] = {0, 520, 1040, 1560, 2081, 2601, 3121, 3641, 4161, 4681, 5201, 5721, 6242, 6762, 7282, 7802,
+    8322, 8842, 9362, 9882, 10403, 10923, 11443, 11963, 12483, 13003, 13523, 14043, 14564, 15084, 15604, 16124,
+    16644, 17164, 17684, 18204, 18725, 19245, 19765, 20285, 20805, 21325, 21845, 22365, 22886, 23406, 23926, 24446,
+    24966, 25486, 26006, 26526, 27047, 27567, 28087, 28607, 29127, 29647, 30167, 30687, 31208, 31728, 32248, 32768};
+
+JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_warp(JNIEnv* env, jclass, jobject imageBuffer, jint width, jint height, jobject warpBuffer,
+    jint x1, jint y1, jint x2, jint y2, jint x3, jint y3, jint x4, jint y4)
+{    
+    uchar* image = (uchar*)(*env).GetDirectBufferAddress(imageBuffer);
+    uchar* warp = (uchar*)(*env).GetDirectBufferAddress(warpBuffer);
+
+    jint ax = x2 + x3;
+    jint bx = x1 + x4 - ax;
+    ax <<= 15;
+    
+    jint ay = y3 + y4;
+    jint by = y1 + y2 - ay;
+    bx <<= 15;
+    
+    for (int y = 0 ; y < 64 ; y++) {
+        for (int x = 0 ; x < 64 ; x++) {
+            jint px = (ax + bx * warpMap[x]) >> 17;
+            jint py = (ay + by * warpMap[y]) >> 17;
+            *(warp++) = image[py*width + px];
+        }
+    }
+}
+
+JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_normalize(JNIEnv* env, jclass, jobject imageBuffer, jint total)
 {
-    Mat& image = *(Mat*)imageAddr;
+    uchar* image = (uchar*)(*env).GetDirectBufferAddress(imageBuffer);
 
-    const int cols = image.cols;
-    const int rows = image.rows;
-    const int total = cols*rows;
-
-    CV_DbgAssert(image.depth() == CV_8U);
-    CV_DbgAssert(image.channels() == 1);
-
-    CV_DbgAssert(image.ptr<uchar>(1) - image.ptr<uchar>(0) == cols);
-
-    uchar* a = image.ptr<uchar>(0);
+    uchar* a = image;
 
     int sum, sq;
 
@@ -714,7 +737,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_normalize(JNIEnv*, jobje
         beta = NORMAL_MEDIAN - alpha * sumnorm;
     }
 
-    a = image.ptr<uchar>(0);
+    a = image;
 
     #if HAVE_NEON == 1
 
@@ -776,65 +799,4 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_normalize(JNIEnv*, jobje
 
 }
 
-JNIEXPORT jint JNICALL Java_org_rftg_scorer_NativeTools_drawSobel(JNIEnv*, jobject, jlong sobelAddr, jlong frameAddr)
-{
-    Mat& sobel = *(Mat*)sobelAddr;
-    Mat& frame = *(Mat*)frameAddr;
-
-    int total = sobel.cols * sobel.rows;
-
-    uchar* s = sobel.ptr<uchar>(0);
-    uchar* f = frame.ptr<uchar>(0);
-
-    for (int i = total ; i > 0 ; i--) {
-        uchar mask = *(s++);
-
-        uchar* r = f++;
-        uchar* g = f++;
-        uchar* b = f++;
-
-
-        if (mask & 0x80) {
-            if (mask & 0x20) {
-                *r = 224;
-                *g = 224;
-                *b = 255;
-            } else if (mask & 0x10) {
-                *r = 224;
-                *g = 224;
-                *b = 255;
-            } else {
-                *r = 255;
-                *g = 255;
-                *b = 0;
-            }
-        } else if (mask & 0x40) {
-            if (mask & 0x20) {
-                *r = 224;
-                *g = 224;
-                *b = 255;
-            } else if (mask & 0x10) {
-                *r = 224;
-                *g = 224;
-                *b = 255;
-            } else {
-                *r = 255;
-                *g = 0;
-                *b = 255;
-            }
-        } else {
-            if (mask & 0x20) {
-                *r = 255;
-                *g = 0;
-                *b = 0;
-            } else if (mask & 0x10) {
-                *r = 0;
-                *g = 255;
-                *b = 0;
-            }
-        }
-
-    }
-}
-#endif
 }

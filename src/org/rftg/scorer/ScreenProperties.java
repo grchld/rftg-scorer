@@ -42,6 +42,9 @@ class ScreenProperties {
     final float totalTextScale;
 //    final float totalTextScaleShrink;
 
+    final float borderNewStrokeWidth;
+    final float borderOldStrokeWidth;
+
     final int cardNameOffsetX;
     final int cardNameOffsetY;
 
@@ -83,8 +86,8 @@ class ScreenProperties {
         cardCountTextScale = scaleFloat(70);
         totalTextScale = scaleFloat(70);
 
-
-//        totalTextScaleShrink = scaleFloat(3);
+        borderNewStrokeWidth = scaleFloat(3);
+        borderOldStrokeWidth = scaleFloat(2);
 
         cardNameOffsetX = scale(10);
         cardNameOffsetY = scale(50);

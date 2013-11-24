@@ -154,7 +154,7 @@ public class UserInterfaceView extends View {
             }
         }
         */
-
+        /*
         if (mainContext.recognizer.debugRectangles != null) {
             for (Point[] points : mainContext.recognizer.debugRectangles) {
                 Point p0 = translate(points[0]);
@@ -166,6 +166,21 @@ public class UserInterfaceView extends View {
                 canvas.drawLine(p1.x, p1.y, p2.x, p2.y, userInterfaceResources.PAINT_GREEN);
                 canvas.drawLine(p2.x, p2.y, p3.x, p3.y, userInterfaceResources.PAINT_GREEN);
                 canvas.drawLine(p3.x, p3.y, p0.x, p0.y, userInterfaceResources.PAINT_GREEN);
+            }
+        }
+        */
+        synchronized (mainContext.recognizer.collectedCardMatches) {
+            for (CardMatch match : mainContext.recognizer.collectedCardMatches) {
+                Point[] points = match.rect;
+                Point p0 = translate(points[0]);
+                Point p1 = translate(points[1]);
+                Point p2 = translate(points[2]);
+                Point p3 = translate(points[3]);
+
+                canvas.drawLine(p0.x, p0.y, p1.x, p1.y, userInterfaceResources.PAINT_BORDER_NEW);
+                canvas.drawLine(p1.x, p1.y, p2.x, p2.y, userInterfaceResources.PAINT_BORDER_NEW);
+                canvas.drawLine(p2.x, p2.y, p3.x, p3.y, userInterfaceResources.PAINT_BORDER_NEW);
+                canvas.drawLine(p3.x, p3.y, p0.x, p0.y, userInterfaceResources.PAINT_BORDER_NEW);
             }
         }
 

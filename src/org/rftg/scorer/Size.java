@@ -30,6 +30,10 @@ public class Size implements Comparable<Size> {
         }
     }
 
+    boolean contains(Point point) {
+        return point.x >= 0 && point.x < width && point.y >= 0 && point.y < height;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

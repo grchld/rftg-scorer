@@ -19,6 +19,9 @@ class UserInterfaceResources {
     private final Paint PAINT_TOTAL = paint(0, 0, 0);
     private final Paint PAINT_MAGNIFIED = paint(255, 255, 255);
 
+    final Paint PAINT_BORDER_NEW = paint(0, 255, 0);
+    final Paint PAINT_BORDER_OLD = paint(255, 0, 0);
+
     final Paint PAINT_BLACK = paint(0, 0, 0);
     final Paint PAINT_WHITE = paint(255, 255, 255);
     final Paint PAINT_GREEN = paint(0, 255, 0);
@@ -61,6 +64,9 @@ class UserInterfaceResources {
         PAINT_PRESTIGE.setTextSize(screenProperties.prestigeTextScale);
         PAINT_MILITARY.setTextSize(screenProperties.militaryTextScale);
         PAINT_TOTAL.setTextSize(screenProperties.totalTextScale);
+
+        PAINT_BORDER_NEW.setStrokeWidth(screenProperties.borderNewStrokeWidth);
+        PAINT_BORDER_OLD.setStrokeWidth(screenProperties.borderOldStrokeWidth);
 
         cardsIcon = loadSprite("cards", screenProperties.cardsIconRect, PAINT_CARDS);
         chipsIcon = loadSprite("chip", screenProperties.chipsIconRect, PAINT_CHIPS);

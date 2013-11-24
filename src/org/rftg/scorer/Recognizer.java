@@ -1,7 +1,10 @@
 package org.rftg.scorer;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -29,48 +32,18 @@ class Recognizer {
     private static final int MASK_TOP = 0x80;
     private static final int MASK_BOTTOM = 0x40;
 
-/*
-    private static final Scalar COLOR_SHADOW = new Scalar(0, 0, 0);
-    private static final Scalar COLOR_SCORE = new Scalar(255, 255, 255);
-    private static final Scalar COLOR_TOTAL = new Scalar(0, 0, 0);
-    private static final Scalar COLOR_MATCH_OLD = new Scalar(255, 0, 0);
-    private static final Scalar COLOR_MATCH_NEW = new Scalar(0, 255, 0);
-    private static final Scalar COLOR_CHIPS = new Scalar(255, 255, 0);
-    private static final Scalar COLOR_PRESTIGE = new Scalar(0, 255, 0);
-    private static final Scalar COLOR_CARDS = new Scalar(128, 255, 128);
-    private static final Scalar COLOR_MILITARY = new Scalar(255, 0, 0);
+    private final List<Line> linesLeft = new ArrayList<Line>();
+    private final List<Line> linesRight = new ArrayList<Line>();
+    private final List<Line> linesTop = new ArrayList<Line>();
+    private final List<Line> linesBottom = new ArrayList<Line>();
 
-    private final RecognizerResources recognizerResources;
-    private final ScreenProperties screen;
-    private final State state;
+    private final List<Point[]> rectangles = new ArrayList<Point[]>();
 
-    private Mat rgb;
-    private Mat gray;
-    private Mat canny;
-    private Mat sobel;
-    private Mat sobelTransposed;
-*/
-    private List<Line> linesLeft = new ArrayList<Line>();
-    private List<Line> linesRight = new ArrayList<Line>();
-    private List<Line> linesTop = new ArrayList<Line>();
-    private List<Line> linesBottom = new ArrayList<Line>();
+    private final CardMatch[] cardMatches = new CardMatch[CardPatterns.SAMPLE_COUNT];
+    private final List<CardMatch> sortedCardMatches = new ArrayList<CardMatch>();
+    final List<CardMatch> collectedCardMatches = new ArrayList<CardMatch>();
 
-    private List<Point[]> rectangles = new ArrayList<Point[]>();
-
-    /*
-    private Mat selectionFused;
-    private Mat[] selection = new Mat[MAX_RECTANGLES];
-
-    private CardMatch[] cardMatches;
-
-    private Hough houghLeft;
-    private Hough houghRight;
-    private Hough houghTop;
-    private Hough houghBottom;
-*//*
-    final int width;
-    final int height;
-*/
+    private final List<Buffer> cardMatchesBuffers = new ArrayList<Buffer>();
 
     private final MainContext mainContext;
 
@@ -83,6 +56,7 @@ class Recognizer {
     volatile List<Point[]> debugRectangles;
 
     private AtomicInteger houghSync = new AtomicInteger(0);
+    private AtomicInteger matchSync = new AtomicInteger(0);
 
     Recognizer(MainContext mainContext) {
         this.mainContext = mainContext;
@@ -178,9 +152,9 @@ class Recognizer {
                 houghSync.set(0);
                 startFrameRecognition();
             } else {
-                calcTranspose.execute();
-                calcHoughLeft.execute();
-                calcHoughRight.execute();
+                mainContext.executor.submit(calcTranspose);
+                mainContext.executor.submit(calcHoughLeft);
+                mainContext.executor.submit(calcHoughRight);
             }
         }
     };
@@ -198,8 +172,8 @@ class Recognizer {
                 sobelTransposed.position(0);
             }
 
-            calcHoughTop.execute();
-            calcHoughBottom.execute();
+            mainContext.executor.submit(calcHoughTop);
+            mainContext.executor.submit(calcHoughBottom);
         }
     };
 
@@ -238,10 +212,77 @@ class Recognizer {
 
             debugRectangles = new ArrayList<Point[]>(rectangles);
 
-            mainContext.userInterface.postInvalidate();
-            startFrameRecognition();
+            if (rectangles.isEmpty()) {
+                synchronized (collectedCardMatches) {
+                    collectedCardMatches.clear();
+                }
+                mainContext.userInterface.postInvalidate();
+                startFrameRecognition();
+            } else {
+                Arrays.fill(cardMatches, null);
+                matchSync.set(rectangles.size());
+                for (Point[] rect : rectangles) {
+                    mainContext.executor.submit(new CardMatcherTask(rect));
+                }
+            }
         }
-    };
+    }
+
+    class CardMatcherTask extends CardMatcher {
+        CardMatcherTask(Point[] rect) {
+            super(frame, frameSize, mainContext.cardPatterns.samples, rect, cardMatches);
+        }
+
+        @Override
+        protected Buffer createBuffer() {
+            synchronized (cardMatchesBuffers) {
+                if (cardMatchesBuffers.isEmpty()) {
+                    return ByteBuffer.allocateDirect(CardPatterns.SAMPLE_WIDTH * CardPatterns.SAMPLE_HEIGHT);
+                } else {
+                    return cardMatchesBuffers.remove(cardMatchesBuffers.size() - 1);
+                }
+            }
+        }
+
+        @Override
+        protected void releaseBuffer(Buffer buffer) {
+            synchronized (cardMatchesBuffers) {
+                cardMatchesBuffers.add(buffer);
+            }
+        }
+
+        @Override
+        void execute() throws Exception {
+            super.execute();
+            if (matchSync.decrementAndGet() == 0) {
+
+                startFrameRecognition();
+
+                sortedCardMatches.clear();
+                for (CardMatch match : cardMatches) {
+                    if (match != null) {
+                        sortedCardMatches.add(match);
+                    }
+                }
+
+                Collections.sort(sortedCardMatches, CardMatch.MATCH_SCORE_COMPARATOR);
+
+                synchronized (collectedCardMatches) {
+                    collectedCardMatches.clear();
+                    matchIntersect:
+                    for (CardMatch match : sortedCardMatches) {
+                        for (CardMatch goodMatch : collectedCardMatches) {
+                            if (goodMatch.isIntersects(match)) {
+                                continue matchIntersect;
+                            }
+                        }
+                        collectedCardMatches.add(match);
+                    }
+                }
+                mainContext.userInterface.postInvalidate();
+            }
+        }
+    }
 
 
     private void initTasks() {

@@ -1,7 +1,10 @@
 package org.rftg.scorer;
 
 import java.io.InputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.ShortBuffer;
 
 /**
  * @author gc
@@ -15,11 +18,8 @@ class CardPatterns {
     final static float CARD_HORIZONTAL_BORDER = ((float)ORIGINAL_SAMPLE_BORDER)/ORIGINAL_SAMPLE_HEIGHT;
     final static float CARD_VERTICAL_BORDER = ((float)ORIGINAL_SAMPLE_BORDER)/ORIGINAL_SAMPLE_WIDTH;
 
-    final static int SAMPLE_HEIGHT = 64;
     final static int SAMPLE_WIDTH = 64;
-    final static int MATCHER_MINIMAL_BOUND = 5000;
-    final static int MATCHER_MINIMAL_GAP = 1000;
-    final static Size SAMPLE_SIZE = new Size(SAMPLE_WIDTH, SAMPLE_HEIGHT);
+    final static int SAMPLE_HEIGHT = 64;
 
     final static int SAMPLE_COUNT = Card.GameType.EXP3.maxCardNum + 1;
 
@@ -45,36 +45,4 @@ class CardPatterns {
             throw new RuntimeException(e);
         }
     }
-
-    /*
-    public void invokeAnalyse(final Mat selection, final CardMatch[] cardMatches, final Point[] rect, final int maxCardNum) {
-        recognizerResources.executor.submit(new Runnable() {
-            @Override
-            public void run() {
-
-                long matchResult = recognizerResources.customNativeTools.match(selection, samplesFused, SAMPLE_HEIGHT*SAMPLE_WIDTH, maxCardNum + 1);
-
-                int bestCardNumber = (int)matchResult & 0xffff;
-                matchResult >>= 16;
-                int bestScore = (int)matchResult & 0xffff;
-                matchResult >>= 16;
-                int secondBestCardNumber = (int)matchResult & 0xffff;
-                matchResult >>= 16;
-                int secondBestScore = (int)matchResult;
-
-                if (bestScore > MATCHER_MINIMAL_BOUND && bestScore - secondBestScore > MATCHER_MINIMAL_GAP) {
-                    synchronized (cardMatches) {
-                        CardMatch match = cardMatches[bestCardNumber];
-                        if (match == null || match.score < bestScore) {
-                            cardMatches[bestCardNumber] = new CardMatch(bestCardNumber, bestScore, secondBestCardNumber, secondBestScore, rect);
-                        }
-                    }
-                }
-
-            }
-
-        });
-    }
-    */
-
 }

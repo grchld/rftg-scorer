@@ -21,11 +21,7 @@ class NativeTools {
 
     static native long match(Buffer selection, Buffer patterns, int patternSize, int patternsCount);
 
-    static native void normalize(Buffer image, int size);
-    /*
-    public void drawSobel(Mat sobel, Mat flame) {
-        drawSobel(sobel.getNativeObjAddr(), flame.getNativeObjAddr());
-    }
+    static native void warp(Buffer image, int width, int height, Buffer warp, int x1, int y1, int x2, int y2, int x3, int y3, int x4, int y4);
 
-    private native void drawSobel(long sobel, long flame);*/
+    static native void normalize(Buffer image, int size);
 }

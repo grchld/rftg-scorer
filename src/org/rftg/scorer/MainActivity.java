@@ -28,14 +28,9 @@ public class MainActivity extends Activity {
         mainContext = new MainContext(this, fastCamera, userInterface, cardInfo, state);
 
         fastCamera.setInterfaceView(userInterface);
+        fastCamera.setPreferredSize(mainContext.state.settings.preferredCameraSize);
 
         userInterface.setMainContext(mainContext);
-
-        mainContext.state.player.cards.clear();
-        for (int i = 40 ; i < 60 ; i++) {
-            mainContext.state.player.cards.add(cardInfo.cards[i]);
-        }
-        mainContext.state.player.resetScoring();
     }
 
     @Override

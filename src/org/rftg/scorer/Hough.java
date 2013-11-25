@@ -29,6 +29,7 @@ class Hough extends RecognizerTask {
     private final Buffer segmentStates;
     private final ByteBuffer segments = ByteBuffer.allocateDirect(MAX_LINES * SEGMENT_STRUCT_SIZE);
     private final byte[] segmentsBytes = new byte[MAX_LINES * SEGMENT_STRUCT_SIZE];
+    private final Buffer sobelBits;
 /*    private final ByteBuffer segmentsBytes = ByteBuffer.allocate(MAX_LINES * SEGMENT_STRUCT_SIZE);
     private final ShortBuffer segments = segmentsBytes.order(ByteOrder.nativeOrder()).asShortBuffer();*/
     private final boolean transposed;
@@ -50,6 +51,7 @@ class Hough extends RecognizerTask {
         this.width = width;
         this.height = height;
         this.segmentStates = ByteBuffer.allocateDirect(SEGMENT_STATUS_STRUCT_SIZE * SEGMENT_STATUSES_PER_COLUMN * width);
+        this.sobelBits = ByteBuffer.allocateDirect(width * height / 8);
         this.transposed = transposed;
         this.mask = mask;
         this.origin = origin;
@@ -82,8 +84,11 @@ class Hough extends RecognizerTask {
 
     @Override
     void execute() throws Exception {
+
+        NativeTools.extractBits(sobel, sobelBits, width * height, mask);
+
         long time = System.nanoTime();
-        int segmentCount = NativeTools.houghVertical(sobel, width, height, mask, origin, maxGap, minLength, segments, MAX_LINES, segmentStates);
+        int segmentCount = NativeTools.houghVertical(sobelBits, width, height, /*mask,*/ origin, maxGap, minLength, segments, MAX_LINES, segmentStates);
 
         timingHoughTime = System.nanoTime() - time;
 

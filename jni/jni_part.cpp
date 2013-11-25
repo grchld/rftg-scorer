@@ -3,6 +3,7 @@
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <android/log.h>
 
 #if HAVE_NEON == 1
@@ -192,68 +193,66 @@ int segmentCompare(void const *a1, void const* a2) {
     }
 }
 
-jint houghVerticalUnsorted(uchar* image, jint width, jint height, jint bordermask, jint origin, jint maxGap, jint minLength, Segment* segments, jint maxSegments, SegmentState* segmentStates);
+jint houghVerticalUnsorted(uchar* image, jint width, jint height, /*jint bordermask,*/ jint origin, jint maxGap, jint minLength, Segment* segments, jint maxSegments, SegmentState* segmentStates);
 
-JNIEXPORT jint JNICALL Java_org_rftg_scorer_NativeTools_houghVertical(JNIEnv* env, jclass, jobject imageBuffer, jint width, jint height, jint bordermask, jint origin, jint maxGap, jint minLength, jobject segmentsBuffer, jint maxSegments, jobject segmentStatesBuffer) {
+JNIEXPORT jint JNICALL Java_org_rftg_scorer_NativeTools_houghVertical(JNIEnv* env, jclass, jobject imageBuffer, jint width, jint height, /*jint bordermask,*/ jint origin, jint maxGap, jint minLength, jobject segmentsBuffer, jint maxSegments, jobject segmentStatesBuffer) {
     uchar* image = (uchar*)(*env).GetDirectBufferAddress(imageBuffer);
     Segment* segments = (Segment*)(*env).GetDirectBufferAddress(segmentsBuffer);
     SegmentState* segmentStates = (SegmentState*)(*env).GetDirectBufferAddress(segmentStatesBuffer);
 
-    jint segmentNumber = houghVerticalUnsorted(image, width, height, bordermask, origin, maxGap, minLength, segments, maxSegments, segmentStates);
+    jint segmentNumber = houghVerticalUnsorted(image, width, height, /*bordermask,*/ origin, maxGap, minLength, segments, maxSegments, segmentStates);
     if (segmentNumber > 0) {
         qsort(segments, segmentNumber, sizeof(Segment), segmentCompare);
     }
     return segmentNumber;
 }
 
-jint houghVerticalUnsorted(uchar* image, jint width, jint height, jint bordermask, jint origin, jint maxGap, jint minLength, Segment* segments, jint maxSegments, SegmentState* states) {
+jint houghVerticalUnsorted(uchar* image, jint width, jint height, /*jint bordermask,*/ jint origin, jint maxGap, jint minLength, Segment* segments, jint maxSegments, SegmentState* states) {
 
     int segmentNumber = 0;
-
-    const uchar mask = bordermask;
-    const uint longmask = bordermask | (bordermask << 8) | (bordermask << 16) | (bordermask << 24);
 
     int totalStates = width * SLOPE_COUNT;
 
     memset(states, 0, sizeof(SegmentState) * totalStates);
 
-    uint* row = (uint*)image;
-    
-    for (int y = 0; y < height; y++) {
-//        uint* row = (uint*)(&image[width * y]);
-        int x = 0;
-        for (int i = width/sizeof(uint); i > 0 ; i--) {
-            uint value = *(row++);
+    SegmentState* statesForSlope = states;
+    for (int slope = MIN_SLOPE ; slope <= MAX_SLOPE ; slope++, statesForSlope += width) {
 
-            if ((value & longmask) == 0) {
-                x+=sizeof(uint);
-                continue;
-            }
+        ushort* row = (ushort*)image;
 
-            for (int j = sizeof(uint) ; j > 0 ; j--) {
-                if ((value & mask) != 0) {
-                    for (int slope = MIN_SLOPE ; slope <= MAX_SLOPE ; slope++) {
-                        int xbase = x + slope * (origin - y) / DIVISOR;
+        for (int y = 0; y < height; y++) {
 
-                        if (xbase < 0 || xbase >= width) {
-                            continue;
-                        }
 
-                        SegmentState& state = states[SLOPE_COUNT * xbase + (slope - MIN_SLOPE)];
+            int xbase = slope * (origin - y) / DIVISOR;
+            SegmentState* state = statesForSlope + xbase;
 
-                        if (state.count) {
-                            if (y - state.last <= maxGap) {
+
+            for (int i = width/16; i > 0 ; i--) {
+
+                ushort value = *(row++);
+
+                if (value == 0) {
+                    state += 16;
+                    xbase += 16;
+                    continue;
+                }
+
+                for (int j = 16 ; j > 0 ; j--, value >>= 1, state++, xbase++) {
+                    if ((value & 1) != 0 && xbase >= 0 && xbase < width) {
+
+                        if (state->count) {
+                            if (y - state->last <= maxGap) {
                                 // line continues
-                                state.count += y-state.last;
-                                state.last = y;
+                                state->count += y-state->last;
+                                state->last = y;
                             } else {
                                 // previous line stops
-                                if (state.count > minLength) {
+                                if (state->count > minLength) {
                                     // save line
                                     Segment& segment = segments[segmentNumber];
 
-                                    segment.ymin = state.last - state.count + 1;
-                                    segment.ymax = state.last;
+                                    segment.ymin = state->last - state->count + 1;
+                                    segment.ymax = state->last;
                                     segment.x = xbase;
                                     segment.slope = slope;
 
@@ -263,27 +262,25 @@ jint houghVerticalUnsorted(uchar* image, jint width, jint height, jint bordermas
                                     }
                                 }
                                 // staring new line
-                                state.count = 1;
-                                state.last = y;
+                                state->count = 1;
+                                state->last = y;
                             }
                         } else {
                             // starting new line
-                            state.count = 1;
-                            state.last = y;
+                            state->count = 1;
+                            state->last = y;
                         }
 
                     }
                 }
-                value >>= 8;
-                x++;
             }
         }
     }
 
     // force line endings
     SegmentState* state = states;
-    for (int xbase = 0 ; xbase < width; xbase++) {
-        for (int slope = MIN_SLOPE ; slope <= MAX_SLOPE ; slope++) {
+    for (int slope = MIN_SLOPE ; slope <= MAX_SLOPE ; slope++) {
+        for (int xbase = 0 ; xbase < width; xbase++, state++) {
             if (state->count > minLength) {
                 // save line
                 Segment& segment = segments[segmentNumber];
@@ -297,7 +294,6 @@ jint houghVerticalUnsorted(uchar* image, jint width, jint height, jint bordermas
                     return maxSegments;
                 }
             }
-            state++;
         }
     }
 
@@ -528,7 +524,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_NativeTools_match(JNIEnv* env, jcla
         "vand q8, q8, q13\n\t"
         "vadd.i8 q9, q9, q8\n\t"
         "vpadal.u8 q10, q9\n\t"
-        "subs r3, 1\n\t"
+        "subs r3, #1\n\t"
         "bgt NativeTools_match_loop_2\n\t"
 
         "mov r0, %[SELECTION]\n\t"
@@ -553,7 +549,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_NativeTools_match(JNIEnv* env, jcla
         "movle %[SECOND_BEST], %[BEST]\n\t"
         "movle %[BEST], r4\n\t"
 
-        "add r2, 1\n\t"
+        "add r2, #1\n\t"
         "cmp %[COUNT], r2\n\t"
         "bgt NativeTools_match_loop_1\n\t"
         "bal NativeTools_match_loop_4\n\t"
@@ -566,7 +562,7 @@ JNIEXPORT jlong JNICALL Java_org_rftg_scorer_NativeTools_match(JNIEnv* env, jcla
         "cmp %[BEST], r4\n\t"
         "it le\n\t"
         "movle %[BEST], r4\n\t"
-        "add r2, 1\n\t"
+        "add r2, #1\n\t"
         "bal NativeTools_match_loop_1\n\t"
         "NativeTools_match_loop_4:\n\t"
 
@@ -643,24 +639,24 @@ ushort warpMap[64] = {0, 520, 1040, 1560, 2081, 2601, 3121, 3641, 4161, 4681, 52
 
 JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_warp(JNIEnv* env, jclass, jobject imageBuffer, jint width, jint height, jobject warpBuffer,
     jint x1, jint y1, jint x2, jint y2, jint x3, jint y3, jint x4, jint y4)
-{    
+{
     uchar* image = (uchar*)(*env).GetDirectBufferAddress(imageBuffer);
     uchar* warp = (uchar*)(*env).GetDirectBufferAddress(warpBuffer);
 
     jint cx = x4 - x1;
     jint ax = x3 - x2 - cx;
     jint bx = x2 - x1;
-    
+
     jint cy = y4 - y1;
     jint ay = y3 - y2 - cy;
     jint by = y2 - y1;
-    
+
     for (int y = 0 ; y < 64 ; y++) {
         jint beta = warpMap[y];
         for (int x = 0 ; x < 64 ; x++) {
             jint alpha = warpMap[x];
             jint gamma = alpha * beta >> 15;
-            
+
             jint px = ((gamma * ax + beta * cx + alpha * bx) >> 15) + x1;
             jint py = ((gamma * ay + beta * cy + alpha * by) >> 15) + y1;
             *(warp++) = image[py*width + px];
@@ -699,7 +695,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_normalize(JNIEnv* env, j
 
         "vpadal.u16 q7, q0\n\t"
 
-        "subs r3, r3, 1\n\t"
+        "subs r3, r3, #1\n\t"
         "bgt NativeTools_normalize_loop_1\n\t"
 
         "vpaddl.u32 q7, q7\n\t"
@@ -774,7 +770,7 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_normalize(JNIEnv* env, j
         "vqmovn.u16 d0, q4\n\t"
 
         "vstmia r0!, {d0}\n\t"
-        "subs r3, r3, 1\n\t"
+        "subs r3, r3, #1\n\t"
         "bgt NativeTools_normalize_loop_2\n\t"
 
         :
@@ -800,6 +796,27 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_normalize(JNIEnv* env, j
     }
 
     #endif
+
+}
+
+JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_extractBits(JNIEnv* env, jclass, jobject srcBuffer, jobject dstBuffer, jint length, jint mask)
+{
+    uchar* src = (uchar*)(*env).GetDirectBufferAddress(srcBuffer);
+    uchar* dst = (uchar*)(*env).GetDirectBufferAddress(dstBuffer);
+
+    uchar m = mask;
+
+    for (int i = length / 8 ; i > 0 ; i--) {
+        *(dst++) =
+            (*(src++) & mask ? 0x01 : 0) |
+            (*(src++) & mask ? 0x02 : 0) |
+            (*(src++) & mask ? 0x04 : 0) |
+            (*(src++) & mask ? 0x08 : 0) |
+            (*(src++) & mask ? 0x10 : 0) |
+            (*(src++) & mask ? 0x20 : 0) |
+            (*(src++) & mask ? 0x40 : 0) |
+            (*(src++) & mask ? 0x80 : 0);
+    }
 
 }
 

@@ -3,7 +3,9 @@ package org.rftg.scorer;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Paint.Cap;
 
 /**
  * @author gc
@@ -59,18 +61,31 @@ class UserInterfaceResources {
         this.screenProperties = new ScreenProperties(screenSize);
 
         PAINT_PREVIEW.setTextSize(screenProperties.previewTextScale);
+        PAINT_PREVIEW.setShadowLayer(screenProperties.textShadow, 0, 0, Color.BLACK);
+
         PAINT_MAGNIFIED.setTextSize(screenProperties.magnifiedTextScale);
+        PAINT_MAGNIFIED.setShadowLayer(screenProperties.textShadow, 0, 0, Color.BLACK);
+
         PAINT_CARDS.setTextSize(screenProperties.cardCountTextScale);
+        PAINT_CARDS.setShadowLayer(screenProperties.textShadow, 0, 0, Color.BLACK);
+
         PAINT_CHIPS.setTextSize(screenProperties.chipsTextScale);
+        PAINT_CHIPS.setShadowLayer(screenProperties.textShadow, 0, 0, Color.BLACK);
+
         PAINT_PRESTIGE.setTextSize(screenProperties.prestigeTextScale);
+        PAINT_PRESTIGE.setShadowLayer(screenProperties.textShadow, 0, 0, Color.BLACK);
+
         PAINT_MILITARY.setTextSize(screenProperties.militaryTextScale);
+
         PAINT_TOTAL.setTextSize(screenProperties.totalTextScale);
 
         PAINT_BORDER_NEW.setStrokeWidth(screenProperties.borderNewStrokeWidth);
-        PAINT_BORDER_NEW.setStrokeCap(Paint.Cap.BUTT);
-        PAINT_BORDER_OLD.setStrokeWidth(screenProperties.borderOldStrokeWidth);
-        PAINT_BORDER_OLD.setStrokeCap(Paint.Cap.BUTT);
+        PAINT_BORDER_NEW.setStrokeCap(Cap.ROUND);
 
+        PAINT_BORDER_OLD.setStrokeWidth(screenProperties.borderOldStrokeWidth);
+        PAINT_BORDER_OLD.setStrokeCap(Cap.ROUND);
+
+        PAINT_CARD_NAME.setShadowLayer(screenProperties.textShadow, 0, 0, Color.BLACK);
         PAINT_CARD_NAME.setTextAlign(Paint.Align.LEFT);
         PAINT_CARD_NAME.setTextSize(screenProperties.cardTextScale);
 

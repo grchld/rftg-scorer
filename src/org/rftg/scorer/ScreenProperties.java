@@ -40,6 +40,7 @@ class ScreenProperties {
     final float militaryTextScale;
     final float cardCountTextScale;
     final float totalTextScale;
+    final float textShadow;
 //    final float totalTextScaleShrink;
 
     final float borderNewStrokeWidth;
@@ -89,41 +90,10 @@ class ScreenProperties {
         borderNewStrokeWidth = scaleFloat(3);
         borderOldStrokeWidth = scaleFloat(2);
 
+        textShadow = scaleFloat(3);
+
         cardNameOffsetX = scale(10);
         cardNameOffsetY = scale(50);
-
-          /*
-        // Adjustment for small screens
-        if (height < 600) {
-            cardTextFontScale = 1;
-
-            cardsIconSize = new Size(100, 100);
-            chipsIconSize = new Size(100, 100);
-            prestigeIconSize = new Size(100, 100);
-
-            militaryIconSize = new Size(90, 90);
-            resetIconSize = new Size(100, 100);
-            totalIconSize = new Size(110, 110);
-
-            int previewHeight = 105;
-            int previewWidth = 75;
-            previewSize = new Size(previewWidth, previewHeight);
-
-            previewGap = 8;
-            previewStep = previewWidth + previewGap;
-
-            previewTextScale = 2.5;
-            chipsTextScale = 3;
-            prestigeTextScale = 3;
-            militaryTextScale = 2.5;
-            cardCountTextScale = 2.8;
-            totalTextScale = 3;
-            totalTextScaleShrink = 2.5;
-
-            cardNameOffsetX = 8;
-            cardNameOffsetY = 40;
-        }
-        */
 
         resetIconRect = new Rect(new Point(previewGap, previewGap), resetIconSize);
         cardsIconRect = new Rect(new Point(previewGap, screenSize.height - previewSize.height - cardsIconSize.height - 2*previewGap), cardsIconSize);

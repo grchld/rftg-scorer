@@ -21,7 +21,7 @@ class CardPatterns {
     final static int SAMPLE_WIDTH = 64;
     final static int SAMPLE_HEIGHT = 64;
 
-    final static int SAMPLE_COUNT = Card.GameType.EXP3.maxCardNum + 1;
+    final static int SAMPLE_COUNT = Card.GameType.EXP3.totalCardNum;
 
     final ByteBuffer samples = ByteBuffer.allocateDirect(SAMPLE_WIDTH * SAMPLE_HEIGHT * SAMPLE_COUNT);
 

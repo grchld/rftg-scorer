@@ -70,6 +70,7 @@ class Recognizer {
     private RecognizerTask copyFrame = new RecognizerTask() {
         @Override
         void execute() throws Exception {
+            /*
             if (timingStartFrame != 0) {
                 Rftg.i("Frame: "+((System.nanoTime() - timingStartFrame)/1000000) +
                         ", copy: " + (timingCopyTime / 1000000) +
@@ -83,7 +84,7 @@ class Recognizer {
                         ", norm: " + (timingTotalNormalizeTime / 1000000) + "=" + timingRectCount + "*" + (timingRectCount == 0 ? "?" : "" + (timingTotalNormalizeTime / 1000 / timingRectCount) + "/1000") +
                         ", match: " + (timingTotalMatchTime / 1000000) + "=" + timingRectCount + "*" + (timingRectCount == 0 ? "?" : "" + (timingTotalMatchTime / 1000 / timingRectCount) + "/1000")
                 );
-            }
+            } */
 
             timingStartFrame = System.nanoTime();
             if (mainContext.fastCamera.copyFrame(frame, frameSize)) {
@@ -263,6 +264,28 @@ class Recognizer {
                         }
                         collectedCardMatches.add(match);
                     }
+
+                    List<Card> cards = new ArrayList<Card>(mainContext.state.player.cards);
+
+                    for (CardMatch match : collectedCardMatches) {
+
+                        Card card = mainContext.cardInfo.cards[match.cardNumber];
+                        if (!cards.contains(card)) {
+                            if (card.gamblingWorld) {
+                                // need to remove another "Gambling World" card
+                                for (int i = 0 ; i < cards.size() ; i++) {
+                                    if (cards.get(i).gamblingWorld) {
+                                        cards.remove(i);
+                                        break;
+                                    }
+                                }
+                            }
+                            cards.add(card);
+                        }
+                    }
+
+                    mainContext.state.player.cards = cards;
+                    mainContext.state.player.resetScoring();
                 }
                 mainContext.userInterface.postInvalidate();
             }

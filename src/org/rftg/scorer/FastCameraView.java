@@ -24,7 +24,7 @@ public class FastCameraView extends SurfaceView implements SurfaceHolder.Callbac
     private List<Size> cameraSizes;
     private Size preferredSize;
     private Size actualSize;
-    private View interfaceView;
+    private UserInterfaceView interfaceView;
     private byte[] buffer;
     private boolean bufferReady;
 
@@ -59,7 +59,7 @@ public class FastCameraView extends SurfaceView implements SurfaceHolder.Callbac
         this.preferredSize = preferredSize;
     }
 
-    public void setInterfaceView(View interfaceView) {
+    public void setInterfaceView(UserInterfaceView interfaceView) {
         this.interfaceView = interfaceView;
     }
 
@@ -161,7 +161,7 @@ public class FastCameraView extends SurfaceView implements SurfaceHolder.Callbac
 
         if (interfaceView != null) {
             // Change holder size to maintain ratio if needed
-            Size interfaceSize = new Size(interfaceView.getWidth(), interfaceView.getHeight());
+            Size interfaceSize = interfaceView.getViewSize();
             Size preferredHolderSize = interfaceSize.scaleIn(this.actualSize);
             if (preferredHolderSize.width != width || preferredHolderSize.height != height) {
                 surfaceHolder.setFixedSize(preferredHolderSize.width, preferredHolderSize.height);

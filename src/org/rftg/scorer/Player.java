@@ -11,10 +11,10 @@ import java.util.List;
  */
 class Player {
 
-    List<Card> cards = new ArrayList<Card>();
-    int chips;
-    int prestige;
-    Scoring scoring;
+    volatile List<Card> cards = new ArrayList<Card>();
+    volatile int chips;
+    volatile int prestige;
+    volatile Scoring scoring;
     {
         resetScoring();
     }

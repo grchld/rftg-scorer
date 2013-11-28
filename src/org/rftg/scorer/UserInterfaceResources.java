@@ -50,7 +50,7 @@ class UserInterfaceResources {
     private Sprite militaryIcon;
     private Sprite resetIcon;
     private Sprite totalIcon;
-    private Sprite[] cards = new Sprite[Card.GameType.EXP3.maxCardNum + 1];
+    private Sprite[] cards = new Sprite[Card.GameType.EXP3.totalCardNum];
 
     private int magnifiedCardId;
     private Bitmap magnifiedCardBitmap;
@@ -88,6 +88,7 @@ class UserInterfaceResources {
         PAINT_CARD_NAME.setShadowLayer(screenProperties.textShadow, 0, 0, Color.BLACK);
         PAINT_CARD_NAME.setTextAlign(Paint.Align.LEFT);
         PAINT_CARD_NAME.setTextSize(screenProperties.cardTextScale);
+        PAINT_CARD_NAME.setStrokeWidth((float)0.5);
 
         cardsIcon = loadSprite("cards", screenProperties.cardsIconRect, PAINT_CARDS);
         chipsIcon = loadSprite("chip", screenProperties.chipsIconRect, PAINT_CHIPS);

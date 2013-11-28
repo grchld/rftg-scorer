@@ -22,16 +22,16 @@ class Card {
     boolean gamblingWorld;
 
     enum GameType {
-        BASE("The base game", 94),
-        EXP1("The Gathering Storm", 113),
-        EXP2("Rebel vs Imperium", 150),
-        EXP3("The Brink of War", 190);
+        BASE("The base game", 95),
+        EXP1("The Gathering Storm", 114),
+        EXP2("Rebel vs Imperium", 151),
+        EXP3("The Brink of War", 191);
         final String name;
-        final int maxCardNum;
+        final int totalCardNum;
 
-        GameType(String name, int maxCardNum) {
+        GameType(String name, int totalCardNum) {
             this.name = name;
-            this.maxCardNum = maxCardNum;
+            this.totalCardNum = totalCardNum;
         }
     }
 

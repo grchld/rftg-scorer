@@ -78,7 +78,7 @@ class ScreenProperties {
         previewGap = scale(10);
         previewStep = previewSize.width + previewGap;
 
-        cardTextScale = scaleFloat(25);
+        cardTextScale = scaleFloat(18);
         previewTextScale = scaleFloat(60);
         magnifiedTextScale = scaleFloat(200);
         chipsTextScale = scaleFloat(70);
@@ -87,10 +87,10 @@ class ScreenProperties {
         cardCountTextScale = scaleFloat(70);
         totalTextScale = scaleFloat(70);
 
-        borderNewStrokeWidth = scaleFloat(3);
-        borderOldStrokeWidth = scaleFloat(2);
+        borderNewStrokeWidth = scaleFloat(6);
+        borderOldStrokeWidth = scaleFloat(4);
 
-        textShadow = scaleFloat(3);
+        textShadow = scaleFloat(4);
 
         cardNameOffsetX = scale(10);
         cardNameOffsetY = scale(50);

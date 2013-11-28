@@ -10,11 +10,6 @@ public class RectExtractor extends RecognizerTask {
     private static final int MAX_RECTANGLES = 400;
     private static final int MAX_RECTANGLES_TO_USE_OUTERS = 100;
 
-    private static final int MAX_GAP_LEFT = 10;
-    private static final int MAX_GAP = 2;
-    private static final int MIN_LENGTH_LEFT = 120;
-    private static final int MIN_LENGTH = 80;
-
     private static final double RECT_ASPECT = 1.4;
     private static final double RECT_MIN_ASPECT = RECT_ASPECT/1.25;
     private static final double RECT_MAX_ASPECT = RECT_ASPECT*1.25;

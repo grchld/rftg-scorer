@@ -119,8 +119,10 @@ public class MainActivity extends Activity {
     private void changeCameraPreferredSize(Size size) {
         mainContext.state.settings.preferredCameraSize = size;
         mainContext.fastCamera.setPreferredSize(size);
-        mainContext.fastCamera.getHolder().setFixedSize(
-                size == null ? mainContext.userInterface.getWidth() : size.width,
-                size == null ? mainContext.userInterface.getHeight() : size.height);
+
+        Size interfaceSize = mainContext.userInterface.getViewSize();
+        Size fixedSize = size == null ? interfaceSize : interfaceSize.scaleIn(size);
+
+        mainContext.fastCamera.getHolder().setFixedSize(fixedSize.width, fixedSize.height);
     }
 }

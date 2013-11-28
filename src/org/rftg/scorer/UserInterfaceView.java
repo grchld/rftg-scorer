@@ -10,6 +10,7 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -23,6 +24,9 @@ public class UserInterfaceView extends View {
     private List<Widget> widgets = new ArrayList<Widget>();
 
     private Card magnifiedCard;
+
+    private long[] cardAddTimes = new long[Card.GameType.EXP3.totalCardNum];
+    private List<CardMatch> collectedCardMatches = new ArrayList<CardMatch>(Card.GameType.EXP3.totalCardNum);
 
     public UserInterfaceView(Context context) {
         super(context);
@@ -38,6 +42,10 @@ public class UserInterfaceView extends View {
 
     public void setMainContext(MainContext mainContext) {
         this.mainContext = mainContext;
+    }
+
+    public Size getViewSize() {
+        return new Size(getWidth(), getHeight());
     }
 
     {
@@ -168,29 +176,61 @@ public class UserInterfaceView extends View {
             }
         }
         */
+
+        long now = System.currentTimeMillis();
+        /*
+        List<Card> cards = mainContext.state.player.cards;
+        for (int i = 0 ; i < cardAddTimes.length ; i++) {
+            if (!cards.contains(mainContext.cardInfo.cards[i])) {
+                cardAddTimes[i] = 0;
+            }
+        } */
+
+        collectedCardMatches.clear();
         synchronized (mainContext.recognizer.collectedCardMatches) {
-            for (CardMatch match : mainContext.recognizer.collectedCardMatches) {
-                Point[] points = match.rect;
-                Point p0 = translate(points[0]);
-                Point p1 = translate(points[1]);
-                Point p2 = translate(points[2]);
-                Point p3 = translate(points[3]);
+            collectedCardMatches.addAll(mainContext.recognizer.collectedCardMatches);
+        }
 
-                canvas.drawLine(p0.x, p0.y, p1.x, p1.y, userInterfaceResources.PAINT_BORDER_NEW);
-                canvas.drawLine(p1.x, p1.y, p2.x, p2.y, userInterfaceResources.PAINT_BORDER_NEW);
-                canvas.drawLine(p2.x, p2.y, p3.x, p3.y, userInterfaceResources.PAINT_BORDER_NEW);
-                canvas.drawLine(p3.x, p3.y, p0.x, p0.y, userInterfaceResources.PAINT_BORDER_NEW);
+        for (CardMatch match : collectedCardMatches) {
+            if (cardAddTimes[match.cardNumber] == 0) {
+                cardAddTimes[match.cardNumber] = now;
             }
 
-            for (CardMatch match : mainContext.recognizer.collectedCardMatches) {
-                Point[] points = match.rect;
-                Point p0 = translate(points[0]);
+            long old = now - 200;
 
-                canvas.drawText(mainContext.cardInfo.cards[match.cardNumber].name,
-                        p0.x + userInterfaceResources.screenProperties.cardNameOffsetX,
-                        p0.y + userInterfaceResources.screenProperties.cardNameOffsetY,
-                        userInterfaceResources.PAINT_CARD_NAME);
-            }
+            Point[] points = match.rect;
+            Point p0 = translate(points[0]);
+            Point p1 = translate(points[1]);
+            Point p2 = translate(points[2]);
+            Point p3 = translate(points[3]);
+
+            Paint paint = cardAddTimes[match.cardNumber] >= old
+                    ? userInterfaceResources.PAINT_BORDER_NEW
+                    : userInterfaceResources.PAINT_BORDER_OLD;
+            canvas.drawLine(p0.x, p0.y, p1.x, p1.y, paint);
+            canvas.drawLine(p1.x, p1.y, p2.x, p2.y, paint);
+            canvas.drawLine(p2.x, p2.y, p3.x, p3.y, paint);
+            canvas.drawLine(p3.x, p3.y, p0.x, p0.y, paint);
+        }
+
+        for (CardMatch match : collectedCardMatches) {
+            Point[] points = match.rect;
+            Point p0 = translate(points[0]);
+
+            canvas.drawText(mainContext.cardInfo.cards[match.cardNumber].name,
+                    p0.x + userInterfaceResources.screenProperties.cardNameOffsetX,
+                    p0.y + userInterfaceResources.screenProperties.cardNameOffsetY,
+                    userInterfaceResources.PAINT_CARD_NAME);
+/*
+            canvas.drawText(" " + match.score +" > " + match.secondScore,
+                    p0.x + userInterfaceResources.screenProperties.cardNameOffsetX,
+                    p0.y+40 + userInterfaceResources.screenProperties.cardNameOffsetY,
+                    userInterfaceResources.PAINT_CARD_NAME);
+            canvas.drawText(mainContext.cardInfo.cards[match.secondCardNumber].name,
+                    p0.x + userInterfaceResources.screenProperties.cardNameOffsetX,
+                    p0.y+80 + userInterfaceResources.screenProperties.cardNameOffsetY,
+                    userInterfaceResources.PAINT_CARD_NAME);
+                    */
         }
 
         updateWidgets();
@@ -213,7 +253,8 @@ public class UserInterfaceView extends View {
         widgets.add(new Widget(userInterfaceResources.getResetIcon(), null, null){
             @Override
             void onTouchDown() {
-                state.player.cards.clear();
+                Arrays.fill(cardAddTimes, 0);
+                state.player.cards = new ArrayList<Card>();
                 state.player.chips = 0;
                 state.player.prestige = 0;
                 state.player.resetScoring();

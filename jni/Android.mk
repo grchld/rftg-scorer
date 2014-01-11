@@ -5,10 +5,10 @@ include $(CLEAR_VARS)
 LOCAL_MODULE    := rftg_scorer
 LOCAL_SRC_FILES := jni_part.cpp
 LOCAL_LDLIBS +=  -llog -ldl
-#LOCAL_CFLAGS += -O2
+LOCAL_CFLAGS += -O2 -g
 #LOCAL_CFLAGS += -O3 -g -S -dA
 #LOCAL_CFLAGS += -O2 -g -S -dA
-LOCAL_CFLAGS += -O0 -g
+#LOCAL_CFLAGS += -O0 -g
 
 
 ifeq ($(TARGET_ARCH_ABI),armeabi-v7a)

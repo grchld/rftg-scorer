@@ -40,8 +40,8 @@ JNIEXPORT void JNICALL Java_org_rftg_scorer_NativeTools_sobel(JNIEnv* env, jclas
         int* idrow = (int*)drow;
         idrow[0] = 0;
         idrow[1] = 0;
-        idrow[width-1] = 0;
-        idrow[width-2] = 0;
+        idrow[width/sizeof(int)-1] = 0;
+        idrow[width/sizeof(int)-2] = 0;
 
 
         uint8x8_t* prow = (uint8x8_t*)&src[(i-1)*width];

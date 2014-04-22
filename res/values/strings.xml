@@ -2,6 +2,8 @@
 <resources>
     <string name="app_name">RftG-Scorer</string>
     <string name="game_type">Game type</string>
-    <string name="prestige_enable">Enable prestige</string>
-    <string name="prestige_disable">Disable prestige</string>
+	<string name="prestige_enable">Enable prestige</string>
+	<string name="prestige_disable">Disable prestige</string>
+	<string name="tokens_enable">Enable tokens</string>
+	<string name="tokens_disable">Disable tokens</string>
 </resources>

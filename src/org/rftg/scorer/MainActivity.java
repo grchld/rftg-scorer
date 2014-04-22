@@ -82,6 +82,16 @@ public class MainActivity extends Activity implements CvCameraViewListener {
                 item.setTitle(getResources().getString(
                         state.settings.usePrestige ? R.string.prestige_disable : R.string.prestige_enable));
                 return true;
+            case R.id.tokens:
+                state.settings.useTokens = !state.settings.useTokens;
+                if (!state.settings.useTokens) {
+                    state.player.tokensScience = 0;
+                    state.player.tokensUplift = 0;
+                    state.player.tokensAlien = 0;
+                }
+                item.setTitle(getResources().getString(
+                        state.settings.useTokens ? R.string.tokens_disable : R.string.tokens_enable));
+                return true;
             default:
                 return super.onContextItemSelected(item);
         }
@@ -91,6 +101,8 @@ public class MainActivity extends Activity implements CvCameraViewListener {
     public boolean onPrepareOptionsMenu(Menu menu) {
         menu.findItem(R.id.prestige).setTitle(getResources().getString(
                 state.settings.usePrestige ? R.string.prestige_disable : R.string.prestige_enable));
+        menu.findItem(R.id.tokens).setTitle(getResources().getString(
+                state.settings.useTokens ? R.string.tokens_disable : R.string.tokens_enable));
         return true;
     }
 

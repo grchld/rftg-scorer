@@ -80,10 +80,11 @@ class CardInfo {
                         card.vp = Integer.parseInt(s[3]);
                         break;
                     case 'E':
-                        card.count.put(Card.GameType.BASE, Integer.parseInt(s[1]));
-                        card.count.put(Card.GameType.EXP1, Integer.parseInt(s[2]));
-                        card.count.put(Card.GameType.EXP2, Integer.parseInt(s[3]));
-                        card.count.put(Card.GameType.EXP3, Integer.parseInt(s[4]));
+//                        card.count.put(Card.GameType.BASE, Integer.parseInt(s[1]));
+//                        card.count.put(Card.GameType.EXP1, Integer.parseInt(s[2]));
+//                        card.count.put(Card.GameType.EXP2, Integer.parseInt(s[3]));
+//                        card.count.put(Card.GameType.EXP3, Integer.parseInt(s[4]));
+//                        card.count.put(Card.GameType.EXP4, Integer.parseInt(s[5]));
                         break;
                     case 'G':
                         card.goodType = Card.GoodType.valueOf(s[1]);

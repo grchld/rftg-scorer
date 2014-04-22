@@ -50,6 +50,9 @@ class Recognizer {
     private static final Scalar COLOR_MATCH_NEW = new Scalar(0, 255, 0);
     private static final Scalar COLOR_CHIPS = new Scalar(255, 255, 0);
     private static final Scalar COLOR_PRESTIGE = new Scalar(0, 255, 0);
+    private static final Scalar COLOR_TOKENS_SCIENCE = new Scalar(255, 192, 192);
+    private static final Scalar COLOR_TOKENS_UPLIFT = new Scalar(192, 255, 192);
+    private static final Scalar COLOR_TOKENS_ALIEN = new Scalar(255, 255, 192);
     private static final Scalar COLOR_CARDS = new Scalar(128, 255, 128);
     private static final Scalar COLOR_MILITARY = new Scalar(255, 0, 0);
 
@@ -94,7 +97,7 @@ class Recognizer {
         this.recognizerResources = recognizerResources;
         this.screen = recognizerResources.screenProperties;
 
-        cardMatches = new CardMatch[Card.GameType.EXP3.maxCardNum + 1];
+        cardMatches = new CardMatch[Card.GameType.EXP4.maxCardNum + 1];
 
         int xOrigin = width/2;
         int yOrigin = height/2;
@@ -308,6 +311,16 @@ class Recognizer {
         if (state.settings.usePrestige) {
             draw(frame, recognizerResources.userControls.prestigeBackground, Sprite.textSpriteWithDilate(""+state.player.prestige, COLOR_PRESTIGE, COLOR_SHADOW, 1, screen.prestigeTextScale, 3, 1),
                     screen.prestigeIconPosition);
+        }
+
+        // Draw tokens
+        if (state.settings.useTokens) {
+            draw(frame, recognizerResources.userControls.tokensScienceBackground, Sprite.textSpriteWithDilate(""+state.player.tokensScience, COLOR_TOKENS_SCIENCE, COLOR_SHADOW, 1, screen.tokensScienceTextScale, 3, 1),
+                    screen.tokensScienceIconPosition);
+            draw(frame, recognizerResources.userControls.tokensUpliftBackground, Sprite.textSpriteWithDilate(""+state.player.tokensUplift, COLOR_TOKENS_UPLIFT, COLOR_SHADOW, 1, screen.tokensUpliftTextScale, 3, 1),
+                    screen.tokensUpliftIconPosition);
+            draw(frame, recognizerResources.userControls.tokensAlienBackground, Sprite.textSpriteWithDilate(""+state.player.tokensAlien, COLOR_TOKENS_ALIEN, COLOR_SHADOW, 1, screen.tokensAlienTextScale, 3, 1),
+                    screen.tokensAlienIconPosition);
         }
 
         // Draw military scores

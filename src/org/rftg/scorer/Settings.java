@@ -9,17 +9,20 @@ import java.io.ObjectOutputStream;
  */
 class Settings {
 
-    Card.GameType gameType = Card.GameType.EXP3;
+    Card.GameType gameType = Card.GameType.EXP4;
     boolean usePrestige;
+    boolean useTokens;
 
     void load(ObjectInputStream ois, CardInfo cardInfo) throws IOException, ClassNotFoundException {
         gameType = (Card.GameType) ois.readObject();
         usePrestige = ois.readBoolean();
+        useTokens = ois.readBoolean();
     }
 
     void save(ObjectOutputStream oos) throws IOException {
         oos.writeObject(gameType);
         oos.writeBoolean(usePrestige);
+        oos.writeBoolean(useTokens);
     }
 
 }

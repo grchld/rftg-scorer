@@ -14,7 +14,7 @@ class Card {
     int vp;
     GoodType goodType;
     Set<Flag> flags =  EnumSet.noneOf(Flag.class);
-    Map<GameType, Integer> count = new EnumMap<GameType, Integer>(GameType.class);
+//    Map<GameType, Integer> count = new EnumMap<GameType, Integer>(GameType.class);
     List<Power> powers = new ArrayList<Power>(4);
     List<Extra> extras = new ArrayList<Extra>(4);
     Set<Phase> phasePowers = EnumSet.noneOf(Phase.class);
@@ -25,7 +25,8 @@ class Card {
         BASE("The base game", 94),
         EXP1("The Gathering Storm", 113),
         EXP2("Rebel vs Imperium", 150),
-        EXP3("The Brink of War", 190);
+        EXP3("The Brink of War", 190),
+        EXP4("Alien Arifacts", 229);
         final String name;
         final int maxCardNum;
 
@@ -108,12 +109,16 @@ class Card {
         DRAW_DIFFERENT,
         DRAW_EACH_ALIEN,
         DRAW_EACH_NOVELTY,
+        DRAW_EACH_RARE,
+        DRAW_EACH_GENE,
         DRAW_IF,
         DRAW_LUCKY,
         DRAW_MILITARY,
         DRAW_MOST_PRODUCED,
+        DRAW_MOST_NOVELTY,
         DRAW_MOST_RARE,
         DRAW_REBEL,
+        DRAW_IMPERIUM,
         DRAW_WORLD_GENE,
         EXPLORE,
         EXPLORE_AFTER,
@@ -169,7 +174,13 @@ class Card {
         WINDFALL_ANY,
         WINDFALL_GENE,
         WINDFALL_NOVELTY,
-        WINDFALL_RARE
+        WINDFALL_RARE,
+        _DRAW_AND_PLACE_NON_MILITARY_WORLD_OR_KEEP,
+        _ADD_SURVEY_TEAM,
+        _PLACE_ADDITION,
+        _DRAW_EACH_DEVELOPMENT_5_PLUS,
+        _PLACE_SECOND_WITH_EXCESS_MILITARY,
+        _STORE_GOOD_RARE,
     }
 
     public static final Set<PowerType> TRADE_POWERS = EnumSet.of(
@@ -258,6 +269,18 @@ class Card {
         },
         NAME, // find by name
         NEGATIVE_MILITARY, // -military
+        NON_MILITARY {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD && !card.flags.contains(Flag.MILITARY);
+            }
+        },
+        NON_MILITARY_TRADE {
+            @Override
+            public boolean match(Card card) {
+                return card.cardType == CardType.WORLD && !card.flags.contains(Flag.MILITARY) && card.phasePowers.contains(Phase.TRADE);
+            }
+        },
         NOVELTY_PRODUCTION {
             @Override
             public boolean match(Card card) {
@@ -308,7 +331,16 @@ class Card {
             }
         },
         THREE_VP, // extra vp for every three chips
+        TOKEN_SCIENCE, // extra vp for every science token
+        TOKEN_UPLIFT, // extra vp for every uplift token
+        TOKEN_ALIEN, // extra vp for every alien token
         TOTAL_MILITARY, // +military
+        TRADE {
+            @Override
+            public boolean match(Card card) {
+                return card.phasePowers.contains(Phase.TRADE);
+            }
+        },
         UPLIFT_FLAG {
             @Override
             public boolean match(Card card) {

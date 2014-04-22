@@ -33,16 +33,19 @@ class UserControls {
     public Sprite resetBackground;
     public Sprite totalBackground;
     public Sprite prestigeBackground;
+    public Sprite tokensScienceBackground;
+    public Sprite tokensUpliftBackground;
+    public Sprite tokensAlienBackground;
 
     UserControls(final RecognizerResources recognizerResources) {
         this.recognizerResources = recognizerResources;
         final ScreenProperties screen = recognizerResources.screenProperties;
 
-        cardNames = new Sprite[Card.GameType.EXP3.maxCardNum + 1];
+        cardNames = new Sprite[Card.GameType.EXP4.maxCardNum + 1];
         recognizerResources.executor.submit(new Runnable() {
             @Override
             public void run() {
-                for (int i = 0; i <= Card.GameType.EXP3.maxCardNum; i++) {
+                for (int i = 0; i <= Card.GameType.EXP4.maxCardNum; i++) {
                     cardNames[i] = Sprite.textSpriteWithDilate(recognizerResources.cardInfo.cards[i].name,
                             CARD_TEXT_COLOR, CARD_TEXT_SHADOW, CARD_TEXT_FONT_FACE, screen.cardTextFontScale, screen.cardTextThickness, screen.cardTextBorder);
                 }
@@ -54,6 +57,9 @@ class UserControls {
                 cardCountBackground = load("cards", screen.cardsIconPosition.dimensions);
                 chipsBackground = load("chip", screen.chipsIconPosition.dimensions);
                 prestigeBackground = load("prestige", screen.prestigeIconPosition.dimensions);
+                tokensScienceBackground = load("token_science", screen.tokensScienceIconPosition.dimensions);
+                tokensUpliftBackground = load("token_uplift", screen.tokensUpliftIconPosition.dimensions);
+                tokensAlienBackground = load("token_alien", screen.tokensAlienIconPosition.dimensions);
                 militaryBackground = load("military", screen.militaryIconPosition.dimensions);
                 resetBackground = load("reset", screen.resetIconPosition.dimensions);
                 totalBackground = load("total", screen.totalIconPosition.dimensions);
@@ -83,11 +89,20 @@ class UserControls {
             if (inside(recognizer, screen.resetIconPosition, x, y)) {
                 state.player.chips = 0;
                 state.player.prestige = 0;
+                state.player.tokensScience = 0;
+                state.player.tokensUplift = 0;
+                state.player.tokensAlien = 0;
                 state.player.cards.clear();
             } else if (inside(recognizer, screen.chipsIconPosition, x, y)) {
                 state.player.chips++;
             } else if (state.settings.usePrestige && inside(recognizer, screen.prestigeIconPosition, x, y)) {
                 state.player.prestige++;
+            } else if (state.settings.useTokens && inside(recognizer, screen.tokensScienceIconPosition, x, y)) {
+                state.player.tokensScience++;
+            } else if (state.settings.useTokens && inside(recognizer, screen.tokensUpliftIconPosition, x, y)) {
+                state.player.tokensUplift++;
+            } else if (state.settings.useTokens && inside(recognizer, screen.tokensAlienIconPosition, x, y)) {
+                state.player.tokensAlien++;
             }
 
             return true;

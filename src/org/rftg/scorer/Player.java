@@ -14,6 +14,9 @@ class Player {
     List<Card> cards = new ArrayList<Card>();
     int chips;
     int prestige;
+    int tokensScience;
+    int tokensUplift;
+    int tokensAlien;
 
     void load(ObjectInputStream ois, CardInfo cardInfo) throws IOException, ClassNotFoundException {
         chips = ois.readInt();
@@ -22,6 +25,9 @@ class Player {
         for (int id : cardIds) {
             cards.add(cardInfo.cards[id]);
         }
+        tokensAlien = ois.readInt();
+        tokensScience = ois.readInt();
+        tokensUplift = ois.readInt();
     }
 
     void save(ObjectOutputStream oos) throws IOException {
@@ -33,5 +39,8 @@ class Player {
             cardIds[i++] = card.id;
         }
         oos.writeObject(cardIds);
+        oos.writeInt(tokensAlien);
+        oos.writeInt(tokensScience);
+        oos.writeInt(tokensUplift);
     }
 }

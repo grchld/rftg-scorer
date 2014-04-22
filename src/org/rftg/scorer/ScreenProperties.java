@@ -18,6 +18,10 @@ class ScreenProperties {
     private Dimensions chipsIconSize = new Dimensions(125, 125);
     private Dimensions prestigeIconSize = new Dimensions(125, 125);
 
+    private Dimensions tokensScienceIconSize = new Dimensions(125, 125);
+    private Dimensions tokensUpliftIconSize = new Dimensions(125, 125);
+    private Dimensions tokensAlienIconSize = new Dimensions(125, 125);
+
     private Dimensions militaryIconSize = new Dimensions(100, 100);
     private Dimensions resetIconSize = new Dimensions(125, 125);
     private Dimensions totalIconSize = new Dimensions(125, 125);
@@ -25,6 +29,9 @@ class ScreenProperties {
     Position cardsIconPosition;
     Position chipsIconPosition;
     Position prestigeIconPosition;
+    Position tokensScienceIconPosition;
+    Position tokensUpliftIconPosition;
+    Position tokensAlienIconPosition;
     Position militaryIconPosition;
     Position resetIconPosition;
     Position totalIconPosition;
@@ -39,6 +46,9 @@ class ScreenProperties {
     double previewTextScale = 3;
     double chipsTextScale = 4;
     double prestigeTextScale = 4;
+    double tokensScienceTextScale = 4;
+    double tokensUpliftTextScale = 4;
+    double tokensAlienTextScale = 4;
     double militaryTextScale = 3;
     double cardCountTextScale = 4;
     double totalTextScale = 4;
@@ -59,6 +69,10 @@ class ScreenProperties {
             chipsIconSize = new Dimensions(100, 100);
             prestigeIconSize = new Dimensions(100, 100);
 
+            tokensScienceIconSize = new Dimensions(100, 100);
+            tokensUpliftIconSize = new Dimensions(100, 100);
+            tokensAlienIconSize = new Dimensions(100, 100);
+
             militaryIconSize = new Dimensions(90, 90);
             resetIconSize = new Dimensions(100, 100);
             totalIconSize = new Dimensions(110, 110);
@@ -73,6 +87,9 @@ class ScreenProperties {
             previewTextScale = 2.5;
             chipsTextScale = 3;
             prestigeTextScale = 3;
+            tokensScienceTextScale = 3;
+            tokensUpliftTextScale = 3;
+            tokensAlienTextScale = 3;
             militaryTextScale = 2.5;
             cardCountTextScale = 2.8;
             totalTextScale = 3;
@@ -86,6 +103,11 @@ class ScreenProperties {
         cardsIconPosition = new Position(previewGap, - cardsIconSize.height - previewHeight - 2*previewGap, cardsIconSize);
         chipsIconPosition = new Position(- chipsIconSize.width - previewGap, previewGap, chipsIconSize);
         prestigeIconPosition = new Position(chipsIconPosition.x - prestigeIconSize.width - previewGap, previewGap, prestigeIconSize);
+
+        tokensScienceIconPosition = new Position(prestigeIconPosition.x - tokensScienceIconSize.width - previewGap, previewGap, tokensScienceIconSize);
+        tokensUpliftIconPosition = new Position(tokensScienceIconPosition.x - tokensUpliftIconSize.width - previewGap, previewGap, tokensUpliftIconSize);
+        tokensAlienIconPosition = new Position(tokensUpliftIconPosition.x - tokensAlienIconSize.width - previewGap, previewGap, tokensAlienIconSize);
+
         militaryIconPosition = new Position(chipsIconPosition.x + (chipsIconSize.width - militaryIconSize.width) / 2,
                 prestigeIconPosition.y + prestigeIconSize.height + previewGap, militaryIconSize);
         totalIconPosition = new Position(- totalIconSize.width - previewGap, - totalIconSize.height - previewHeight - 2*previewGap, totalIconSize);

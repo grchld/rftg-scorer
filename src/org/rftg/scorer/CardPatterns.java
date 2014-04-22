@@ -39,9 +39,9 @@ class CardPatterns {
 
         this.recognizerResources = recognizerResources;
 
-        samplesFused = new Mat((Card.GameType.EXP3.maxCardNum + 1)*SAMPLE_HEIGHT, SAMPLE_WIDTH, CvType.CV_8UC1);
-        samples = new Mat[Card.GameType.EXP3.maxCardNum + 1];
-        previews = new Sprite[Card.GameType.EXP3.maxCardNum + 1];
+        samplesFused = new Mat((Card.GameType.EXP4.maxCardNum + 1)*SAMPLE_HEIGHT, SAMPLE_WIDTH, CvType.CV_8UC1);
+        samples = new Mat[Card.GameType.EXP4.maxCardNum + 1];
+        previews = new Sprite[Card.GameType.EXP4.maxCardNum + 1];
 
         sampleScaleDown = Imgproc.getAffineTransform(
                 new MatOfPoint2f(
@@ -94,7 +94,7 @@ class CardPatterns {
 
         }
 
-        for (int num = 0; num <= Card.GameType.EXP3.maxCardNum; num++) {
+        for (int num = 0; num <= Card.GameType.EXP4.maxCardNum; num++) {
             recognizerResources.executor.submit(new Task(num));
         }
 

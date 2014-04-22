@@ -17,6 +17,9 @@ class Scoring {
     final List<Card> cards;
     int chips;
     int prestige;
+    int tokensScience;
+    int tokensUplift;
+    int tokensAlien;
     int military;
     int goodTypes;
 
@@ -38,6 +41,9 @@ class Scoring {
         cards = player.cards;
         chips = player.chips;
         prestige = player.prestige;
+        tokensScience = player.tokensScience;
+        tokensUplift = player.tokensUplift;
+        tokensAlien = player.tokensAlien;
 
         calcGoodTypes();
         calcMilitary();
@@ -80,6 +86,15 @@ class Scoring {
                     case THREE_VP:
                         score += chips/3;
                         break;
+                    case TOKEN_SCIENCE:
+                        score += tokensScience;
+                        break;
+                    case TOKEN_UPLIFT:
+                        score += tokensUplift;
+                        break;
+                    case TOKEN_ALIEN:
+                        score += tokensAlien;
+                        break;
                     case TOTAL_MILITARY:
                         score += military;
                         break;
@@ -96,6 +111,9 @@ class Scoring {
                         case KIND_GOOD:
                         case NEGATIVE_MILITARY:
                         case THREE_VP:
+                        case TOKEN_SCIENCE:
+                        case TOKEN_UPLIFT:
+                        case TOKEN_ALIEN:
                         case TOTAL_MILITARY:
                         case PRESTIGE:
                             break;
